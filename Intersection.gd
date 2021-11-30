@@ -10,6 +10,8 @@ var _cnt_outgoing_streets = 0
 
 const MAX_FLOAT = 2147483647
 
+var color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+
 onready var _id = get_index() setget set_id, get_id  
 
 # ==============================================================================
@@ -249,9 +251,10 @@ func _input(event):
 			_reorder()
 
 func _draw(): 	
-	draw_circle(Vector2(0, 0), 15, Color(0.2, 0.2, 0.2, 1))
+	#draw_circle(Vector2(0, 0), 10, Color(0.2, 0.2, 0.2, 1))
+	draw_rect(Rect2(Vector2(-10, -10), Vector2(20, 20)), color)
 	
 	var label = Label.new()
 	var font = label.get_font("")
 
-	draw_string(font, Vector2(-4, 4), "%s" % get_id())
+	#draw_string(font, Vector2(-4, 4), "%s" % get_id())

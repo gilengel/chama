@@ -27,6 +27,8 @@ onready var _district_manager = get_node("../DistrictManager")
 onready var _intersection_manager : IntersectionManager = get_node("../IntersectionManager")
 onready var _camera = get_node("../Camera2D")
 
+onready var _gui_main_panel : MainPanel = get_node("/root/City/CanvasLayer/GUI/MainPanel")
+
 # ==============================================================================
 
 enum State {NOTHING, START_STREET, END_STREET}
@@ -35,6 +37,8 @@ var state = State.NOTHING
 var _starting_street
 var _starting_intersection
 var _valid_street = false
+
+var enabled = true
 
 var temp = { "start": Vector2(0, 0), "end": Vector2(0,0)}
 
@@ -100,7 +104,13 @@ func get_street_by_id(id) -> Street:
 
 # Called when the node enters the scene tree for the first time.
 func _ready():	
-	pass
+	_gui_main_panel.connect("street_changed", self, "_change_temp_street")
+	
+func _change_temp_street(street : Buildable):
+	if street:
+		enabled = true
+	else:
+		enabled = false
 	
 func _update_temp_street_start(position):
 	_starting_intersection = _intersection_manager.is_near_intersection(position, 50)
@@ -151,7 +161,7 @@ func _update_temp_end(position):
 			_valid_street = false
 					
 func _input(event):	
-	if _game_state_manager.mode != _game_state_manager.BUILD_MODE.STREET:
+	if not enabled:
 		return
 		
 	if event is InputEventMouseButton:

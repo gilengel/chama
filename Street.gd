@@ -1,31 +1,20 @@
 class_name Street
-extends Node2D
+extends Buildable
 
 # intersections
 var start = null
 var end  = null 
 
-var _left_district = null setget set_left_district, get_left_district
-var _right_district = null setget set_right_district, get_right_district
-
-var District = preload("res://District.gd")
-
 var midpoints = []
 
 var rng = RandomNumberGenerator.new()
 
-var color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 var outline = false
 const WIDTH = 10
 const MIN_LENGTH = 50
 
 var norm = Vector2(0, 0)
 var angle = null
-
-var polygon = []
-
-#var _previous setget set_previous, get_previous # Street
-#var _next setget set_next, get_next # Street
 
 var _next = []
 var _previous = []
@@ -38,7 +27,14 @@ func set_id(id):
 func get_id():
 	return _id
 	
+func get_ui_name():
+	return "Street"
+	
 func _ready():
+	color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+	
+	polygon.resize(4)
+	
 	_next.resize(2)
 	_previous.resize(2)
 	
@@ -86,26 +82,8 @@ func get_previous_from_intersection(side : int, point : Intersection):
 	else:
 		return get_previous(side)	
 	
-func set_left_district(district):
-	_left_district = district
-
-func get_left_district():
-	return _left_district
-	
-func set_right_district(district):
-	_right_district = district
-
-func get_right_district():
-	return _right_district
-	
 func set_start(new_start):
 	if start:
-#		if _left_district:
-#			_left_district.intersections.erase(start)
-#
-#		if _right_district:
-#			_right_district.intersections.erase(start)
-		
 		start.remove_outgoing_street(self)
 		
 	global_position = new_start.position
@@ -115,12 +93,6 @@ func set_start(new_start):
 	new_start.update()
 	
 	update()
-	
-func get_district(side):
-	if side == District.Side.LEFT:
-		return _left_district
-	else:
-		return _right_district
 	
 func _update_geometry():
 	# add random midpoints
@@ -133,12 +105,15 @@ func _update_geometry():
 	midpoints.clear()
 	
 	var perp_vec = Vector2(-norm.y, norm.x)
-	polygon.clear()
-	polygon.append(perp_vec * WIDTH)
-	polygon.append(end.position - global_position + perp_vec * WIDTH)
-	polygon.append(end.position - global_position - perp_vec * WIDTH)
-	polygon.append(-perp_vec * WIDTH)	
+	#if polygon.empty():
 	
+	polygon = PoolVector2Array( [
+		perp_vec * WIDTH,
+		end.position - global_position + perp_vec * WIDTH,
+		end.position - global_position - perp_vec * WIDTH,
+		-perp_vec * WIDTH
+	] )
+
 	update()
 
 		
@@ -338,44 +313,44 @@ func print():
 	]
 	print(text)
 
-func _draw(): 
-	draw_colored_polygon(polygon, color)
-	
-	if outline:
-		var p = polygon
-		p.append(p[0])
-		draw_polyline(p, Color.white, 4)
-	
-	if start and end:
-
-		var polygon = []
-		var perp_vec = Vector2(-norm.y, norm.x)
-		polygon.append(perp_vec * WIDTH + norm * (length() - 30))
-		polygon.append(end.position - global_position)
-		polygon.append(-perp_vec * WIDTH + norm * (length() - 30))	
-
-		var color = Color(0, 1.0, 0, 0.8)
-		draw_polygon(polygon, [color, color, color])	
+#func _draw(): 
+#	draw_colored_polygon(polygon, color)
 #
-
-
-		var a = get_previous(District.Side.LEFT)
-		var b = get_previous(District.Side.RIGHT)
-		var c = get_next(District.Side.LEFT)
-		var d = get_next(District.Side.RIGHT)
-				
-		var label = Label.new()
-		var font = label.get_font("")
-
-		var text = "%s -> %s,%s,%s,%s" % [
-			get_id(), 
-			a.get_id() if a else "#", 
-			b.get_id() if b else "#", 
-			c.get_id() if c else "#", 
-			d.get_id() if d else "#", 
-		]
-		
-		var v = (end.position - global_position).normalized() * (end.position - global_position).length() / 2.0 - Vector2(40, 0)
-		draw_string(font, v + Vector2(0,7), text, Color.white)		
+#	if outline:
+#		var p = polygon
+#		p.append(p[0])
+#		draw_polyline(p, Color.white, 4)
+	
+#	if start and end:
+#
+#		var polygon = []
+#		var perp_vec = Vector2(-norm.y, norm.x)
+#		polygon.append(perp_vec * WIDTH + norm * (length() - 30))
+#		polygon.append(end.position - global_position)
+#		polygon.append(-perp_vec * WIDTH + norm * (length() - 30))	
+#
+#		var color = Color(0, 1.0, 0, 0.8)
+#		draw_polygon(polygon, [color, color, color])	
+##
+#
+#
+#		var a = get_previous(District.Side.LEFT)
+#		var b = get_previous(District.Side.RIGHT)
+#		var c = get_next(District.Side.LEFT)
+#		var d = get_next(District.Side.RIGHT)
+#
+#		var label = Label.new()
+#		var font = label.get_font("")
+#
+#		var text = "%s -> %s,%s,%s,%s" % [
+#			get_id(), 
+#			a.get_id() if a else "#", 
+#			b.get_id() if b else "#", 
+#			c.get_id() if c else "#", 
+#			d.get_id() if d else "#", 
+#		]
+#
+#		var v = (end.position - global_position).normalized() * (end.position - global_position).length() / 2.0 - Vector2(40, 0)
+#		draw_string(font, v + Vector2(0,7), text, Color.white)		
 
 	

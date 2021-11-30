@@ -1,6 +1,6 @@
 extends MarginContainer
 
-onready var statistics_label = $HBoxContainer/MarginContainer/RichTextLabel
+onready var statistics_label = $HBoxContainer/HBoxContainer/MarginContainer/RichTextLabel
 
 var num_streets = 0
 var num_intersections = 0

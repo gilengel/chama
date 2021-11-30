@@ -1,10 +1,10 @@
 class_name Building
-extends Polygon2D
+extends Buildable
 
 const MAX_FLOAT = 1.79769e308
 
 func min_area():
-	return 0
+	pass
 
 func max_area():
 	return MAX_FLOAT

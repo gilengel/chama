@@ -10,9 +10,19 @@ config_version=4
 
 _global_script_classes=[ {
 "base": "Polygon2D",
+"class": "Buildable",
+"language": "GDScript",
+"path": "res://Buildable.gd"
+}, {
+"base": "Buildable",
 "class": "Building",
 "language": "GDScript",
 "path": "res://Building.gd"
+}, {
+"base": "Building",
+"class": "Church",
+"language": "GDScript",
+"path": "res://Buildings/Church.gd"
 }, {
 "base": "Node2D",
 "class": "District",
@@ -24,6 +34,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://DistrictManager.gd"
 }, {
+"base": "Building",
+"class": "Farm",
+"language": "GDScript",
+"path": "res://Buildings/Farm.gd"
+}, {
 "base": "Node2D",
 "class": "Intersection",
 "language": "GDScript",
@@ -34,12 +49,17 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://IntersectionManager.gd"
 }, {
+"base": "Control",
+"class": "MainPanel",
+"language": "GDScript",
+"path": "res://GUI/MainPanel.gd"
+}, {
 "base": "Building",
 "class": "Marketplace",
 "language": "GDScript",
-"path": "res://Marketplace.gd"
+"path": "res://Buildings/Marketplace.gd"
 }, {
-"base": "Node2D",
+"base": "Buildable",
 "class": "Street",
 "language": "GDScript",
 "path": "res://Street.gd"
@@ -50,11 +70,15 @@ _global_script_classes=[ {
 "path": "res://StreetManager.gd"
 } ]
 _global_script_class_icons={
+"Buildable": "",
 "Building": "",
+"Church": "",
 "District": "",
 "DistrictManager": "",
+"Farm": "",
 "Intersection": "",
 "IntersectionManager": "",
+"MainPanel": "",
 "Marketplace": "",
 "Street": "",
 "StreetManager": ""

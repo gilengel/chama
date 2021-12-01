@@ -54,10 +54,15 @@ func save():
 	
 	return save_dict
 
-func _remove_street(street):
+func remove_street(street):
 	for s in _streets:
 		if s["street"] == street:
 			_streets.erase(s)
+			
+	_reorder()
+	
+	if _streets.empty():
+		queue_free()
 			
 func _reorder():
 	_streets.sort_custom(MyCustomSorter, "sort_ascending")
@@ -94,9 +99,11 @@ func add_outgoing_street(street):
 	_cnt_outgoing_streets += 1	
 			
 func remove_outgoing_street(street):
-	_remove_street(street)
+	remove_street(street)
 			
 	_cnt_outgoing_streets -= 1
+	
+	_check_for_deletion()
 	
 func add_incoming_street(street):
 	_streets.append({ "dir": Direction.IN, "street": street})
@@ -106,9 +113,16 @@ func add_incoming_street(street):
 	_cnt_incoming_streets += 1
 	
 func remove_incoming_street(street):
-	_remove_street(street)
+	remove_street(street)
 	
 	_cnt_incoming_streets -= 1
+	
+	_check_for_deletion()
+	
+func _check_for_deletion():
+	print("check %s %s" % [_cnt_incoming_streets, _cnt_outgoing_streets])
+	if _cnt_incoming_streets == 0 and _cnt_outgoing_streets == 0:
+		queue_free()
 
 func has_incoming_streets():
 	return _cnt_incoming_streets > 0

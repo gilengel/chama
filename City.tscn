@@ -1,9 +1,7 @@
-[gd_scene load_steps=13 format=2]
+[gd_scene load_steps=10 format=2]
 
-[ext_resource path="res://District.gd" type="Script" id=2]
 [ext_resource path="res://City.gd" type="Script" id=3]
 [ext_resource path="res://Camera2D.gd" type="Script" id=4]
-[ext_resource path="res://Building.gd" type="Script" id=5]
 [ext_resource path="res://StreetManager.gd" type="Script" id=6]
 [ext_resource path="res://DistrictManager.gd" type="Script" id=7]
 [ext_resource path="res://IntersectionManager.gd" type="Script" id=8]
@@ -11,16 +9,6 @@
 [ext_resource path="res://HouseManager.gd" type="Script" id=10]
 [ext_resource path="res://BuildingsManager.tscn" type="PackedScene" id=12]
 [ext_resource path="res://GUI/MainPanel.tscn" type="PackedScene" id=13]
-
-[sub_resource type="GDScript" id=1]
-script/source = "class_name Marketplace
-extends Building
-
-const MIN_AREA = pow(400, 2)
-
-func min_area():
-	return MIN_AREA
-"
 
 [node name="City" type="Node2D"]
 script = ExtResource( 3 )
@@ -39,8 +27,16 @@ __meta__ = {
 margin_right = 1920.0
 margin_bottom = 60.0
 
+[node name="MainPanel" parent="CanvasLayer/GUI/HBoxContainer" instance=ExtResource( 13 )]
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_right = 1756.0
+margin_bottom = 60.0
+size_flags_horizontal = 3
+
 [node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/GUI/HBoxContainer"]
-margin_right = 160.0
+margin_left = 1760.0
+margin_right = 1920.0
 margin_bottom = 60.0
 
 [node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/GUI/HBoxContainer/HBoxContainer"]
@@ -56,27 +52,12 @@ bbcode_text = "Streets: 100 Intersections: 100 Houses: 100"
 text = "Streets: 100 Intersections: 100 Houses: 100"
 fit_content_height = true
 
-[node name="MainPanel" parent="CanvasLayer/GUI" instance=ExtResource( 13 )]
-anchor_right = 0.0
-anchor_bottom = 0.0
-margin_right = 1920.0
-margin_bottom = 60.0
-
-[node name="Intersection" type="Node" parent="."]
-
-[node name="District" type="Node2D" parent="."]
-script = ExtResource( 2 )
-
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2( 960, 540 )
 current = true
 script = ExtResource( 4 )
 
 [node name="Tween" type="Tween" parent="Camera2D"]
-
-[node name="Building" type="Polygon2D" parent="."]
-visible = false
-script = ExtResource( 5 )
 
 [node name="BuildingsManager" parent="." instance=ExtResource( 12 )]
 
@@ -91,10 +72,5 @@ script = ExtResource( 10 )
 
 [node name="IntersectionManager" type="Node" parent="."]
 script = ExtResource( 8 )
-
-[node name="Buildings" type="Node" parent="."]
-
-[node name="Marketplace" type="Polygon2D" parent="Buildings"]
-script = SubResource( 1 )
 
 [connection signal="street_count_changed" from="StreetManager" to="CanvasLayer/GUI" method="_on_street_count_changed"]

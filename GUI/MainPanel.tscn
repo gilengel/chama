@@ -10,25 +10,49 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="TabContainer" type="TabContainer" parent="."]
-margin_right = 622.0
-margin_bottom = 70.0
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+margin_right = 67.0
+margin_bottom = 36.0
+rect_min_size = Vector2( 500, 0 )
+size_flags_horizontal = 3
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Streets" type="HBoxContainer" parent="TabContainer"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 32.0
-margin_right = 36.0
+[node name="Tab" type="TabContainer" parent="HBoxContainer"]
+margin_right = 441.0
 margin_bottom = 36.0
+size_flags_horizontal = 3
+tab_align = 0
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
-[node name="Buildings" type="HBoxContainer" parent="TabContainer"]
+[node name="Buildings" type="HBoxContainer" parent="HBoxContainer/Tab"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 margin_left = 4.0
 margin_top = 32.0
-margin_right = 36.0
+margin_right = -4.0
+margin_bottom = -4.0
+
+[node name="Streets" type="HBoxContainer" parent="HBoxContainer/Tab"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 4.0
+margin_top = 32.0
+margin_right = -4.0
+margin_bottom = -4.0
+
+[node name="Btn_Delete" type="Button" parent="HBoxContainer"]
+margin_left = 445.0
+margin_right = 500.0
 margin_bottom = 36.0
+toggle_mode = true
+text = "Delete"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[connection signal="toggled" from="HBoxContainer/Btn_Delete" to="." method="_on_Btn_Delete_toggled"]

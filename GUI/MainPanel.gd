@@ -11,11 +11,12 @@ onready var streets = _buildings_manager.get_node("Streets")
 
 signal building_changed(building)
 signal street_changed(street)
+signal destroy
 
 # ==============================================================================
 
-onready var buildings_tab = $TabContainer/Buildings
-onready var streets_tab = $TabContainer/Streets
+onready var buildings_tab = $HBoxContainer/Tab/Buildings
+onready var streets_tab = $HBoxContainer/Tab/Streets
 
 # ==============================================================================
 
@@ -71,3 +72,9 @@ func _ready():
 	_add_building_buttons()
 	_add_street_buttons()
 	
+	$HBoxContainer/Btn_Delete.group = _btn_group
+
+
+func _on_Btn_Delete_toggled(button_pressed):
+	if button_pressed:
+		emit_signal("destroy")

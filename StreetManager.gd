@@ -27,7 +27,7 @@ onready var _district_manager = get_node("../DistrictManager")
 onready var _intersection_manager : IntersectionManager = get_node("../IntersectionManager")
 onready var _camera = get_node("../Camera2D")
 
-onready var _gui_main_panel : MainPanel = get_node("/root/City/CanvasLayer/GUI/MainPanel")
+onready var _gui_main_panel : MainPanel = get_node("/root/City/CanvasLayer/GUI/HBoxContainer/MainPanel")
 
 # ==============================================================================
 
@@ -185,7 +185,7 @@ func _create_intersection(position):
 	
 	return intersection	
 	
-func _is_point_on_street(pt : Vector2) -> Street :
+func is_point_on_street(pt : Vector2) -> Street :
 	for s in get_tree().get_nodes_in_group(STREET_GROUP):
 		if Geometry.is_point_in_polygon(pt, s.global_polygon()):
 			return s
@@ -199,13 +199,13 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 	var split_start : Street = null
 	var split_end : Street = null
 	if not start:
-		split_start = _is_point_on_street(start_pos)
+		split_start = is_point_on_street(start_pos)
 		
 		if not split_start:
 			start = _intersection_manager.create_intersection(start_pos)
 		
 	if not end:
-		split_end = _is_point_on_street(end_pos)
+		split_end = is_point_on_street(end_pos)
 				
 		if not split_end:
 			end = _intersection_manager.create_intersection(end_pos)
@@ -228,7 +228,11 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 	
 	emit_signal("street_count_changed", get_streets().size())
 				
-
+func remove(street: Street):
+	street.start.remove_street(street)
+	street.end.remove_street(street)
+	
+	street.queue_free()
 
 
 	

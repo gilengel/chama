@@ -9,7 +9,9 @@ export var zoom_factor := 0.1
 # Duration of the zoom's tween animation.
 export var zoom_duration := 0.2
 
-export var move_duration := 0.1
+export var move_duration := 0.2
+
+export var move_factor := 50
 
 # The camera's target zoom level.
 var _zoom_level := 1.0 setget _set_zoom_level
@@ -61,14 +63,12 @@ func _input(event):
 			
 	if event is InputEventKey:
 		if event.pressed and event.scancode == KEY_W:
-			_set_offset(offset - Vector2(0, 10))
-			#offset.y -= 10
+			_set_offset(offset - Vector2(0, move_factor))
 		if event.pressed and event.scancode == KEY_S:
-			_set_offset(offset + Vector2(0, 10))
-			#offset.y += 10
+			_set_offset(offset + Vector2(0, move_factor))
 		if event.pressed and event.scancode == KEY_A:
-			_set_offset(offset - Vector2(10, 0))
+			_set_offset(offset - Vector2(move_factor, 0))
 		if event.pressed and event.scancode == KEY_D:
-			_set_offset(offset + Vector2(10, 0))
+			_set_offset(offset + Vector2(move_factor, 0))
 			
 	#position = camera_offset

@@ -31,7 +31,9 @@ func get_ui_name():
 	return "Street"
 	
 func _ready():
-	color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+	normal_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+	
+	
 	
 	polygon.resize(4)
 	
@@ -41,6 +43,8 @@ func _ready():
 	rng.randomize()
 	
 	update()
+	
+	._ready()
 	
 func save():
 	var save_dict = {
@@ -320,7 +324,7 @@ func print():
 #		var p = polygon
 #		p.append(p[0])
 #		draw_polyline(p, Color.white, 4)
-	
+#
 #	if start and end:
 #
 #		var polygon = []
@@ -331,9 +335,7 @@ func print():
 #
 #		var color = Color(0, 1.0, 0, 0.8)
 #		draw_polygon(polygon, [color, color, color])	
-##
-#
-#
+
 #		var a = get_previous(District.Side.LEFT)
 #		var b = get_previous(District.Side.RIGHT)
 #		var c = get_next(District.Side.LEFT)
@@ -352,5 +354,4 @@ func print():
 #
 #		var v = (end.position - global_position).normalized() * (end.position - global_position).length() / 2.0 - Vector2(40, 0)
 #		draw_string(font, v + Vector2(0,7), text, Color.white)		
-
 	

@@ -1,5 +1,5 @@
 class_name StreetManager
-extends Node
+extends EntityManager
 
 # ==============================================================================
 
@@ -7,6 +7,8 @@ const MIN_ANGLE = 0.785398 # 45°
 const MAX_CONNECTIONS_PER_INTERSECTION = 4
 const MIN_LENGTH = 50
 const MAX_LENGTH = 2000
+
+const SNAP_DISTANCE = 25
 
 const STREET_GROUP = "Streets"
 
@@ -44,10 +46,14 @@ var enabled = true
 
 var temp = { "start": Vector2(0, 0), "end": Vector2(0,0)}
 
+var temp_street : Line2D = null
+
+
+
 # ==============================================================================
 
 
-func preload_street(data):
+func preload_entity(data):
 	var street = Street.new()
 
 	street.add_to_group(STREET_GROUP)
@@ -59,54 +65,33 @@ func preload_street(data):
 	# must be after add_child in order to overwrite id
 	street.set_id(data.id)
 
-func load_street(data):
-	var street = get_street_by_id(data.id)
+func load_entity(data):
+	var street = get_by_id(data.id)
 		
-	var start = _intersection_manager.get_intersection_by_id(data.start)	
-	var end = _intersection_manager.get_intersection_by_id(data.end)
+	street.set_start(_intersection_manager.get_by_id(data.start))
+	street.set_end(_intersection_manager.get_by_id(data.end))	
+	
+	if data.d_l as float >= 0:
+		street.left_district =  _district_manager.get_by_id(data.d_l as float)
+	if data.d_r as float  >= 0:
+		street.right_district =  _district_manager.get_by_id(data.d_r as float)
 		
-	#street.set_previous()
+func delete(street):
+	street.start.remove_street(street)
+	street.end.remove_street(street)
 	
-	street.set_start(start)
-	street.set_end(end)	
+	street.queue_free()
 	
-func get_streets():
-	return get_tree().get_nodes_in_group(STREET_GROUP)
-	
-static func sort_ascending(a : Dictionary, b : Dictionary):
-	if a.distance < b.distance:
-		return true
-		
-	return false	
-	
-func get_closest_streets_to(point : Vector2) -> Dictionary:
-	var closest_street = null
-	var closest_distance = 1000000000
-	
-	var _streets = []
-	for street in get_streets():
-		var pt = Geometry.get_closest_point_to_segment_2d(point, street.global_position, street.end.global_position)
-		_streets.append({ "distance": point.distance_to(pt), "street": street})
-
-	_streets.sort_custom(self, "sort_ascending")
-	
-
-	return { 
-		"street" : _streets[0].street, 
-		"side" : _streets[0].street.get_side_of_point(point) 
-	}
-		
-func get_street_by_id(id) -> Street:
-	for node in get_tree().get_nodes_in_group(STREET_GROUP):
-		if node.get_id() == id:
-			return node
-	
-	return null
-
-
 # Called when the node enters the scene tree for the first time.
 func _ready():	
+	entity_group = STREET_GROUP
 	_gui_main_panel.connect("street_changed", self, "_change_temp_street")
+	
+	temp_street = Line2D.new()
+	temp_street.width = Street.WIDTH * 2
+	temp_street.default_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+	temp_street.points.resize(2)
+	add_child(temp_street)
 	
 func _change_temp_street(street : Buildable):
 	if street:
@@ -115,7 +100,7 @@ func _change_temp_street(street : Buildable):
 		enabled = false
 	
 func _update_temp_street_start(position):
-	_starting_intersection = _intersection_manager.is_near_intersection(position, 50)
+	_starting_intersection = _intersection_manager.is_near_intersection(position, SNAP_DISTANCE)
 		
 	if _starting_intersection:
 		state = State.START_STREET
@@ -135,7 +120,9 @@ func _update_temp_street_start(position):
 							
 		temp["start"] = position
 		temp["end"] = position
-
+		
+		temp_street.points[0] = position		
+		temp_street.points[1] = position		
 				
 func _place_street():
 	if _valid_street:
@@ -150,6 +137,10 @@ func _place_street():
 	state = State.NOTHING		
 		
 func _update_temp_end(position):
+	var near_intersection = _intersection_manager.is_near_intersection(position, SNAP_DISTANCE)
+	if near_intersection:
+		position = near_intersection.position
+
 
 	if state == State.START_STREET:
 		temp["end"] = position
@@ -157,28 +148,33 @@ func _update_temp_end(position):
 		if (_exceeds_min_angle(temp["start"], temp["end"]) and 
 			not _violates_max_streets_on_intersection(temp["start"], temp["end"]) and 
 			not _violates_min_length(temp["start"], temp["end"]) and
-			not _violates_max_length(temp["start"], temp["end"])):
+			not _violates_max_length(temp["start"], temp["end"]) and
+			not _violates_intersecting_another_street()):
+			
+			temp_street.default_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 			_valid_street = true
 		else:
+			temp_street.default_color = Color.red
 			_valid_street = false
+			
+	temp_street.points = [temp["start"], temp["end"]]
+	temp_street.update()
 					
 func _input(event):	
-	
+	._input(event)
 	
 	if not enabled:
 		return
 		
 	if event is InputEventMouseButton:
-		var position = get_viewport().canvas_transform.affine_inverse().xform(event.position)
 		if event.is_action_pressed("place_object"):		
-			_update_temp_street_start(position)
+			_update_temp_street_start(_mouse_world_position)
 	
 		if event.is_action_released("place_object") and state == State.START_STREET:
 			_place_street()
 		
 	if event is InputEventMouseMotion:
-		var position = get_viewport().canvas_transform.affine_inverse().xform(event.position)
-		_update_temp_end(position)
+		_update_temp_end(_mouse_world_position)
 		
 		
 func is_point_on_street(pt : Vector2) -> Street :
@@ -189,8 +185,8 @@ func is_point_on_street(pt : Vector2) -> Street :
 	return null
 				
 func create_street(start_pos : Vector2, end_pos : Vector2):
-	var start = _intersection_manager.is_near_intersection(start_pos, 50)
-	var end = _intersection_manager.is_near_intersection(end_pos, 50)
+	var start = _intersection_manager.is_near_intersection(start_pos, SNAP_DISTANCE)
+	var end = _intersection_manager.is_near_intersection(end_pos, SNAP_DISTANCE)
 	
 	var split_start : Street = null
 	var split_end : Street = null
@@ -205,18 +201,62 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 				
 		if not split_end:
 			end = _intersection_manager.create_intersection(end_pos)
+			
+	if not split_start and split_end:
+		var _start = split_end.start
+		var _end = split_end.end
+		split_end.get_parent().remove_child(split_end)
+		
+		var intersection = _intersection_manager.create_intersection(end_pos)
+		_create_street(_start, intersection)	
+		_create_street(start, intersection)
+		_create_street(intersection, _end)		
 	
-	if split_start:
+		return
+	if split_start and not split_end:
 		var _start = split_start.start
 		var _end = split_start.end
 		split_start.get_parent().remove_child(split_start)
 		
 		var intersection = _intersection_manager.create_intersection(start_pos)
-		var s1 = _create_street(_start, intersection)	
-		var s2 = _create_street(intersection, end)
-		var s3 = _create_street(intersection, _end)
+		_create_street(_start, intersection)	
+		_create_street(intersection, end)
+		_create_street(intersection, _end)
 		
-		emit_signal("street_count_changed", get_streets().size())
+		return
+		
+		
+	if split_start and split_end:
+		var _split_end_start = split_end.start
+		var _split_end_end = split_end.end
+		
+		var _split_start_start = split_start.start
+		var _split_start_end = split_start.end
+					
+		var district = split_end.get_district(split_end.get_side_of_point(start_pos))	
+		
+		if district:
+			district.queue_free()
+		
+		split_end.get_parent().remove_child(split_end)
+		split_start.get_parent().remove_child(split_start)
+
+		var intersection_start = _intersection_manager.create_intersection(start_pos)
+		var intersection_end = _intersection_manager.create_intersection(end_pos)
+		
+		var new_street = _create_street(intersection_end, intersection_start)
+		
+		_create_street(_split_end_start, intersection_end)	
+		_create_street(intersection_end, _split_end_end)
+					
+		
+		_create_street(_split_start_start, intersection_start)	
+		_create_street(intersection_start, _split_start_end)			
+		
+		_district_manager._create_district_on_side(new_street, District.Side.LEFT)
+		_district_manager._create_district_on_side(new_street, District.Side.RIGHT)			
+		
+		emit_signal("street_count_changed", get_all().size())
 		
 		return
 	
@@ -224,31 +264,8 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 	emit_signal("street_created", street)
 	
 	
-	emit_signal("street_count_changed", get_streets().size())
+	emit_signal("street_count_changed", get_all().size())
 				
-func remove(street: Street):
-	street.start.remove_street(street)
-	street.end.remove_street(street)
-	
-	street.queue_free()
-
-func _is_near_street(point):
-	for street in get_tree().get_nodes_in_group(STREET_GROUP):
-		if self.street and street.get_index() == self.street.get_index():
-			continue;
-			
-		if Geometry.is_point_in_polygon(point, street.global_polygon()):
-			var intersection = Geometry.line_intersects_line_2d(street.start.position, street.norm, point,  Vector2(-street.norm.y, street.norm.x))
-			return [street, intersection]
-			
-	
-func is_near_street(point: Vector2) -> Street:
-	for node in get_tree().get_nodes_in_group(STREET_GROUP):
-		if Geometry.is_point_in_polygon(point, node.global_polygon()):
-			return node
-	
-	return null
-
 
 func _starts_on_street(point):
 	for node in get_tree().get_nodes_in_group(STREET_GROUP):
@@ -258,11 +275,6 @@ func _starts_on_street(point):
 	return null
 		
 func _create_street(start_intersection : Intersection, end_intersection : Intersection) -> Street:
-	for s in get_streets():
-		if s.start == start_intersection and s.end == end_intersection:
-			print("WAHHHHHHHHHHHHHHHHH")
-			return s
-			
 	var street = Street.new()
 	street.set_start(start_intersection)
 	street.add_to_group(STREET_GROUP)
@@ -271,43 +283,7 @@ func _create_street(start_intersection : Intersection, end_intersection : Inters
 	
 	street.set_end(end_intersection)	
 	
-	
-	
 	return street
-		
-func _remove_street(street : Street):
-	street.get_left_district().queue_free()
-	street.get_right_district().queue_free()
-	
-	street.queue_free()
-	
-	
-func _split_street_on_start(street, split_point, end_point):
-	var start = street.start
-	
-	var crossroad = Intersection.new()
-	crossroad.position = split_point
-	crossroad.add_to_group(_intersection_manager.INTERSECTION_GROUP)
-	crossroad.add_to_group($"../".PERSIST_GROUP)
-	add_child(crossroad)
-	
-	_remove_street(street)
-	street = _create_street(start, crossroad)
-	
-	street.set_left_district(_district_manager.create_district(street, District.Side.LEFT))
-	street.set_right_district(_district_manager.create_district(street, District.Side.RIGHT))
-	
-	
-	
-	
-	street = _create_street(crossroad, crossroad)
-
-	
-	return crossroad	
-	
-func _split_street(street, split_point, end_point, end = null):
-	pass
-	
 
 func _exceeds_min_angle(start, end):
 	
@@ -332,10 +308,21 @@ func _violates_max_streets_on_intersection(start, end):
 	if _starting_intersection:
 		return _starting_intersection._streets.size() >= MAX_CONNECTIONS_PER_INTERSECTION
 
+func _violates_intersecting_another_street():
+	if (_intersection_manager.is_near_intersection(temp_street.points[0], SNAP_DISTANCE) or
+		_intersection_manager.is_near_intersection(temp_street.points[1], SNAP_DISTANCE)):
+	
+		return false
+			
+	for street in get_all():
+		if Geometry.segment_intersects_segment_2d(street.start.global_position, street.end.global_position, temp_street.points[0], temp_street.points[1]):
+			return true
+	
+	return false
 
 
 func _intersect_with_street(position):
-	var near_intersection = _intersection_manager.is_near_intersection(position, 50)
+	var near_intersection = _intersection_manager.is_near_intersection(position, SNAP_DISTANCE)
 	if near_intersection:
 		temp["end"] = near_intersection.position
 						

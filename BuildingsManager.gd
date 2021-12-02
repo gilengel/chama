@@ -1,4 +1,5 @@
-extends Node
+class_name BuildingsManager
+extends EntityManager
 
 # ==============================================================================
 
@@ -13,32 +14,56 @@ const BUILDING_GROUP = "Buildings"
 
 # ==============================================================================
 
-var Building = preload("res://Building.gd")
-var District = preload("res://District.gd")
+#var Building = preload("res://Building.gd")
+#var District = preload("res://District.gd")
 
 # ==============================================================================
 
-# Declare member variables here. Examples:
-# var a = 2
-# var b = "text"
-
 var temp_building : Building = null
 var temp_street : Street = null
+var temp_district : District = null
 
 var enabled = false
 var destroy_enabled = false
 
-func create_building(building : Building, geometry: PoolVector2Array) -> Building:
-	var new_building = building.duplicate()
-	#new_building.position = new_building.centroid()
+func preload_entity(data):
+	var new_building : Building = null
+	match data.type:
+		"Church":
+			new_building = Church.new()
+			
 	new_building.add_to_group(BUILDING_GROUP)
 	new_building.add_to_group($"../".PERSIST_GROUP)
+	new_building.visible = true
+	add_child(new_building)
+	
+	new_building.set_id(data.id)
+
+func load_entity(data):
+	var building = get_by_id(data.id)
+	var district = _district_manager.get_by_id(data.district)
+	assert(district)
+	
+	building.position = ExtendedGeometry.centroid_polygon_2d(district.get_points())
+	building.district = district
+
+	print(building.position)
+	
+func create_building(building : Building, district : District) -> Building:
+	var new_building = building.duplicate()
+	new_building.position = ExtendedGeometry.centroid_polygon_2d(district.get_points())
+	new_building.district = district
+	new_building.add_to_group(BUILDING_GROUP)
+	new_building.add_to_group($"../".PERSIST_GROUP)
+	new_building.visible = true
 	add_child(new_building)
 	
 	return new_building
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	entity_group = BUILDING_GROUP
+
 	_gui_main_panel.connect("building_changed", self, "_change_temp_building")
 	_gui_main_panel.connect("destroy", self, "_enable_destroy")
 	
@@ -61,67 +86,50 @@ func _change_temp_building(building : Buildable):
 		remove_child(temp_building)
 
 
-func _enclosed(start: Street, side : int):
-	var next = start.get_next(side)
-	var street = start		
-	var forward = true
-	
-	var streets = []	
-	var points = []
-	var i = 0
-	while next != start and next:
-		streets.append({ "street" : street, "side": side})
-		
-		if forward:
-			next = street.get_next(side)
-			
-			points.append(street.start.position)
-		else:
-			next = street.get_previous(side)
-			
-			points.append(street.end.position)
-			
-		if next and (street.end == next.end or street.start == next.start):	
-			forward = !forward
-			
-			side = District.Side.LEFT if side == District.Side.RIGHT else District.Side.RIGHT
-				
-
-		street = next
-		
-	return { "enclosed": next == start, "streets": streets, "points": points }
-
 func _input_build(event):
 	if event is InputEventMouseMotion:
-		for district in _district_manager.get_districts():
+		temp_district = null
+		
+		for district in _district_manager.get_all():
 			district.set_hovered(false)
 			
-		for district in _district_manager.get_districts():
-			if district.is_point_in_district(event.global_position):
+		for district in _district_manager.get_all():
+			if district.is_point_in_district(_mouse_world_position):
 				district.hover_color = Color.orangered
 				district.set_hovered(true)
+				temp_district = district
 				
 				for n in district.neighbours:
 					n.hover_color = Color.orange
 					n.set_hovered(true)
-	if event.is_action_pressed("place_object") and temp_building.is_constructable():		
-		create_building(temp_building, temp_building.polygon)
+					
+	if event.is_action_pressed("place_object") and temp_building.is_constructable() and temp_district:	
+		create_building(temp_building, temp_district) 
 
 func _input_destroy(event):
 	if event is InputEventMouseMotion:		
+
 		if temp_street:
 			temp_street.set_hovered(false)
 			
-		temp_street =  _street_manager.is_point_on_street(event.global_position)
+		temp_street =  _street_manager.is_point_on_street(_mouse_world_position)
 		
 		if temp_street:
 			temp_street.set_hovered(true)
 			
 	if event.is_action_pressed("place_object") and temp_street:
-		_street_manager.remove(temp_street)
+		print(temp_street.right_district)
+		
+		_district_manager.remove_district_via_street(temp_street, District.Side.LEFT)	
+		_district_manager.remove_district_via_street(temp_street, District.Side.RIGHT)
+		
+		_street_manager.delete(temp_street)
+		
 		temp_street = null
 
 func _input(event):
+	._input(event)
+
 	if enabled:
 		_input_build(event)
 		return

@@ -4,21 +4,9 @@ extends Buildable
 var neighbours = []
 # Declare member variables here. Examples:
 var _geometry = []
-var _colors = []
 var _triangles = []
-var side
-var street
-
 
 enum Side {LEFT, RIGHT}
-
-func other_side(side):
-	if side == Side.LEFT:
-		return Side.RIGHT
-	
-	return Side.LEFT
-
-onready var _id = get_index() setget set_id, get_id  
 
 var rng = RandomNumberGenerator.new()
 
@@ -28,19 +16,12 @@ func _ready():
 	normal_color = Color(rng.randf(), rng.randf(), rng.randf(), 0.3)
 	._ready()
 
-func set_id(id):
-	_id = id
-	
-func get_id():
-	return _id
-
 func _save_neighbour_ids():
 	var ids = []
 	for i in neighbours:
 		ids.append(i.get_id())
 	
 	return ids
-	
 
 func save():
 	var pts = []
@@ -53,7 +34,6 @@ func save():
 		"pos_x": position.x,
 		"pos_y": position.y,
 		"pts": pts,
-		"side": side,
 		"neighbours": _save_neighbour_ids()
 	}
 
@@ -64,10 +44,6 @@ func get_points():
 	
 func set_points(points):
 	_geometry = points
-	
-	_colors = []
-	for g in _geometry:
-		_colors.append(color)
 			
 	_triangles = Geometry.triangulate_polygon(_geometry)
 	update()
@@ -86,8 +62,6 @@ func _draw():
 	for i in range(0, _triangles.size(), 3):
 		var poly = [_geometry[_triangles[i]], _geometry[_triangles[i+1]], _geometry[_triangles[i+2]]]
 		draw_polygon(poly,[color, color, color])
-		
-		#draw_polyline(poly, Color.white, 4)
 
 		
 	if _geometry:

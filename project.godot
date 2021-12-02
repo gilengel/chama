@@ -19,6 +19,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Building.gd"
 }, {
+"base": "EntityManager",
+"class": "BuildingsManager",
+"language": "GDScript",
+"path": "res://BuildingsManager.gd"
+}, {
 "base": "Building",
 "class": "Church",
 "language": "GDScript",
@@ -29,10 +34,15 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://District.gd"
 }, {
-"base": "Node2D",
+"base": "EntityManager",
 "class": "DistrictManager",
 "language": "GDScript",
 "path": "res://DistrictManager.gd"
+}, {
+"base": "Node",
+"class": "EntityManager",
+"language": "GDScript",
+"path": "res://EntityManager.gd"
 }, {
 "base": "Node",
 "class": "ExtendedGeometry",
@@ -49,7 +59,7 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Intersection.gd"
 }, {
-"base": "Node",
+"base": "EntityManager",
 "class": "IntersectionManager",
 "language": "GDScript",
 "path": "res://IntersectionManager.gd"
@@ -69,7 +79,7 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Street.gd"
 }, {
-"base": "Node",
+"base": "EntityManager",
 "class": "StreetManager",
 "language": "GDScript",
 "path": "res://StreetManager.gd"
@@ -77,9 +87,11 @@ _global_script_classes=[ {
 _global_script_class_icons={
 "Buildable": "",
 "Building": "",
+"BuildingsManager": "",
 "Church": "",
 "District": "",
 "DistrictManager": "",
+"EntityManager": "",
 "ExtendedGeometry": "",
 "Farm": "",
 "Intersection": "",

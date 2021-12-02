@@ -93,8 +93,6 @@ func _get_index_for_new_street(street, dir) -> int:
 		var angle = _angle_in_360deg(norm_of_street(_streets[i].street, _streets[i].dir))		
 		var new_angle = _angle_in_360deg(norm_of_street(street, dir))
 		
-		print("angle cmp = new:%s old:%s" % [new_angle, angle])
-		
 		if new_angle < angle: 
 			return i
 			
@@ -110,18 +108,24 @@ func _reorder():
 		var next = _streets[i+1].street if i < _streets.size()-1 else _streets.front().street
 		
 		if _streets[i].dir == Direction.IN:
-			if previous != street:
+			street.set_next(null, District.Side.LEFT)
+			street.set_next(null, District.Side.RIGHT)
+						
+			if previous.get_id() != street.get_id():
 				street.set_next(previous, District.Side.RIGHT)
 			
-			if next != street:
+			if next.get_id() != street.get_id():
 				street.set_next(next, District.Side.LEFT)
 				
 			street.update()
 		else:
-			if next != street:
+			street.set_previous(null, District.Side.LEFT)
+			street.set_previous(null, District.Side.RIGHT)
+			
+			if next.get_id() != street.get_id():
 				street.set_previous(next, District.Side.RIGHT)
 			
-			if previous != street:
+			if previous.get_id() != street.get_id():
 				street.set_previous(previous, District.Side.LEFT)
 				
 			street.update()
@@ -134,7 +138,8 @@ func add_outgoing_street(street):
 			
 func remove_outgoing_street(street):
 	remove_street(street)
-			
+	_reorder()		
+	
 	_cnt_outgoing_streets -= 1
 	
 	_check_for_deletion()
@@ -147,6 +152,7 @@ func add_incoming_street(street):
 	
 func remove_incoming_street(street):
 	remove_street(street)
+	_reorder()
 	
 	_cnt_incoming_streets -= 1
 	
@@ -239,24 +245,6 @@ func next_angle_to_line(end):
 			
 	dd = 2 * PI - dd		
 	return dd	
-	
-func _input(event):
-	
-	if event is InputEventMouseMotion:
-		var position = get_viewport().canvas_transform.affine_inverse().xform(event.position)
-		
-		if position.distance_to(global_position) < 50:		
-			print("IIIIIIIIIIIIIIIIIIIIIID %s" % get_id())
-			#_reorder()
-			var ids = []
-			
-			for i in _streets:
-				var a_norm  = i.street.norm if i.dir == Direction.OUT else (i.street.start.global_position - i.street.end.global_position).normalized()
-				
-				print("%s %s" % [i.street.get_id(), _angle_in_360deg(a_norm)])
-				ids.append(i.street.get_id())
-				
-			print(ids)	
 	
 func _draw(): 	
 	#draw_circle(Vector2(0, 0), 10, Color(0.2, 0.2, 0.2, 1))

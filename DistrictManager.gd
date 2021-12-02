@@ -1,5 +1,5 @@
 class_name DistrictManager
-extends Node2D
+extends EntityManager
 
 onready var _street_manager = get_node("../StreetManager")
 onready var _intersection_manager = get_node("../IntersectionManager")
@@ -12,12 +12,13 @@ signal district_count_changed(count)
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	entity_group = DISTRICT_GROUP
 	_street_manager.connect("street_created", self, "_update_districts_for_street")
 	_intersection_manager.connect("intersection_created", self, "_update_district_outer_boundary")
 	
 func _update_district_outer_boundary(intersection : Intersection):
 	var pts = []
-	for intersection in _intersection_manager.get_intersections():
+	for intersection in _intersection_manager.get_all():
 		pts.append(intersection.position)
 
 	
@@ -25,6 +26,10 @@ func _update_district_outer_boundary(intersection : Intersection):
 	#_outer_boundary = Geometry.convex_hull_2d(pts)
 	
 func _district_is_outer(points: PoolVector2Array):
+	# special case for the first district
+	if get_all().empty():
+		return false
+		
 	var polygon_size = points.size()
 	for i in range(_outer_boundary.size()):
 		var found = false
@@ -65,16 +70,6 @@ func _update_districts_for_street(street: Street):
 	_create_district_on_side(street, District.Side.LEFT)
 	_create_district_on_side(street, District.Side.RIGHT)
 
-func get_districts():
-	return get_tree().get_nodes_in_group(DISTRICT_GROUP)
-
-func get_district_by_id(id):
-	for node in get_districts():
-		if node.get_id() == id:
-			return node
-	
-	return null
-	
 func enclosed(start: Street, side : int):
 	var next = start.get_next(side)
 	var street = start		
@@ -106,7 +101,7 @@ func enclosed(start: Street, side : int):
 	
 	return { "enclosed": next == start, "streets": streets, "points": points }
 
-func preload_district(data):
+func preload_entity(data):
 	var district = District.new()
 
 	var pts = []
@@ -114,17 +109,15 @@ func preload_district(data):
 		pts.append(Vector2(data.pts[i], data.pts[i+1]))
 	
 	district.set_points(pts)
-	district.side = data.side
 	district.add_to_group(DISTRICT_GROUP)
 	district.add_to_group($"../".PERSIST_GROUP)
 	add_child(district)
 	district.set_id(data.id)
 
-func load_district(data):
-	var district = get_district_by_id(data.id)
-	print(data)
+func load_entity(data):
+	var district = get_by_id(data.id)
 	for i in data.neighbours:
-		district.neighbours.append(get_district_by_id(i))
+		district.neighbours.append(get_by_id(i))
 
 func create_district(points: PoolVector2Array):
 	var district = District.new()
@@ -134,6 +127,17 @@ func create_district(points: PoolVector2Array):
 	district.add_to_group($"../".PERSIST_GROUP)
 	add_child(district)
 	
-	emit_signal("district_count_changed", get_districts().size())
+	emit_signal("district_count_changed", get_all().size())
 
 	return district
+
+
+func remove_district_via_street(street: Street, side: int) -> void:
+	var temp_district = enclosed(street, side)
+	
+	if street.get_district(side):
+		street.get_district(side).queue_free()
+	
+	if temp_district:
+		for s in temp_district.streets:
+			s.street.set_district(null, s.side)

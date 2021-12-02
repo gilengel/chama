@@ -22,8 +22,6 @@ var angle = null
 var _next = []
 var _previous = []
 
-onready var _id = get_index() setget set_id, get_id  
-
 func set_district(district: District, side: int) -> void:
 	assert(side >= 0 and side <= 1)
 	
@@ -41,12 +39,6 @@ func get_district(side: int) -> District:
 		return right_district
 		
 	return null
-
-func set_id(id):
-	_id = id
-	
-func get_id():
-	return _id
 	
 func get_ui_name():
 	return "Street"
@@ -75,7 +67,9 @@ func save():
 		"p_l": "null" if not _previous[District.Side.LEFT] else _previous[District.Side.LEFT].get_id(),
 		"p_r": "null" if not _previous[District.Side.RIGHT] else _previous[District.Side.RIGHT].get_id(),
 		"n_l": "null" if not _next[District.Side.LEFT] else _next[District.Side.LEFT].get_id(),
-		"n_r": "null" if not _next[District.Side.RIGHT] else _next[District.Side.RIGHT].get_id(),				
+		"n_r": "null" if not _next[District.Side.RIGHT] else _next[District.Side.RIGHT].get_id(),
+		"d_l": "-1" if not left_district else left_district.get_id(),
+		"d_r": "-1" if not right_district else right_district.get_id(),
 	}
 	
 	return save_dict

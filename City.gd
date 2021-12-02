@@ -9,6 +9,7 @@ export var PERSIST_GROUP = "Persist"
 onready var _street_manager = get_node("StreetManager")
 onready var _district_manager = get_node("DistrictManager")
 onready var _intersection_manager = get_node("IntersectionManager")
+onready var _building_manager = get_node("BuildingsManager")
 
 onready var Building = get_node("Building")
 
@@ -63,21 +64,26 @@ func _save():
 	save_game.open("user://savegame.json", File.WRITE)
 
 	var streets = []
-	for street in get_tree().get_nodes_in_group(_street_manager.STREET_GROUP):
+	for street in _street_manager.get_all():
 		streets.append(street.call("save"))
 	
 	var districts = []
-	for district in get_tree().get_nodes_in_group(_district_manager.DISTRICT_GROUP):
+	for district in _district_manager.get_all():
 		districts.append(district.call("save"))
 
 	var intersections = []
-	for intersection in get_tree().get_nodes_in_group(_intersection_manager.INTERSECTION_GROUP):
+	for intersection in _intersection_manager.get_all():
 		intersections.append(intersection.call("save"))
+		
+	var buildings = []
+	for building in _building_manager.get_all():
+		buildings.append(building.call("save"))
 	
 	var save_dict = {
 		"streets": streets,
 		"districts": districts,
-		"intersections": intersections			
+		"intersections": intersections,
+		"buildings": buildings		
 	}
 		
 	save_game.store_line(to_json(save_dict))		
@@ -93,15 +99,19 @@ func _load():
 	# during loading. This will vary wildly depending on the needs of a
 	# project, so take care with this step.
 	# For our example, we will accomplish this by deleting saveable objects.
-	var save_nodes = get_tree().get_nodes_in_group(_street_manager.STREET_GROUP)
+	var save_nodes = _street_manager.get_all()
 	for i in save_nodes:
 		remove_child(i)
 
-	save_nodes = get_tree().get_nodes_in_group(_district_manager.DISTRICT_GROUP)
+	save_nodes = _district_manager.get_all()
 	for i in save_nodes:
 		remove_child(i)
 
-	save_nodes = get_tree().get_nodes_in_group(_intersection_manager.INTERSECTION_GROUP)
+	save_nodes = _intersection_manager.get_all()
+	for i in save_nodes:
+		remove_child(i)
+		
+	save_nodes = _building_manager.get_all()
 	for i in save_nodes:
 		remove_child(i)
 		
@@ -116,25 +126,33 @@ func _load():
 		for i in node_data.keys():
 			if i == "districts":
 				for district in node_data[i]:
-					_district_manager.preload_district(district)
+					_district_manager.preload_entity(district)
 					
 			if i == "intersections":
 				for intersection in node_data[i]:
-					_intersection_manager.load_intersection(intersection)
+					_intersection_manager.load_entity(intersection)
 			
 			if i == "streets":
 				for street in node_data[i]:
-					_street_manager.preload_street(street)
+					_street_manager.preload_entity(street)
+					
+			if i == "buildings":
+				for building in node_data[i]:
+					_building_manager.preload_entity(building)
 					
 		# Update all references between game objects
 		for i in node_data.keys():
 			if i == "streets":
 				for street in node_data[i]:
-					_street_manager.load_street(street)
+					_street_manager.load_entity(street)
 					
 			if i == "districts":
 				for district in node_data[i]:
-					_district_manager.load_district(district)
+					_district_manager.load_entity(district)
+					
+			if i == "buildings":
+				for building in node_data[i]:
+					_building_manager.load_entity(building)
 
 	save_game.close()
 

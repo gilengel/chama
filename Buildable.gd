@@ -5,6 +5,8 @@ var hovered = false setget set_hovered
 var hover_color : Color = Color.olivedrab
 var normal_color : Color = Color.black
 
+onready var _id = get_index() setget set_id, get_id  
+
 func _ready():
 	color = normal_color
 
@@ -19,3 +21,9 @@ func get_ui_name():
 
 func is_constructable():
 	pass
+
+func set_id(id):
+	_id = id
+	
+func get_id():
+	return _id

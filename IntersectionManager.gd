@@ -1,11 +1,14 @@
 class_name IntersectionManager
-extends Node
+extends EntityManager
 
 const INTERSECTION_GROUP = "Intersections"
 
 signal intersection_created(intersection)
 
-func load_intersection(data):
+func _ready():
+	entity_group = INTERSECTION_GROUP
+
+func load_entity(data):
 	var intersection = Intersection.new()
 	
 	intersection.position = Vector2(data.pos_x, data.pos_y)
@@ -14,16 +17,6 @@ func load_intersection(data):
 	add_child(intersection)
 	
 	intersection.set_id(data.id)
-
-func get_intersections():
-	return get_tree().get_nodes_in_group(INTERSECTION_GROUP)
-
-func get_intersection_by_id(id):
-	for node in get_intersections():
-		if node.get_id() == id:
-			return node
-	
-	return null
 
 func create_intersection(position):
 	var intersection = Intersection.new()

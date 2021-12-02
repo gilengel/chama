@@ -3,6 +3,8 @@ extends Node
 
 const INTERSECTION_GROUP = "Intersections"
 
+signal intersection_created(intersection)
+
 func load_intersection(data):
 	var intersection = Intersection.new()
 	
@@ -29,6 +31,8 @@ func create_intersection(position):
 	intersection.add_to_group(INTERSECTION_GROUP)
 	intersection.add_to_group($"../".PERSIST_GROUP)
 	add_child(intersection)
+	
+	emit_signal("intersection_created", intersection)
 	
 	return intersection
 

@@ -1,7 +1,7 @@
 class_name District
-extends Node2D
+extends Buildable
 
-
+var neighbours = []
 # Declare member variables here. Examples:
 var _geometry = []
 var _colors = []
@@ -9,7 +9,6 @@ var _triangles = []
 var side
 var street
 
-var color = Color(69.0 / 255, 74.0 / 255, 77.0 / 255, 0.6)
 
 enum Side {LEFT, RIGHT}
 
@@ -21,27 +20,44 @@ func other_side(side):
 
 onready var _id = get_index() setget set_id, get_id  
 
+var rng = RandomNumberGenerator.new()
+
+func _ready():
+	rng.randomize()
+	
+	normal_color = Color(rng.randf(), rng.randf(), rng.randf(), 0.3)
+	._ready()
+
 func set_id(id):
 	_id = id
 	
 func get_id():
 	return _id
 
-#func save():
-#	var pts = []
-#	for pt in _geometry:
-#		pts.append(pt.x)
-#		pts.append(pt.y)
-#
-#	var save_dict = {
-#		"id": _id,
-#		"pos_x": position.x,
-#		"pos_y": position.y,
-#		"pts": pts,
-#		"side": side		
-#	}
-#
-#	return save_dict
+func _save_neighbour_ids():
+	var ids = []
+	for i in neighbours:
+		ids.append(i.get_id())
+	
+	return ids
+	
+
+func save():
+	var pts = []
+	for pt in _geometry:
+		pts.append(pt.x)
+		pts.append(pt.y)
+
+	var save_dict = {
+		"id": _id,
+		"pos_x": position.x,
+		"pos_y": position.y,
+		"pts": pts,
+		"side": side,
+		"neighbours": _save_neighbour_ids()
+	}
+
+	return save_dict
 	
 func get_points():
 	return _geometry
@@ -71,7 +87,7 @@ func _draw():
 		var poly = [_geometry[_triangles[i]], _geometry[_triangles[i+1]], _geometry[_triangles[i+2]]]
 		draw_polygon(poly,[color, color, color])
 		
-		draw_polyline(poly, Color.white, 4)
+		#draw_polyline(poly, Color.white, 4)
 
 		
 	if _geometry:
@@ -84,7 +100,7 @@ func _draw():
 			center += g
 		center /= _geometry.size()
 
-		draw_string(font, center, "%s" % [get_id()])
+		draw_string(font, center, "%s n=%s" % [get_id(), neighbours.size()])
 #
 #		var length = _geometry[0].distance_to(_geometry[3])		
 #		var norm = (_geometry[3] - _geometry[0]).normalized()

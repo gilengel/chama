@@ -23,7 +23,9 @@ var mode = BUILD_MODE.STREET
 # ==============================================================================
 
 func _ready():
+	
 	VisualServer.set_default_clear_color(Color(90.0 / 255, 148.0 / 255, 112.0 / 255 , 1.0))
+	
 	
 	
 	var mx = get_viewport().size.x / 2
@@ -32,22 +34,30 @@ func _ready():
 
 
 	# default street
-	_street_manager.create_street(Vector2(mx-150, my-150), Vector2(mx+150, my-150))
-	_street_manager.create_street(Vector2(mx+150, my-150), Vector2(mx+150, my+150))
-	_street_manager.create_street(Vector2(mx+150, my+150), Vector2(mx-150, my+150))
-	_street_manager.create_street(Vector2(mx-150, my+150), Vector2(mx-150, my-150))
-
-	_street_manager.create_street(Vector2(mx+150, my-150), Vector2(mx+300, my-150))
-	_street_manager.create_street(Vector2(mx+300, my+150), Vector2(mx+300, my-150))
-	_street_manager.create_street(Vector2(mx+150, my+150), Vector2(mx+300, my+150))
-
-	_street_manager.create_street(Vector2(mx+300, my-150), Vector2(mx+500, my-150))
-	_street_manager.create_street(Vector2(mx+300, my+150), Vector2(mx+500, my+150))
-
-	_street_manager.create_street(Vector2(mx-150, my-150), Vector2(mx-300, my-150))
-	_street_manager.create_street(Vector2(mx-150, my+150), Vector2(mx-300, my+150))
-	_street_manager.create_street(Vector2(mx-300, my-150), Vector2(mx-300, my+150))
-
+#	_street_manager.create_street(Vector2(mx-150, my-150), Vector2(mx+150, my-150))
+#	#_street_manager.create_street(Vector2(mx+150, my-150), Vector2(mx+150, my+150))
+#	_street_manager.create_street(Vector2(mx+150, my+150), Vector2(mx-150, my+150))
+#	_street_manager.create_street(Vector2(mx-150, my+150), Vector2(mx-150, my-150))
+#
+#	_street_manager.create_street(Vector2(mx+150, my-150), Vector2(mx+300, my-150))
+#	_street_manager.create_street(Vector2(mx+300, my+150), Vector2(mx+300, my-150))
+#
+#
+#	_street_manager.create_street(Vector2(mx+150, my+150), Vector2(mx+300, my+150))
+#	_street_manager.create_street(Vector2(mx+300, my+150), Vector2(mx+300, my+450))
+#	_street_manager.create_street(Vector2(mx+150, my+450), Vector2(mx+300, my+450))
+#	_street_manager.create_street(Vector2(mx+150, my+450), Vector2(mx+150, my+150))
+#
+#	_street_manager.create_street(Vector2(mx+300, my-150), Vector2(mx+500, my-150))
+#	_street_manager.create_street(Vector2(mx+300, my+150), Vector2(mx+500, my+150))
+#
+#	_street_manager.create_street(Vector2(mx-150, my-150), Vector2(mx-300, my-150))
+#	_street_manager.create_street(Vector2(mx-150, my+150), Vector2(mx-300, my+150))
+#	_street_manager.create_street(Vector2(mx-300, my-150), Vector2(mx-300, my+150))
+#
+#	_street_manager.create_street(Vector2(mx-300, my-150), Vector2(mx-300, my-450))
+#	_street_manager.create_street(Vector2(mx-300, my-450), Vector2(mx-150, my-450))
+#	_street_manager.create_street(Vector2(mx-150, my-450), Vector2(mx-150, my-150))
 func _save():
 	var save_game = File.new()
 	save_game.open("user://savegame.json", File.WRITE)
@@ -56,9 +66,9 @@ func _save():
 	for street in get_tree().get_nodes_in_group(_street_manager.STREET_GROUP):
 		streets.append(street.call("save"))
 	
-#	var districts = []
-#	for district in get_tree().get_nodes_in_group(_district_manager.DISTRICT_GROUP):
-#		districts.append(district.call("save"))
+	var districts = []
+	for district in get_tree().get_nodes_in_group(_district_manager.DISTRICT_GROUP):
+		districts.append(district.call("save"))
 
 	var intersections = []
 	for intersection in get_tree().get_nodes_in_group(_intersection_manager.INTERSECTION_GROUP):
@@ -66,7 +76,7 @@ func _save():
 	
 	var save_dict = {
 		"streets": streets,
-		#"districts": districts,
+		"districts": districts,
 		"intersections": intersections			
 	}
 		
@@ -106,7 +116,7 @@ func _load():
 		for i in node_data.keys():
 			if i == "districts":
 				for district in node_data[i]:
-					_district_manager.load_district(district)
+					_district_manager.preload_district(district)
 					
 			if i == "intersections":
 				for intersection in node_data[i]:
@@ -121,6 +131,10 @@ func _load():
 			if i == "streets":
 				for street in node_data[i]:
 					_street_manager.load_street(street)
+					
+			if i == "districts":
+				for district in node_data[i]:
+					_district_manager.load_district(district)
 
 	save_game.close()
 
@@ -148,4 +162,3 @@ func _on_build_marketplace_toggled(button_pressed):
 	if button_pressed:
 		mode = BUILD_MODE.BUILDING
 		$CanvasLayer/GUI/HBoxContainer/Btn_Street.pressed = false
-

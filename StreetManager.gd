@@ -20,6 +20,8 @@ var District = preload("res://District.gd")
 
 signal street_count_changed(count)
 
+signal street_created(street)
+
 # ==============================================================================
 
 onready var _game_state_manager = get_node("../../City")
@@ -161,30 +163,24 @@ func _update_temp_end(position):
 			_valid_street = false
 					
 func _input(event):	
+	
+	
 	if not enabled:
 		return
 		
 	if event is InputEventMouseButton:
+		var position = get_viewport().canvas_transform.affine_inverse().xform(event.position)
 		if event.is_action_pressed("place_object"):		
-			_update_temp_street_start(event.position + _camera.offset)
+			_update_temp_street_start(position)
 	
 		if event.is_action_released("place_object") and state == State.START_STREET:
 			_place_street()
 		
 	if event is InputEventMouseMotion:
-		_update_temp_end(event.position + _camera.offset)
+		var position = get_viewport().canvas_transform.affine_inverse().xform(event.position)
+		_update_temp_end(position)
 		
 		
-func _create_intersection(position):
-	var intersection = Intersection.new()
-
-	intersection.position = position
-	intersection.add_to_group(_intersection_manager.INTERSECTION_GROUP)
-	intersection.add_to_group($"../".PERSIST_GROUP)
-	add_child(intersection)	
-	
-	return intersection	
-	
 func is_point_on_street(pt : Vector2) -> Street :
 	for s in get_tree().get_nodes_in_group(STREET_GROUP):
 		if Geometry.is_point_in_polygon(pt, s.global_polygon()):
@@ -224,7 +220,9 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		
 		return
 	
-	_create_street(start, end)
+	var street = _create_street(start, end)
+	emit_signal("street_created", street)
+	
 	
 	emit_signal("street_count_changed", get_streets().size())
 				
@@ -234,67 +232,6 @@ func remove(street: Street):
 	
 	street.queue_free()
 
-
-	
-#func create_street(start_pos, end_pos):
-#	var street = Street.new()
-#
-#	var start = _is_near_intersection(start_pos, 50)
-#	var splitted_start
-#	var splitted_end
-#
-#	if not start:		
-#		for s in get_tree().get_nodes_in_group(STREET_GROUP):
-#			if Geometry.is_point_in_polygon(start_pos, s.global_polygon()):
-#				start = _split_street_on_start(s, start_pos, end_pos)				
-#				splitted_start = s
-#
-#		if not splitted_start:
-#			start = _create_intersection(start_pos)		
-#
-#	var end = _is_near_intersection(end_pos, 50)
-#	if not end:
-#		for s in get_tree().get_nodes_in_group(STREET_GROUP):
-#			if Geometry.is_point_in_polygon(end_pos, s.global_polygon()):
-#				print(":)")
-#				#end = _split_street_on_end(s, end_pos, start_pos, start)	
-#				#splitted_end = s
-#
-#		if not splitted_end:
-#			end = _create_intersection(end_pos)
-#
-#	if not splitted_start and not splitted_end:
-#		street.set_start(start)
-#		street.set_end(end)		
-#
-#		street.add_to_group(STREET_GROUP)
-#		street.add_to_group($"../".PERSIST_GROUP)
-#		add_child(street)	
-#
-#		var previous = street.start.previous_street(street)
-#		street.set_previous(previous)
-#
-#		if previous:
-#			print("%s -> %s %s" % [street.get_id(), previous.get_id(), previous.end.previous_street(previous).get_id()])
-#			previous.set_next(previous.end.previous_street(previous))
-#
-#		var next = street.end.next_street(street)
-#		street.set_next(next)
-#
-#		if next and not next.get_previous():
-#			next.set_previous(street)	
-#
-#
-#		street.set_left_district(_district_manager.create_district(street, District.Side.LEFT))
-#		street.set_right_district(_district_manager.create_district(street, District.Side.RIGHT))
-#
-#
-#	emit_signal("street_count_changed", get_streets().size())
-#
-#	return street
-	
-
-	
 func _is_near_street(point):
 	for street in get_tree().get_nodes_in_group(STREET_GROUP):
 		if self.street and street.get_index() == self.street.get_index():
@@ -321,15 +258,20 @@ func _starts_on_street(point):
 	return null
 		
 func _create_street(start_intersection : Intersection, end_intersection : Intersection) -> Street:
+	for s in get_streets():
+		if s.start == start_intersection and s.end == end_intersection:
+			print("WAHHHHHHHHHHHHHHHHH")
+			return s
+			
 	var street = Street.new()
 	street.set_start(start_intersection)
-		
-
 	street.add_to_group(STREET_GROUP)
 	street.add_to_group($"../".PERSIST_GROUP)
 	add_child(street)
 	
 	street.set_end(end_intersection)	
+	
+	
 	
 	return street
 		
@@ -359,23 +301,6 @@ func _split_street_on_start(street, split_point, end_point):
 	
 	
 	street = _create_street(crossroad, crossroad)
-	
-	
-	
-	
-#	street.set_next(null)
-#
-#	var old_end = street.end	
-#	street.set_end(crossroad)
-#
-#	var new_street = _create_street(crossroad, _create_intersection(end_point))
-#	var previous = new_street.start.previous_street(new_street)
-#	new_street.set_previous(previous)
-#
-#	street.set_next(crossroad.next_street(street))
-#
-#	var old_street2 = _create_street(crossroad, old_end)
-#	old_street2.set_previous(crossroad.previous_street(old_street2))
 
 	
 	return crossroad	

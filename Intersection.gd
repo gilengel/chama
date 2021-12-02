@@ -21,11 +21,14 @@ class MyCustomSorter:
 		var d = vec.angle()
 		d = (d if d > 0 else (2*PI + d)) * 360 / (2*PI)
 			
+		if d == 360:
+			return 0
+			
 		return d
 		
 	static func sort_ascending(a : Dictionary, b : Dictionary):
-		var a_norm = a.street.norm if a.dir == Direction.IN else (a.street.start.global_position - a.street.end.global_position).normalized()
-		var b_norm = b.street.norm if b.dir == Direction.IN else (b.street.start.global_position - b.street.end.global_position).normalized()
+		var a_norm = a.street.norm if a.dir == Direction.OUT else (a.street.start.position - a.street.end.position).normalized()
+		var b_norm = b.street.norm if b.dir == Direction.OUT else (b.street.start.position - b.street.end.position).normalized()
 		
 		if _angle(a_norm) < _angle(b_norm):
 			return true
@@ -58,12 +61,45 @@ func remove_street(street):
 	for s in _streets:
 		if s["street"] == street:
 			_streets.erase(s)
-			
-	_reorder()
-	
+				
 	if _streets.empty():
 		queue_free()
+		
+	_reorder()
+	
+func _angle(vec : Vector2):	
+	var d = vec.angle()
+	d = (d if d > 0 else (2*PI + d)) * 360 / (2*PI)
 			
+	return d	
+
+static func _angle_in_360deg(vec : Vector2):	
+		var d = vec.angle()
+		d = (d if d > 0 else (2*PI + d)) * 360 / (2*PI)
+		
+		if d == 360:
+			return 0
+			
+		return d	
+		
+func norm_of_street(street, dir: int) -> Vector2:
+	return street.norm if dir == Direction.IN else (street.start.position - street.end.position).normalized()
+
+func _get_index_for_new_street(street, dir) -> int:
+	if _streets.empty():
+		return 0
+		
+	for i in range(0, _streets.size()):
+		var angle = _angle_in_360deg(norm_of_street(_streets[i].street, _streets[i].dir))		
+		var new_angle = _angle_in_360deg(norm_of_street(street, dir))
+		
+		print("angle cmp = new:%s old:%s" % [new_angle, angle])
+		
+		if new_angle < angle: 
+			return i
+			
+	return _streets.size() - 1		
+		
 func _reorder():
 	_streets.sort_custom(MyCustomSorter, "sort_ascending")
 
@@ -87,15 +123,13 @@ func _reorder():
 			
 			if previous != street:
 				street.set_previous(previous, District.Side.LEFT)
+				
 			street.update()
-		
-		
 
 func add_outgoing_street(street): 
-	_streets.append({ "dir": Direction.OUT, "street": street})
-	
+	_streets.push_back({ "dir": Direction.OUT, "street": street})
 	_reorder()
-	
+
 	_cnt_outgoing_streets += 1	
 			
 func remove_outgoing_street(street):
@@ -106,8 +140,7 @@ func remove_outgoing_street(street):
 	_check_for_deletion()
 	
 func add_incoming_street(street):
-	_streets.append({ "dir": Direction.IN, "street": street})
-	
+	_streets.push_back({ "dir": Direction.IN, "street": street})
 	_reorder()
 
 	_cnt_incoming_streets += 1
@@ -120,7 +153,6 @@ func remove_incoming_street(street):
 	_check_for_deletion()
 	
 func _check_for_deletion():
-	print("check %s %s" % [_cnt_incoming_streets, _cnt_outgoing_streets])
 	if _cnt_incoming_streets == 0 and _cnt_outgoing_streets == 0:
 		queue_free()
 
@@ -144,54 +176,6 @@ func _angle_between_vecs(vec1, vec2):
 		d += 2*PI
 		
 	return d
-	
-#func previous_street(street):
-#	var dd = MAX_FLOAT
-#	var smallest = null
-#
-#	var dir = _dir_of_street(street)
-#	for s in _streets:
-#		if s["street"] == street:
-#			continue
-#
-#		var d = _angle_between_vecs(s["street"].norm, street.norm)
-#
-#		if s["dir"] != dir:
-#			d = _angle_between_vecs((s["street"].start.position - s["street"].end.position).normalized(), street.norm)
-#
-#		if d < dd:
-#			dd = d
-#			smallest = s
-#
-#
-#	if smallest:			
-#		return smallest["street"]
-#	else:
-#		return null
-		
-
-#func next_street(street):
-#	var dd = -MAX_FLOAT
-#	var smallest = null
-#
-#	var dir = _dir_of_street(street)
-#	for s in _streets:
-#		if s["street"] == street:
-#			continue
-#
-#		var d = _angle_between_vecs(s["street"].norm, street.norm)
-#
-#		if s["dir"] != dir:
-#			d = _angle_between_vecs((s["street"].start.position - s["street"].end.position).normalized(), street.norm)
-#
-#		if d > dd:
-#			dd = d
-#			smallest = s
-#
-#	if smallest:			
-#		return smallest["street"]
-#	else:
-#		return null
 
 func previous_street(street):
 	var index = _streets.find(street)
@@ -257,13 +241,23 @@ func next_angle_to_line(end):
 	return dd	
 	
 func _input(event):
+	
 	if event is InputEventMouseMotion:
-		if (event.global_position - global_position).length() < 100:
+		var position = get_viewport().canvas_transform.affine_inverse().xform(event.position)
+		
+		if position.distance_to(global_position) < 50:		
+			print("IIIIIIIIIIIIIIIIIIIIIID %s" % get_id())
+			#_reorder()
 			var ids = []
 			
-			
-			_reorder()
-
+			for i in _streets:
+				var a_norm  = i.street.norm if i.dir == Direction.OUT else (i.street.start.global_position - i.street.end.global_position).normalized()
+				
+				print("%s %s" % [i.street.get_id(), _angle_in_360deg(a_norm)])
+				ids.append(i.street.get_id())
+				
+			print(ids)	
+	
 func _draw(): 	
 	#draw_circle(Vector2(0, 0), 10, Color(0.2, 0.2, 0.2, 1))
 	draw_rect(Rect2(Vector2(-10, -10), Vector2(20, 20)), color)

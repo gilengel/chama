@@ -74,3 +74,4 @@ script = ExtResource( 10 )
 script = ExtResource( 8 )
 
 [connection signal="street_count_changed" from="StreetManager" to="CanvasLayer/GUI" method="_on_street_count_changed"]
+[connection signal="district_count_changed" from="DistrictManager" to="CanvasLayer/GUI" method="_on_DistrictManager_district_count_changed"]

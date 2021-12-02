@@ -9,7 +9,6 @@ func _ready():
 	color = normal_color
 
 func set_hovered(new_value : bool):
-	print(hover_color)
 	if new_value:
 		color = hover_color
 	else:

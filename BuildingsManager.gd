@@ -70,7 +70,7 @@ func _enclosed(start: Street, side : int):
 	var points = []
 	var i = 0
 	while next != start and next:
-		streets.append(street)
+		streets.append({ "street" : street, "side": side})
 		
 		if forward:
 			next = street.get_next(side)
@@ -93,21 +93,17 @@ func _enclosed(start: Street, side : int):
 
 func _input_build(event):
 	if event is InputEventMouseMotion:
-		var s = _street_manager.get_closest_streets_to(event.global_position)
-		var left_enclosed = _enclosed(s.street, s.side)
-		
-		temp_building.visible = false
-		if left_enclosed.enclosed:
-			temp_building.polygon = left_enclosed.points
-			temp_building.color = Color(1, 1, 1, 0.3)
-			temp_building.visible = true
+		for district in _district_manager.get_districts():
+			district.set_hovered(false)
 			
-			
-			if not temp_building.is_constructable():
-				temp_building.color = Color.orange
-			else:
-				temp_building.color = Color.white
-
+		for district in _district_manager.get_districts():
+			if district.is_point_in_district(event.global_position):
+				district.hover_color = Color.orangered
+				district.set_hovered(true)
+				
+				for n in district.neighbours:
+					n.hover_color = Color.orange
+					n.set_hovered(true)
 	if event.is_action_pressed("place_object") and temp_building.is_constructable():		
 		create_building(temp_building, temp_building.polygon)
 

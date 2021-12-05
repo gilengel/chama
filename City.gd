@@ -33,6 +33,10 @@ func _ready():
 	var my = get_viewport().size.y / 2
 
 
+#	_street_manager.create_street(Vector2(mx-150, my-150), Vector2(mx+150, my-150))
+#	_street_manager.create_street(Vector2(mx+150, my-150), Vector2(mx+150, my+150))
+#	_street_manager.create_street(Vector2(mx+150, my+150), Vector2(mx-150, my+150))
+#	_street_manager.create_street(Vector2(mx-150, my+150), Vector2(mx-150, my-150))
 
 	# default street
 #	_street_manager.create_street(Vector2(mx-150, my-150), Vector2(mx+150, my-150))
@@ -164,7 +168,20 @@ func _input(event):
 		if event.pressed and event.scancode == KEY_F2:
 			_save()
 		if event.pressed and event.scancode == KEY_F3:
-			_load()			
+			_load()	
+			
+		if event.pressed and event.scancode == KEY_M:
+			var districts = _district_manager.get_all()
+			for i in range(districts.size()):
+				districts[i].splits += 1
+				districts[i].update()
+
+		if event.pressed and event.scancode == KEY_N:
+			var districts = _district_manager.get_all()
+			for i in range(districts.size()):
+				if districts[i].splits > 1:
+					districts[i].splits -= 1
+					districts[i].update()
 			
 		if event.pressed and event.scancode == KEY_ESCAPE:
 			get_tree().quit()		

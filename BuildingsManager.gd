@@ -46,8 +46,6 @@ func load_entity(data):
 	
 	building.position = ExtendedGeometry.centroid_polygon_2d(district.get_points())
 	building.district = district
-
-	print(building.position)
 	
 func create_building(building : Building, district : District) -> Building:
 	var new_building = building.duplicate()
@@ -118,8 +116,6 @@ func _input_destroy(event):
 			temp_street.set_hovered(true)
 			
 	if event.is_action_pressed("place_object") and temp_street:
-		print(temp_street.right_district)
-		
 		_district_manager.remove_district_via_street(temp_street, District.Side.LEFT)	
 		_district_manager.remove_district_via_street(temp_street, District.Side.RIGHT)
 		

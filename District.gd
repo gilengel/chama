@@ -6,9 +6,13 @@ var neighbours = []
 var _geometry = []
 var _triangles = []
 
+var min_house_area: float = 0
+
 var splits = 1
 
 enum Side {LEFT, RIGHT}
+
+const MIN_AREA_SIDE = 100
 
 var rng = RandomNumberGenerator.new()
 
@@ -25,6 +29,10 @@ class BinaryTreeNode:
 
 func _ready():
 	rng.randomize()
+	
+	if min_house_area == 0:
+		min_house_area = pow(200, 2) #pow(MIN_AREA_SIDE * (1 + rng.randf_range(-0.15, 0.15)), 2)
+	
 	
 	normal_color = Color(rng.randf(), rng.randf(), rng.randf(), 0.3)
 	._ready()
@@ -71,58 +79,47 @@ func is_point_in_district(point):
 	return Geometry.is_point_in_polygon(point, _geometry)
 
 
-func _line_segment(v1: Vector2, v2: Vector2, centroid: Vector2) -> Dictionary:
+func _line_segment(v1: Vector2, v2: Vector2, is_street1: bool, is_street2: bool) -> Dictionary:
 		var vec = (v2 - v1)
 		var norm = vec.normalized()
-		var anorm = (v1 - v2).normalized()
 		var perp = Vector2(-norm.y, norm.x)	
-				
-		return { "s": v1, "e": v2, "n": norm, "an": anorm, "p": perp, "l": vec.length()}
-
-#func _before(i: int):
-#	if i == 0:
-#		return _line_segment(_geometry.back(), _geometry.front())
-#
-#	return _line_segment(_geometry[i-1], _geometry[i])
-	
-#func _next(i: int):
-#	if i+1 == _geometry.size() - 1:
-#		return _line_segment(_geometry.front(), _geometry.back())	
-#
-#	return _line_segment(_geometry[i+1], _geometry[i+2])
-	
-const MIN_AREA = pow(100, 2)
+			
+		return { "s": v1, "e": v2, "n": norm, "p": perp, "l": vec.length(), "street": is_street1 or is_street2}
 
 func generate_houses(polygon, max_splits):
-	return _longest_side_starting_index(polygon, splits)
+	var p = []
+	for i in range(polygon.size()):
+		p.push_back(true)
 	
-func _longest_side_starting_index(polygon, max_splits = 0, splits = 0, color = Color.black) -> Array:
-	var polygons = []
-	var values = []
+	var _p = polygon
+	_p.push_back(_p[0])
+	return _longest_side_starting_index(_p, p)
+	
+func _get_split_point(segment: Dictionary) -> Vector2:
+	return segment.s + segment.n * segment.l * 0.5 # rng.randf_range(0.3, 0.7)
+	
+func _get_longest_side(values: Array, is_street: Array) -> Dictionary:
+	assert(values.size() == is_street.size())
+	
+	# first filter side that are connected to a street because they
+	# will be prioritized
+	var values_with_streets = []
+	for i in range(0, values.size()):
+		if is_street[i]:
+			values_with_streets.append(values[i])
 		
-	var centroid = ExtendedGeometry.centroid_polygon_2d(polygon)
+	var _values = values if values_with_streets.empty() else values_with_streets
 	
-	#if ExtendedGeometry.area_polygon_2d(polygon) < MIN_AREA or 
-	if splits > max_splits :
-		polygons.append({ "p": polygon, "c": color})
-		return polygons
-	
-	var polygon_size = polygon.size()
-	for i in range(polygon_size):
-		values.append(_line_segment(polygon[i], polygon[(i+1) % polygon_size], centroid))
-	values.append(_line_segment(polygon[polygon_size-1], polygon[0], centroid))
-		
-	var longest_side = values[0].l
-	var longest_index = 0
-	
-	for i in range(1, values.size()):
-		if values[i].l > longest_side:
-			longest_side = values[i].l
+	var longest_side = _values[0].l
+	var longest_index = 0	
+	for i in range(1, _values.size()):
+		if _values[i].l > longest_side:
+			longest_side = _values[i].l
 			longest_index = i
 	
+	return longest_index		
 
-
-	var midpoint = values[longest_index].s + values[longest_index].n * values[longest_index].l / 2.0
+func _calculate_intersections(longest_index: int, midpoint: Vector2, values: Array) -> Array:
 	var endpoint = midpoint + values[longest_index].p * 60000
 
 	var intersections = []
@@ -134,10 +131,38 @@ func _longest_side_starting_index(polygon, max_splits = 0, splits = 0, color = C
 		
 		if intersection:
 			intersections.append({ "index": i, "point": intersection })
+			
+	return intersections
+					
+func _longest_side_starting_index(polygon: Array, is_street: Array, _splits = 0) -> Array:
+	assert(is_street.size() == polygon.size() - 1)
+	
+	var polygons = []
+	var values = []
+	
+	if ExtendedGeometry.area_polygon_2d(polygon) < min_house_area or _splits == splits:
+	#if :
+		polygons.append({ "p": polygon, "s": is_street })
+		
+		return polygons
+	
+	
+	assert(polygon[0] == polygon[polygon.size()-1])
+	polygon.pop_back()
+	
+	var polygon_size = polygon.size()
+	
+	for i in range(polygon_size):
+		values.append(_line_segment(polygon[i], polygon[(i+1) % polygon_size], is_street[i], is_street[(i+1) % polygon_size]))
+		
+	var longest_index = _get_longest_side(values, is_street)
+	var midpoint = _get_split_point(values[longest_index])
+	var intersections = _calculate_intersections(longest_index, midpoint, values)
 
-
-	var p1 = []
-	p1.append(midpoint)
+	var polygon1 = []
+	polygon1.append(midpoint)
+	var is_street1 = [is_street[longest_index]]
+	
 	var start = longest_index + 1
 	var end = intersections[0].index
 		
@@ -145,48 +170,54 @@ func _longest_side_starting_index(polygon, max_splits = 0, splits = 0, color = C
 	while index != end:
 		index = (index + 1) % values.size()		
 	
-		p1.append(values[index].s)
+		polygon1.append(values[index].s)
+		is_street1.append(is_street[index])
 		
-	p1.append(intersections[0].point)
-	p1.append(midpoint)
+	polygon1.append(intersections[0].point)
+	polygon1.append(midpoint)
+	is_street1.append(false)
+	
+	polygons.append_array(_longest_side_starting_index(polygon1, is_street1, _splits + 1))
 
-	start = intersections[0].index + 1
+	start = intersections[0].index
 	end = longest_index
 	
-	print(p1)
+	var polygon2 = []	
+	polygon2.append(intersections[0].point)
+	var is_street2 = [is_street[intersections[0].index]]
+	index = start
 	
-	polygons.append_array(_longest_side_starting_index(p1, max_splits, splits + 1, Color(0, 1, 0, float(splits) / max_splits)))
-	
-	var p2 = []
-	p2.append(intersections[0].point)
-	
-	index = start - 1
 	while index != end:
 		index = (index + 1) % values.size()
+				
+		polygon2.append(values[index].s)
+		is_street2.append(is_street[index])
+
+	polygon2.append(midpoint)
+	is_street2.append(false)
+	polygon2.append(intersections[0].point)
 		
-		p2.append(values[index].s)
-
-	p2.append(midpoint)
-	p2.append(intersections[0].point)
+	polygons.append_array(_longest_side_starting_index(polygon2, is_street2, _splits + 1))
 	
-	polygons.append_array(_longest_side_starting_index(p2, max_splits, splits + 1, Color(1, 0, 0, float(splits) / max_splits)))
-			 
 	return polygons
-
-const ANGLE_OFFSET = 0.5
 				
 
 func _draw(): 
-	
-	print("====")
+	var label = Label.new()
+	var font = label.get_font("")
+			
 	for s in generate_houses(ExtendedGeometry.order_polygon_2d_clockwise(_geometry), 3):
-		#draw_colored_polygon(s.p, s.c)
-		draw_polyline(s.p, Color.black, 3)
+		
+		for i in range(s.p.size()-1):
+			draw_line(s.p[i], s.p[i+1], Color.black if s.s[i] else Color.red, 8)
+
+		draw_line(s.p[s.p.size()-1], s.p[0], Color.black if s.s[s.p.size()-2] and s.s[0] else Color.red, 8)
+		
+#		draw_polyline(s.p, Color.black, 3)
 		
 	if _geometry:
 
-		var label = Label.new()
-		var font = label.get_font("")
+
 
 		var center = Vector2(0, 0)
 		for g in _geometry:

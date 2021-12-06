@@ -13,7 +13,7 @@ var midpoints = []
 var rng = RandomNumberGenerator.new()
 
 var outline = false
-const WIDTH = 10
+const WIDTH = 1
 const MIN_LENGTH = 50
 
 var norm = Vector2(0, 0)
@@ -260,5 +260,5 @@ func _draw():
 		]
 
 		var v = (end.position - global_position).normalized() * (end.position - global_position).length() / 2.0 - Vector2(40, 0)
-		draw_string(font, v + Vector2(0,7), text, Color.white)		
+		#draw_string(font, v + Vector2(0,7), text, Color.white)		
 	

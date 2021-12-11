@@ -32,7 +32,25 @@ func _ready():
 	var mx = get_viewport().size.x / 2
 	var my = get_viewport().size.y / 2
 
+	var p = [Vector2(1172, 729), Vector2(907, 608), Vector2(834, 729), Vector2(932, 795), Vector2(843, 909), Vector2(775, 726), Vector2(868, 586), Vector2(707, 609), Vector2(697, 911), Vector2(589, 830), Vector2(654, 627), Vector2(378, 736), Vector2(336, 575), Vector2(515, 607), Vector2(586, 474), Vector2(398, 471), Vector2(512, 309), Vector2(682, 406), Vector2(697, 335), Vector2(780, 337), Vector2(679, 104), Vector2(853.458313, 91.054321), Vector2(937.404724, 190.474731), Vector2(907, 188), Vector2(899, 328), Vector2(1015.37146, 282.813202), Vector2(1098.253906, 380.973572), Vector2(925, 499), Vector2(925, 499), Vector2(1149, 604), Vector2(1200, 515), Vector2(1196.455322, 497.276611), Vector2(1300.5, 620.5), Vector2(1172, 729)]
+	p = [Vector2(1172, 197), Vector2(1173, 374), Vector2(547, 444), Vector2(566, 617), Vector2(1192, 626), Vector2(1206, 847), Vector2(835, 837), Vector2(840.823425, 620.951172), Vector2(1192, 626), Vector2(1206, 847), Vector2(464, 827), Vector2(299, 484), Vector2(501, 209)]
+	#p = [Vector2(835, 837), Vector2(464, 827), Vector2(299, 484), Vector2(501, 209), Vector2(1172, 197), Vector2(1173, 374), Vector2(547, 444), Vector2(566, 617), Vector2(840.823425, 620.951172), Vector2(835, 837)]
+	p.invert()
+	#for i in range(p.size()-1):
+	#	_street_manager.create_street(p[i], p[i+1])
+	
+	
+	var size = 300
+#	_street_manager.create_street(Vector2(mx-size, my-size), Vector2(mx-size, my+size))
+#	_street_manager.create_street(Vector2(mx-size, my+size), Vector2(mx+size, my+size))
+#	_street_manager.create_street(Vector2(mx+size, my+size), Vector2(mx+size, my))
+#	_street_manager.create_street(Vector2(mx+size, my), Vector2(mx - size / 2, my + size / 2))
+#	_street_manager.create_street(Vector2(mx - size / 2, my + size / 2), Vector2(mx, my - size))
+#	_street_manager.create_street(Vector2(mx, my - size), Vector2(mx-size, my-size))
+	#_street_manager.create_street(Vector2(mx-150, my-150), Vector2(mx+150, my-150))
+	
 
+	
 #	_street_manager.create_street(Vector2(mx-150, my-150), Vector2(mx+150, my-150))
 #	_street_manager.create_street(Vector2(mx+150, my-150), Vector2(mx+150, my+150))
 #	_street_manager.create_street(Vector2(mx+150, my+150), Vector2(mx-150, my+150))

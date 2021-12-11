@@ -3,13 +3,19 @@ extends Buildable
 
 const MAX_FLOAT = 9999999999999
 
-var district : District = null
+var district : District = null setget set_district
+
+func influence():
+	return 1
 
 func min_area():
 	pass
 
 func max_area():
 	return MAX_FLOAT
+	
+func set_district(new_district : District):
+	district = new_district
 
 # formula used from https://en.wikipedia.org/wiki/Centroid#Of_a_polygon
 func centroid():

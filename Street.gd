@@ -13,7 +13,7 @@ var midpoints = []
 var rng = RandomNumberGenerator.new()
 
 var outline = false
-const WIDTH = 1
+const WIDTH = 10
 const MIN_LENGTH = 50
 
 var norm = Vector2(0, 0)
@@ -234,14 +234,14 @@ func _draw():
 
 	if start and end:
 
-		var polygon = []
-		#var perp_vec = Vector2(-norm.y, norm.x)
-		polygon.append(perp_vec * WIDTH + norm * (length() - 30))
-		polygon.append(end.position - global_position)
-		polygon.append(-perp_vec * WIDTH + norm * (length() - 30))	
-
-		var color = Color(0, 1.0, 0, 0.8)
-		draw_polygon(polygon, [color, color, color])	
+#		var polygon = []
+#		#var perp_vec = Vector2(-norm.y, norm.x)
+#		polygon.append(perp_vec * WIDTH + norm * (length() - 30))
+#		polygon.append(end.position - global_position)
+#		polygon.append(-perp_vec * WIDTH + norm * (length() - 30))	
+#
+#		var color = Color(0, 1.0, 0, 0.8)
+#		draw_polygon(polygon, [color, color, color])	
 
 		var a = get_previous(District.Side.LEFT)
 		var b = get_previous(District.Side.RIGHT)

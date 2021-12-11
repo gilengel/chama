@@ -49,7 +49,7 @@ func load_entity(data):
 	
 func create_building(building : Building, district : District) -> Building:
 	var new_building = building.duplicate()
-	new_building.position = ExtendedGeometry.centroid_polygon_2d(district.get_points())
+	#new_building.position = ExtendedGeometry.centroid_polygon_2d(district.get_points())
 	new_building.district = district
 	new_building.add_to_group(BUILDING_GROUP)
 	new_building.add_to_group($"../".PERSIST_GROUP)
@@ -84,6 +84,28 @@ func _change_temp_building(building : Buildable):
 		remove_child(temp_building)
 
 
+func _get_influenced_districts(district, max_recursion = 1, _result = [], iteration = 0):
+	
+	if iteration == max_recursion:
+		_result.push_back(district)
+		return _result
+		
+		
+	for neighbour in district.neighbours:
+		var exists = false
+		print(_result)
+		for d in _result:
+			if d.get_id() == neighbour.get_id():
+				exists = true
+				
+		if not exists:
+			_result.push_back(neighbour)
+		
+		
+	for neighbour in district.neighbours:
+		_result.append_array(_get_influenced_districts(neighbour, max_recursion, _result, iteration + 1))
+	return _result
+
 func _input_build(event):
 	if event is InputEventMouseMotion:
 		temp_district = null
@@ -93,6 +115,9 @@ func _input_build(event):
 			
 		for district in _district_manager.get_all():
 			if district.is_point_in_district(_mouse_world_position):
+				
+				var influenced_districts = _get_influenced_districts(district, 2)
+			
 				district.hover_color = Color.orangered
 				district.set_hovered(true)
 				temp_district = district

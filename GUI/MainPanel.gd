@@ -11,7 +11,7 @@ onready var streets = _buildings_manager.get_node("Streets")
 
 signal building_changed(building)
 signal street_changed(street)
-signal destroy
+signal destroy_mode_changed(enabled)
 
 # ==============================================================================
 
@@ -50,6 +50,7 @@ func _toggle_building(toggled: bool):
 	if toggled:
 		var building = _btn_group.get_pressed_button().get_meta("building")
 		
+		emit_signal("destroy_mode_changed", false)
 		emit_signal("street_changed", null)
 		emit_signal("building_changed", building)
 		
@@ -57,6 +58,7 @@ func _toggle_street(toggled: bool):
 	if toggled:
 		var street = _btn_group.get_pressed_button().get_meta("street")
 		
+		emit_signal("destroy_mode_changed", false)
 		emit_signal("building_changed", null)
 		emit_signal("street_changed", street)
 
@@ -77,4 +79,4 @@ func _ready():
 
 func _on_Btn_Delete_toggled(button_pressed):
 	if button_pressed:
-		emit_signal("destroy")
+		emit_signal("destroy_mode_changed", true)

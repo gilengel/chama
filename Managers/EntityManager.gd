@@ -18,7 +18,12 @@ func create():
 	pass
 	
 func delete(entity):
-	get_all().erase(entity)
+	assert(get_all().has(entity))
+	
+	entity.remove_from_group(entity_group)	
+	entity.queue_free()
+	
+	assert(not get_all().has(entity))
 
 func get_all():
 	assert(not entity_group.empty())

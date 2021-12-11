@@ -11,6 +11,9 @@ func get_ui_name():
 func min_area():
 	return pow(200, 2)
 	
+func influence():
+	return 0	
+	
 func set_district(new_district):
 	.set_district(new_district)
 	

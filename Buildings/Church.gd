@@ -6,6 +6,9 @@ func get_ui_name():
 
 func min_area():
 	return 0
+	
+func influence():
+	return 4	
 
 func _draw():
 	var centroid = centroid()

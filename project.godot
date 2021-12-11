@@ -22,7 +22,7 @@ _global_script_classes=[ {
 "base": "EntityManager",
 "class": "BuildingsManager",
 "language": "GDScript",
-"path": "res://BuildingsManager.gd"
+"path": "res://Managers/BuildingsManager.gd"
 }, {
 "base": "Building",
 "class": "Church",
@@ -37,12 +37,12 @@ _global_script_classes=[ {
 "base": "EntityManager",
 "class": "DistrictManager",
 "language": "GDScript",
-"path": "res://DistrictManager.gd"
+"path": "res://Managers/DistrictManager.gd"
 }, {
 "base": "Node",
 "class": "EntityManager",
 "language": "GDScript",
-"path": "res://EntityManager.gd"
+"path": "res://Managers/EntityManager.gd"
 }, {
 "base": "Node",
 "class": "ExtendedGeometry",
@@ -67,7 +67,7 @@ _global_script_classes=[ {
 "base": "EntityManager",
 "class": "IntersectionManager",
 "language": "GDScript",
-"path": "res://IntersectionManager.gd"
+"path": "res://Managers/IntersectionManager.gd"
 }, {
 "base": "Control",
 "class": "MainPanel",
@@ -87,7 +87,7 @@ _global_script_classes=[ {
 "base": "EntityManager",
 "class": "StreetManager",
 "language": "GDScript",
-"path": "res://StreetManager.gd"
+"path": "res://Managers/StreetManager.gd"
 } ]
 _global_script_class_icons={
 "Buildable": "",

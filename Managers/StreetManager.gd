@@ -24,6 +24,8 @@ signal street_count_changed(count)
 
 signal street_created(street)
 
+signal street_deleted(street)
+
 # ==============================================================================
 
 onready var _game_state_manager = get_node("../../City")
@@ -42,7 +44,7 @@ var _starting_street
 var _starting_intersection
 var _valid_street = false
 
-var enabled = true
+var enabled = false
 
 var temp = { "start": Vector2(0, 0), "end": Vector2(0,0)}
 
@@ -80,18 +82,28 @@ func delete(street):
 	street.start.remove_street(street)
 	street.end.remove_street(street)
 	
-	street.queue_free()
+	emit_signal("street_deleted", street)
+	
+	.delete(street)
+	
+	emit_signal("street_count_changed", get_all().size())
 	
 # Called when the node enters the scene tree for the first time.
 func _ready():	
 	entity_group = STREET_GROUP
 	_gui_main_panel.connect("street_changed", self, "_change_temp_street")
+	_gui_main_panel.connect("destroy_mode_changed", self, "_enable_destroy")
+	
 	
 	temp_street = Line2D.new()
 	temp_street.width = Street.WIDTH * 2
 	temp_street.default_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 	temp_street.points.resize(2)
 	add_child(temp_street)
+	
+func _enable_destroy(value):
+	if value:
+		enabled = false
 	
 func _change_temp_street(street : Buildable):
 	if street:
@@ -213,6 +225,7 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		_create_street(intersection, _end)		
 	
 		return
+		
 	if split_start and not split_end:
 		var _start = split_start.start
 		var _end = split_start.end
@@ -233,10 +246,15 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		var _split_start_start = split_start.start
 		var _split_start_end = split_start.end
 					
-		var district = split_end.get_district(split_end.get_side_of_point(start_pos))	
+		#var district = split_end.get_district(split_end.get_side_of_point(end_pos))	
+		var left_district = split_start.get_district(District.Side.LEFT)
+		var right_district = split_start.get_district(District.Side.RIGHT)
 		
-		if district:
-			district.queue_free()
+		if left_district:
+			_district_manager.delete(left_district)
+		if right_district:
+			_district_manager.delete(right_district)
+
 		
 		split_end.get_parent().remove_child(split_end)
 		split_start.get_parent().remove_child(split_start)

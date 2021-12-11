@@ -10,10 +10,15 @@ var _outer_boundary : PoolVector2Array = []
 
 signal district_count_changed(count)
 
+func delete(entity):
+	.delete(entity)
+	emit_signal("district_count_changed", get_all().size())
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	entity_group = DISTRICT_GROUP
 	_street_manager.connect("street_created", self, "_update_districts_for_street")
+	_street_manager.connect("street_deleted", self, "_delete_districts_for_street")
 	_intersection_manager.connect("intersection_created", self, "_update_district_outer_boundary")
 	
 func _update_district_outer_boundary(intersection : Intersection):
@@ -49,6 +54,7 @@ func _create_district_on_side(street: Street, side: int):
 		
 	var temp_district = enclosed(street, side)
 	
+	#assert(temp_district.enclosed and not _district_is_outer(temp_district.points))
 	if temp_district.enclosed and not _district_is_outer(temp_district.points):
 		var district = create_district(temp_district.points)
 		
@@ -69,6 +75,20 @@ func _update_districts_for_street(street: Street):
 	
 	_create_district_on_side(street, District.Side.LEFT)
 	_create_district_on_side(street, District.Side.RIGHT)
+
+func _delete_districts_for_street(street: Street):
+	for side in [District.Side.LEFT, District.Side.RIGHT]:
+			
+		var enclosed = enclosed(street, side)
+		if enclosed.enclosed:
+			for i in range(enclosed.streets.size()):
+				enclosed.streets[i].set_district(null, enclosed.streets[i].side)
+		
+		var district = street.get_district(side)
+		if is_instance_valid(district):
+			delete(district)
+
+	
 
 func enclosed(start: Street, side : int):
 	var next = start.get_next(side)

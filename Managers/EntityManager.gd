@@ -14,7 +14,7 @@ func load_entity(data):
 func save():
 	pass
 	
-func create():
+func create(type = null):
 	pass
 	
 func delete(entity):

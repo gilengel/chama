@@ -5,6 +5,10 @@ const MAX_FLOAT = 9999999999999
 
 var district : District = null setget set_district
 
+# We need to overwrite it so that we can instance new objects later one
+# only based on the class name
+func get_class(): return get_ui_name()
+
 func influence():
 	return 1
 

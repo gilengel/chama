@@ -4,6 +4,8 @@ extends EntityManager
 onready var _street_manager = get_node("../StreetManager")
 onready var _intersection_manager = get_node("../IntersectionManager")
 
+onready var state_end_create_street = get_node("../BuildingStateMachine/EndCreateStreet")
+
 const DISTRICT_GROUP = "Districts"
 
 var _outer_boundary : PoolVector2Array = []
@@ -20,6 +22,8 @@ func _ready():
 	_street_manager.connect("street_created", self, "_update_districts_for_street")
 	_street_manager.connect("street_deleted", self, "_delete_districts_for_street")
 	_intersection_manager.connect("intersection_created", self, "_update_district_outer_boundary")
+	
+	state_end_create_street.connect("street_created", self, "_update_districts_for_street")
 	
 func _update_district_outer_boundary(intersection : Intersection):
 	var pts = []

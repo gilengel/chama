@@ -7,6 +7,9 @@ var normal_color : Color = Color.black
 
 onready var _id = get_index() setget set_id, get_id  
 
+func shape():
+	pass
+
 func _ready():
 	color = normal_color
 

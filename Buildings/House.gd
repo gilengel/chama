@@ -27,6 +27,8 @@ func _ready():
 func is_constructable():
 	return true
 	
+func shape():
+	return district.polygon
 	
 
 	
@@ -185,7 +187,6 @@ func _calculate_split_polygons(polygon: Array, intersections: Array) -> Array:
 	return _result	
 	
 func _draw():
-	for house in houses:
-		
-		draw_polyline(house, Color.black, 16)
+	for house in houses:		
+		draw_polyline(house, color, 16)
 

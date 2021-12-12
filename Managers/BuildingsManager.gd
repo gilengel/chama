@@ -19,9 +19,7 @@ const BUILDING_GROUP = "Buildings"
 
 # ==============================================================================
 
-var temp_building : Building = null
-var temp_street : Street = null
-var temp_district : District = null
+
 
 var enabled = false
 var destroy_enabled = false
@@ -47,16 +45,6 @@ func load_entity(data):
 	building.position = ExtendedGeometry.centroid_polygon_2d(district.get_points())
 	building.district = district
 	
-func create_building(building : Building, district : District) -> Building:
-	var new_building = building.duplicate()
-	#new_building.position = ExtendedGeometry.centroid_polygon_2d(district.get_points())
-	new_building.district = district
-	new_building.add_to_group(BUILDING_GROUP)
-	new_building.add_to_group($"../".PERSIST_GROUP)
-	new_building.visible = true
-	add_child(new_building)
-	
-	return new_building
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -68,89 +56,48 @@ func _ready():
 func _enable_destroy(value):
 	destroy_enabled = value
 	
-func _change_temp_building(building : Buildable):
-	destroy_enabled = false
+func create(type = null):
+	assert(type != null)
+	assert($Buildings.has_node(type))
 	
-	if building:
-		enabled = true
-		
-		remove_child(temp_building)
-		temp_building = building.duplicate()
-		temp_building.visible = false
-		add_child(temp_building)
-	else:
-		enabled = false
-		
-		remove_child(temp_building)
-
-
-func _get_influenced_districts(district, max_recursion = 1, _result = [], iteration = 0):
-	if iteration == max_recursion:
-		if not _result.has(district):
-			_result.push_back(district)
-		return _result
-		
-		
-	for i in range(district.neighbours.size()):
-		if not _result.has(district.neighbours[i]):
-			_result.push_back(district.neighbours[i])
-		
-		
-	for neighbour in district.neighbours:
-		var influenced = _get_influenced_districts(neighbour, max_recursion, _result, iteration + 1)
-		for i in range(influenced.size()):
-			if not _result.has(influenced[i]):
-				_result.push_back(influenced[i])
-				
-	return _result
-
-func _input_build(event):
-	if event is InputEventMouseMotion:
-		temp_district = null
-		
-		for district in _district_manager.get_all():
-			district.set_hovered(false)
-			
-		for district in _district_manager.get_all():
-			if district.is_point_in_district(_mouse_world_position):
-				
-				for influenced in _get_influenced_districts(district, temp_building.influence()):
-					influenced.hover_color = Color.orange
-					influenced.set_hovered(true)
-
-				district.hover_color = Color.orangered
-				district.set_hovered(true)
-				temp_district = district
+	var building = $Buildings.get_node(type).duplicate()
+	building.add_to_group(BUILDING_GROUP)
+	building.add_to_group($"../".PERSIST_GROUP)
+	add_child(building)
 	
-					
-	if event.is_action_pressed("place_object") and temp_building.is_constructable() and temp_district:	
-		create_building(temp_building, temp_district) 
+	return building
 
-func _input_destroy(event):
-	if event is InputEventMouseMotion:		
-
-		if temp_street:
-			temp_street.set_hovered(false)
+func is_point_on_building(point: Vector2):
+	for building in get_all():
+		if Geometry.is_point_in_polygon(point, building.shape()):
+			return building
 			
-		temp_street =  _street_manager.is_point_on_street(_mouse_world_position)
-		
-		if temp_street:
-			temp_street.set_hovered(true)
-			
-	if event.is_action_pressed("place_object") and temp_street:
-		_street_manager.delete(temp_street)
-		
-		temp_street = null
-
-func _input(event):
-	._input(event)
-
-	if enabled:
-		_input_build(event)
-		return
-		
-	if destroy_enabled:
-		_input_destroy(event)
+	return null
+#func _input_destroy(event):
+#	if event is InputEventMouseMotion:		
+#
+#		if temp_street:
+#			temp_street.set_hovered(false)
+#
+#		temp_street =  _street_manager.is_point_on_street(_mouse_world_position)
+#
+#		if temp_street:
+#			temp_street.set_hovered(true)
+#
+#	if event.is_action_pressed("place_object") and temp_street:
+#		_street_manager.delete(temp_street)
+#
+#		temp_street = null
+#
+#func _input(event):
+#	._input(event)
+#
+#	if enabled:
+#		_input_build(event)
+#		return
+#
+#	if destroy_enabled:
+#		_input_destroy(event)
 		
 
 				

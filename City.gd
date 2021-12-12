@@ -15,16 +15,9 @@ onready var Building = get_node("Building")
 
 # ==============================================================================
 
-enum BUILD_MODE {NONE, STREET, BUILDING}
-
-# ==============================================================================
-
-var mode = BUILD_MODE.STREET
-
-# ==============================================================================
-
 func _ready():
 	VisualServer.set_default_clear_color(Color(90.0 / 255, 148.0 / 255, 112.0 / 255 , 1.0))
+
 
 func _save():
 	var save_game = File.new()
@@ -148,15 +141,17 @@ func _input(event):
 			
 		if event.pressed and event.scancode == KEY_ESCAPE:
 			get_tree().quit()		
-						
-				
 
-func _on_build_street_toggled(button_pressed):
-	if button_pressed:
-		mode = BUILD_MODE.STREET
-		$CanvasLayer/GUI/HBoxContainer/Btn_Marketplace.pressed = false
 
-func _on_build_marketplace_toggled(button_pressed):
-	if button_pressed:
-		mode = BUILD_MODE.BUILDING
-		$CanvasLayer/GUI/HBoxContainer/Btn_Street.pressed = false
+func _on_build_mode_change(mode, param):	
+	var BUILDING_MODES = $CanvasLayer/GUI/HBoxContainer/MainPanel.BUILDING_MODES
+	
+	match mode:
+		BUILDING_MODES.Building:
+			$BuildingStateMachine.transition_to("CreateBuilding", {"building" : param })
+		
+		BUILDING_MODES.Street:
+			$BuildingStateMachine.transition_to("StartCreateStreet")
+			
+		BUILDING_MODES.Destroy:
+			$BuildingStateMachine.transition_to("Destroy")

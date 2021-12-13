@@ -22,6 +22,8 @@ var angle = null
 var _next = []
 var _previous = []
 
+enum PT { START_LEFT, END_LEFT, END_RIGHT, START_RIGHT }
+
 func set_district(district: District, side: int) -> void:
 	assert(side >= 0 and side <= 1)
 	
@@ -141,7 +143,121 @@ func get_side_point_at_point(side: int, point: Vector2):
 	
 	return -perp * WIDTH
 	
+func _foo(side, distance, distance2):
+	var perp_vec = Vector2(-norm.y, norm.x)
+	
+	var s = start.position
+	var e = end.position
+		
+	var p = []
+	p.append(- perp_vec * distance)
+	p.append(e-s - perp_vec * distance)
+	p.append(e-s + perp_vec * distance)
+	p.append(+ perp_vec * distance)
+		
+	return p
+	
+func update_points(indices, points):
+	for i in range(indices.size()):
+		polygon[indices[i]] = points[i]
+		
+	update()	
+		
+func street_points(side, distance = 10, distance2 = 60):
+	var pts = _foo(side, distance, distance2)
+	var other_pts = []
+
+	var other_indices = []
+	var other_district = null
+
+	# in case the streets starts in a connection
+	if _previous[side]:		
+		if _previous[side].start != start:			
+			other_pts = _previous[side]._foo(side, distance, distance2)
+			other_indices = [PT.END_LEFT, PT.END_RIGHT]
+
+			var a = Geometry.line_intersects_line_2d(other_pts[PT.END_LEFT], _previous[side].norm, pts[PT.START_LEFT], norm)
+			var b = Geometry.line_intersects_line_2d(other_pts[PT.END_RIGHT], _previous[side].norm, pts[PT.START_RIGHT], norm)
+			#var intersections = _calc_intersections(pts, other_pts)
+			
+			var offset = global_position - _previous[side].global_position
+
+			pts[PT.START_LEFT] = a
+			pts[PT.START_RIGHT] = b
+			_previous[side].update_points([PT.END_LEFT, PT.END_RIGHT], [offset + a, offset + b])
+			
+		if _previous[side].start == start:					
+			other_pts = _previous[side]._foo(side, distance, distance2)
+			other_indices = [PT.START_LEFT, PT.START_RIGHT]
+
+			var a = Geometry.line_intersects_line_2d(other_pts[PT.START_RIGHT], _previous[side].norm, pts[PT.START_LEFT], norm)
+			var b = Geometry.line_intersects_line_2d(other_pts[PT.START_LEFT], _previous[side].norm, pts[PT.START_RIGHT], norm)
+			#var intersections = _calc_intersections(pts, other_pts)
+			
+			var offset = global_position - _previous[side].global_position
+			
+			pts[PT.START_LEFT] = a
+			pts[PT.START_RIGHT] = b
+			_previous[side].update_points([PT.START_LEFT, PT.START_RIGHT], [b, a])
+
+	if _next[side]:
+		if _next[side].end != end:		
+			other_pts = _next[side]._foo(side, distance, distance2)
+			other_indices = [PT.END_LEFT, PT.END_RIGHT]
+
+			var a = Geometry.line_intersects_line_2d(other_pts[PT.START_LEFT], _next[side].norm, pts[PT.END_LEFT], norm)
+			var b = Geometry.line_intersects_line_2d(other_pts[PT.START_RIGHT], _next[side].norm, pts[PT.END_RIGHT], norm)
+				#var intersections = _calc_intersections(pts, other_pts)
+				
+			var offset = global_position - _next[side].global_position
+
+			pts[PT.END_LEFT] = end.global_position - global_position + a
+			pts[PT.END_RIGHT] = end.global_position - global_position + b
+			_next[side].update_points([PT.START_LEFT, PT.START_RIGHT], [a,  b])
+		else:
+			print("MAYA")
+			other_pts = _next[side]._foo(side, distance, distance2)
+			other_indices = [PT.START_LEFT, PT.START_RIGHT]
+
+			var a = Geometry.line_intersects_line_2d(other_pts[PT.END_RIGHT], _next[side].norm, pts[PT.END_LEFT], norm)
+			var b = Geometry.line_intersects_line_2d(other_pts[PT.END_LEFT], _next[side].norm, pts[PT.END_RIGHT], norm)
+			#var intersections = _calc_intersections(pts, other_pts)
+			
+			var offset =  _next[side].end.global_position - _next[side].global_position
+			
+			pts[PT.END_LEFT] = end.global_position - global_position + a
+			pts[PT.END_RIGHT] = end.global_position - global_position + b
+			_next[side].update_points([PT.END_LEFT, PT.END_RIGHT], [offset + b, offset + a])			
+#
+#
+#	# in case the streets end in a connection
+#	if _next[side]:
+#		if end == _next[side].end:			
+#			var other_side = District.Side.LEFT if side == District.Side.RIGHT else District.Side.RIGHT	
+#
+#			other_pts = _next._foo(other_side, distance, distance2)
+#			other_indices = [3, 2]
+#			other_district = _next.get_district(other_side)
+#		else:
+#			other_pts = _next._foo(side, distance, distance2)
+#			other_indices = [0, 1]
+#			other_district = _next.get_district(side)
+#
+#
+#		var intersections = _calc_intersections(pts, other_pts)				
+#
+#		pts[3] = intersections[0]
+#		pts[2] = intersections[1]
+#
+#
+#		#if other_district:
+#		#	other_district.update_points(other_indices, intersections)	
+		
+	return pts	
+	
 func _update_geometry():
+	
+	
 	# add random midpoints
 	var length = end.position.distance_to(position)
 	
@@ -159,6 +275,8 @@ func _update_geometry():
 		end.position - global_position - perp_vec * WIDTH,
 		-perp_vec * WIDTH
 	] )
+	
+	polygon = street_points(District.Side.LEFT)
 
 	update()
 
@@ -239,7 +357,7 @@ func get_side_of_point(point: Vector2) -> int:
 	return District.Side.LEFT if v1.cross(v2) > 0 else District.Side.RIGHT
 
 func _draw(): 
-	pass
+
 	#draw_colored_polygon(polygon, color)
 	#draw_polyline(polygon, Color.black, 2)
 #
@@ -249,8 +367,8 @@ func _draw():
 ##		draw_polyline(p, Color.white, 4)
 ##
 ##
-##	#var norm = street.norm
-#	var perp_vec = Vector2(-norm.y, norm.x)
+	#var norm = street.norm
+	var perp_vec = Vector2(-norm.y, norm.x)
 ##
 ##	var start = norm * length() / 2.0
 ##	var dir_vec = -perp_vec * 50
@@ -260,33 +378,33 @@ func _draw():
 #
 #
 #
-#	if start and end:
-#
-#		var polygon = []
-#		#var perp_vec = Vector2(-norm.y, norm.x)
-#		polygon.append(perp_vec * WIDTH + norm * (length() - 30))
-#		polygon.append(end.position - global_position)
-#		polygon.append(-perp_vec * WIDTH + norm * (length() - 30))	
-#
-#		var color = Color(0, 1.0, 0, 0.8)
-#		draw_polygon(polygon, [color, color, color])	
-#
-#		var a = get_previous(District.Side.LEFT)
-#		var b = get_previous(District.Side.RIGHT)
-#		var c = get_next(District.Side.LEFT)
-#		var d = get_next(District.Side.RIGHT)
-#
-#		var label = Label.new()
-#		var font = label.get_font("")
-#
-#		var text = "%s -> %s,%s,%s,%s" % [
-#			get_id(), 
-#			a.get_id() if a else "#", 
-#			b.get_id() if b else "#", 
-#			c.get_id() if c else "#", 
-#			d.get_id() if d else "#", 
-#		]
-#
-#		var v = (end.position - global_position).normalized() * (end.position - global_position).length() / 2.0 - Vector2(40, 0)
-#		draw_string(font, v + Vector2(0,7), text, Color.white)		
-#
+	if start and end:
+
+		var polygon = []
+		#var perp_vec = Vector2(-norm.y, norm.x)
+		polygon.append(perp_vec * WIDTH + norm * (length() - 30))
+		polygon.append(end.position - global_position)
+		polygon.append(-perp_vec * WIDTH + norm * (length() - 30))	
+
+		var color = Color(0, 1.0, 0, 0.8)
+		draw_polygon(polygon, [color, color, color])	
+
+		var a = get_previous(District.Side.LEFT)
+		var b = get_previous(District.Side.RIGHT)
+		var c = get_next(District.Side.LEFT)
+		var d = get_next(District.Side.RIGHT)
+
+		var label = Label.new()
+		var font = label.get_font("")
+
+		var text = "%s -> %s,%s,%s,%s" % [
+			get_id(), 
+			a.get_id() if a else "#", 
+			b.get_id() if b else "#", 
+			c.get_id() if c else "#", 
+			d.get_id() if d else "#", 
+		]
+
+		var v = (end.position - global_position).normalized() * (end.position - global_position).length() / 2.0 - Vector2(40, 0)
+		draw_string(font, v + Vector2(0,7), text, Color.white)		
+

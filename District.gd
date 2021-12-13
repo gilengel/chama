@@ -59,12 +59,6 @@ func set_points(points):
 	
 	update()
 
-func update_points(indices, points):
-	for i in range(indices.size()):
-		polygon[indices[i]] = points[i]
-		
-	update()
-
 func is_point_in_district(point):
 	return Geometry.is_point_in_polygon(point, polygon)
 	

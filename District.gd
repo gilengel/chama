@@ -2,10 +2,6 @@ class_name District
 extends Buildable
 
 var neighbours = []
-# Declare member variables here. Examples:
-
-
-
 
 var splits = 0
 
@@ -71,15 +67,11 @@ func update_points(indices, points):
 
 func is_point_in_district(point):
 	return Geometry.is_point_in_polygon(point, polygon)
-
-
-func _draw(): 
-	var label = Label.new()
-	var font = label.get_font("")
-
-	#houses = generate_houses(_geometry, 3)
-	#for s in houses:
-		#draw_colored_polygon(s.p, s.c)
-	#	draw_polyline(s.p, Color.black, 8)
-
-	draw_polyline(polygon, Color.orange, 16)
+	
+func _draw():
+	var center = ExtendedGeometry.average_centroid_polygon_2d(polygon)
+	
+	draw_circle(center, 20, Color.orange)
+	
+	center = ExtendedGeometry.centroid_polygon_2d(polygon)
+	draw_circle(center, 20, Color.palevioletred)

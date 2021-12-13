@@ -13,6 +13,16 @@ var _outer_boundary : PoolVector2Array = []
 signal district_count_changed(count)
 
 func delete(entity):
+	var district = entity as District
+	
+	for neighbour in district.neighbours:
+		# neighbour is already pending to be killed or invalid so no
+		# further action required
+		if not is_instance_valid(neighbour):
+			continue
+			
+		neighbour.neighbours.erase(district)
+		
 	.delete(entity)
 	emit_signal("district_count_changed", get_all().size())
 
@@ -21,18 +31,17 @@ func _ready():
 	entity_group = DISTRICT_GROUP
 	_street_manager.connect("street_created", self, "_update_districts_for_street")
 	_street_manager.connect("street_deleted", self, "_delete_districts_for_street")
-	_intersection_manager.connect("intersection_created", self, "_update_district_outer_boundary")
+	_intersection_manager.connect("intersection_count_changed", self, "_update_district_outer_boundary")
 	
-	state_end_create_street.connect("street_created", self, "_update_districts_for_street")
+	state_end_create_street.connect("street_created", self, "create_districts_for_street")
 	
-func _update_district_outer_boundary(intersection : Intersection):
+func _update_district_outer_boundary(size = 0):
 	var pts = []
 	for intersection in _intersection_manager.get_all():
 		pts.append(intersection.position)
 
 	
 	_outer_boundary = Geometry.convex_hull_2d(pts)
-	#_outer_boundary = Geometry.convex_hull_2d(pts)
 	
 func _district_is_outer(points: PoolVector2Array):
 	# special case for the first district
@@ -40,6 +49,8 @@ func _district_is_outer(points: PoolVector2Array):
 		return false
 		
 	var polygon_size = points.size()
+	var outer_size = _outer_boundary.size()
+	
 	for i in range(_outer_boundary.size()):
 		var found = false
 		for j in range(polygon_size):
@@ -52,33 +63,76 @@ func _district_is_outer(points: PoolVector2Array):
 			
 	return true
 	
-		
-func _create_district_on_side(street: Street, side: int):
-	assert(side >= 0 and side <= 1)
-		
-	var temp_district = enclosed(street, side)
+func create_districts_for_street(street: Street):
 	
-	#assert(temp_district.enclosed and not _district_is_outer(temp_district.points))
-	if temp_district.enclosed and not _district_is_outer(temp_district.points):
-		var district = create_district(temp_district.points)
-		
-		for street_and_side in temp_district.streets:
+	var left = enclosed(street, District.Side.LEFT)
+	var left_center = ExtendedGeometry.average_centroid_polygon_2d(left.points)
+	var is_left = street.get_side_of_point(left_center) == District.Side.LEFT
+	
+	if is_left and left.enclosed and enclosed_area_is_free(left):
+		var district = create_district(left.points)
+
+		for street_and_side in left.streets:
 			street_and_side.street.set_district(district, street_and_side.side)
-			
+
 			var other_side = District.Side.LEFT if street_and_side.side == District.Side.RIGHT else District.Side.RIGHT
 			var neighbouring_district = street_and_side.street.get_district(other_side)
-			
-			if neighbouring_district:
+
+			if is_instance_valid(neighbouring_district):
 				neighbouring_district.neighbours.append(district)
 				neighbouring_district.update()
-				district.neighbours.append(neighbouring_district)
+				district.neighbours.append(neighbouring_district)		
 	
-func _update_districts_for_street(street: Street):
-	if street.end._streets.size() == 1 or street.start._streets.size() == 1:
-		return
+	var right = enclosed(street, District.Side.RIGHT)
+	var right_center = ExtendedGeometry.average_centroid_polygon_2d(right.points)
+	var is_right = street.get_side_of_point(right_center) == District.Side.RIGHT
+
+	if is_right and right.enclosed and enclosed_area_is_free(right):
+		var district = create_district(right.points)
+
+		for street_and_side in right.streets:
+			street_and_side.street.set_district(district, street_and_side.side)
+
+			var other_side = District.Side.LEFT if street_and_side.side == District.Side.RIGHT else District.Side.RIGHT
+			var neighbouring_district = street_and_side.street.get_district(other_side)
+
+			if is_instance_valid(neighbouring_district):
+				neighbouring_district.neighbours.append(district)
+				neighbouring_district.update()
+				district.neighbours.append(neighbouring_district)	
+
+
+
+
+
+
+
 	
-	_create_district_on_side(street, District.Side.LEFT)
-	_create_district_on_side(street, District.Side.RIGHT)
+#func _create_district_on_side(street: Street, side: int):
+#	assert(side >= 0 and side <= 1)
+#
+#	var temp_district = enclosed(street, side)
+#
+#	if temp_district.enclosed and not _district_is_outer(temp_district.points):
+#		var district = create_district(temp_district.points)
+#
+#		for street_and_side in temp_district.streets:
+#			street_and_side.street.set_district(district, street_and_side.side)
+#
+#			var other_side = District.Side.LEFT if street_and_side.side == District.Side.RIGHT else District.Side.RIGHT
+#			var neighbouring_district = street_and_side.street.get_district(other_side)
+#
+#			if is_instance_valid(neighbouring_district):
+#				neighbouring_district.neighbours.append(district)
+#				neighbouring_district.update()
+#				district.neighbours.append(neighbouring_district)
+	
+#func _update_districts_for_street(street: Street):
+#	if street.end._streets.size() == 1 or street.start._streets.size() == 1:
+#		return
+#
+#	_create_district_on_side(street, District.Side.LEFT)
+#	_create_district_on_side(street, District.Side.RIGHT)
 
 func _delete_districts_for_street(street: Street):
 	for side in [District.Side.LEFT, District.Side.RIGHT]:
@@ -93,7 +147,13 @@ func _delete_districts_for_street(street: Street):
 			delete(district)
 
 	
-
+func enclosed_area_is_free(ring: Dictionary) -> bool:
+	for street_side_pair in ring.streets:
+		if street_side_pair.street.get_district(street_side_pair.side):
+			return false
+	
+	return true
+	
 func enclosed(start: Street, side : int):
 	var next = start.get_next(side)
 	var street = start		
@@ -150,6 +210,8 @@ func create_district(points: PoolVector2Array):
 	district.add_to_group(DISTRICT_GROUP)
 	district.add_to_group($"../".PERSIST_GROUP)
 	add_child(district)
+	
+	_update_district_outer_boundary()
 	
 	emit_signal("district_count_changed", get_all().size())
 

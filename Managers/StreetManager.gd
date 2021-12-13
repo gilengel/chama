@@ -3,10 +3,6 @@ extends EntityManager
 
 # ==============================================================================
 
-
-
-
-
 const STREET_GROUP = "Streets"
 
 # ==============================================================================
@@ -112,34 +108,15 @@ func create(type = null):
 	var street = Street.new()
 	street.add_to_group(STREET_GROUP)
 	street.add_to_group($"../".PERSIST_GROUP)
+	
+	var highest_id = 0
+	for s in get_all():
+		if s.get_id() > highest_id:
+			highest_id = s.get_id()	
+	
 	add_child(street)
+	street._id = highest_id + 1
+	
+	emit_signal("street_count_changed", get_all().size())
 	
 	return street
-
-#func _intersect_with_street(position):
-#	var near_intersection = _intersection_manager.is_near_intersection(position, SNAP_DISTANCE)
-#	if near_intersection:
-#		temp["end"] = near_intersection.position
-#
-#	var a = []
-#	for s in get_tree().get_nodes_in_group(STREET_GROUP):
-#		if _starting_street and s.get_index() == _starting_street.get_index():
-#			continue;
-#
-#		var r = Geometry.segment_intersects_segment_2d(s.position, s.end.position, temp["start"], temp["end"])
-#
-#		if r:
-#			a.append(r)
-#
-#
-#	var shortest = Vector2(50000, 50000)
-#	var shortest_distance = 80000000000
-#
-#	if a:				
-#		for intersection in a:				
-#			var distance = intersection.distance_squared_to(temp["start"]) 
-#			if distance < shortest_distance:
-#				shortest_distance = distance
-#				shortest = intersection
-#
-#		temp["end"] = shortest

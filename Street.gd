@@ -2,8 +2,8 @@ class_name Street
 extends Buildable
 
 # intersections
-var start = null
-var end  = null 
+var start = null setget set_start
+var end  = null setget set_end
 
 var left_district : District = null
 var right_district : District = null
@@ -68,8 +68,8 @@ func save():
 		"p_r": "null" if not _previous[District.Side.RIGHT] else _previous[District.Side.RIGHT].get_id(),
 		"n_l": "null" if not _next[District.Side.LEFT] else _next[District.Side.LEFT].get_id(),
 		"n_r": "null" if not _next[District.Side.RIGHT] else _next[District.Side.RIGHT].get_id(),
-		"d_l": "-1" if not left_district else left_district.get_id(),
-		"d_r": "-1" if not right_district else right_district.get_id(),
+		"d_l": "-1" if not is_instance_valid(left_district) else left_district.get_id(),
+		"d_r": "-1" if not is_instance_valid(right_district) else right_district.get_id(),
 	}
 	
 	return save_dict
@@ -113,6 +113,34 @@ func set_start(new_start):
 	
 	update()
 	
+func get_normal_starting_at(pt: Vector2) -> Vector2:
+	assert(pt == start.global_position or pt == end.global_position)
+	
+	if pt == start.global_position:
+		return norm
+	
+	return (position - end.position).normalized()
+
+func _get_previous_point(side: int) -> Vector2:
+	assert(side == 0 or side == 1)
+	
+	var p = _previous[side]	
+	
+	if p.end == start:
+		return p.polygon[1 if side == District.Side.RIGHT else 2]
+	
+	
+	return p.polygon[0 if side == District.Side.RIGHT else 3]
+		
+func get_side_point_at_point(side: int, point: Vector2):
+	var norm = get_normal_starting_at(point)
+	var perp = Vector2(-norm.y, norm.x)
+	
+	if side == District.Side.LEFT:
+		return perp * WIDTH
+	
+	return -perp * WIDTH
+	
 func _update_geometry():
 	# add random midpoints
 	var length = end.position.distance_to(position)
@@ -124,7 +152,7 @@ func _update_geometry():
 	midpoints.clear()
 	
 	var perp_vec = Vector2(-norm.y, norm.x)
-	
+
 	polygon = PoolVector2Array( [
 		perp_vec * WIDTH,
 		end.position - global_position + perp_vec * WIDTH,
@@ -141,19 +169,17 @@ func set_end(new_end):
 	
 	end = new_end
 	new_end.add_incoming_street(self)
-	new_end.update()
-	
-	
-	
+	new_end.update()	
 
-	_update_geometry()
+	
 	
 	start.add_outgoing_street(self)
 
 	
 	#for i in range(floor(length / 25) - 1):
 	#	midpoints.append(start + norm * 25 * (i+1) + Vector2(-norm.y, norm.x) * rng.randf_range(-5, 5))
-		
+	
+	_update_geometry()
 	update()
 	
 func set_end_position(new_end_pos):
@@ -213,27 +239,29 @@ func get_side_of_point(point: Vector2) -> int:
 	return District.Side.LEFT if v1.cross(v2) > 0 else District.Side.RIGHT
 
 func _draw(): 
-	draw_colored_polygon(polygon, color)
-
-#	if outline:
-#		var p = polygon
-#		p.append(p[0])
-#		draw_polyline(p, Color.white, 4)
+	pass
+	#draw_colored_polygon(polygon, color)
+	#draw_polyline(polygon, Color.black, 2)
+#
+##	if outline:
+##		var p = polygon
+##		p.append(p[0])
+##		draw_polyline(p, Color.white, 4)
+##
+##
+##	#var norm = street.norm
+#	var perp_vec = Vector2(-norm.y, norm.x)
+##
+##	var start = norm * length() / 2.0
+##	var dir_vec = -perp_vec * 50
+##
+##	draw_line(start, start + dir_vec, Color.orange, 4)
 #
 #
-#	#var norm = street.norm
-	var perp_vec = Vector2(-norm.y, norm.x)
 #
-#	var start = norm * length() / 2.0
-#	var dir_vec = -perp_vec * 50
 #
-#	draw_line(start, start + dir_vec, Color.orange, 4)
-	
-
-
-
-	if start and end:
-
+#	if start and end:
+#
 #		var polygon = []
 #		#var perp_vec = Vector2(-norm.y, norm.x)
 #		polygon.append(perp_vec * WIDTH + norm * (length() - 30))
@@ -242,23 +270,23 @@ func _draw():
 #
 #		var color = Color(0, 1.0, 0, 0.8)
 #		draw_polygon(polygon, [color, color, color])	
-
-		var a = get_previous(District.Side.LEFT)
-		var b = get_previous(District.Side.RIGHT)
-		var c = get_next(District.Side.LEFT)
-		var d = get_next(District.Side.RIGHT)
-
-		var label = Label.new()
-		var font = label.get_font("")
-
-		var text = "%s -> %s,%s,%s,%s" % [
-			get_id(), 
-			a.get_id() if a else "#", 
-			b.get_id() if b else "#", 
-			c.get_id() if c else "#", 
-			d.get_id() if d else "#", 
-		]
-
-		var v = (end.position - global_position).normalized() * (end.position - global_position).length() / 2.0 - Vector2(40, 0)
-		#draw_string(font, v + Vector2(0,7), text, Color.white)		
-	
+#
+#		var a = get_previous(District.Side.LEFT)
+#		var b = get_previous(District.Side.RIGHT)
+#		var c = get_next(District.Side.LEFT)
+#		var d = get_next(District.Side.RIGHT)
+#
+#		var label = Label.new()
+#		var font = label.get_font("")
+#
+#		var text = "%s -> %s,%s,%s,%s" % [
+#			get_id(), 
+#			a.get_id() if a else "#", 
+#			b.get_id() if b else "#", 
+#			c.get_id() if c else "#", 
+#			d.get_id() if d else "#", 
+#		]
+#
+#		var v = (end.position - global_position).normalized() * (end.position - global_position).length() / 2.0 - Vector2(40, 0)
+#		draw_string(font, v + Vector2(0,7), text, Color.white)		
+#

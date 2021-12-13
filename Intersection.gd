@@ -62,9 +62,6 @@ func remove_street(street):
 		if s["street"] == street:
 			_streets.erase(s)
 				
-	if _streets.empty():
-		queue_free()
-		
 	_reorder()
 	
 func _angle(vec : Vector2):	
@@ -142,8 +139,6 @@ func remove_outgoing_street(street):
 	
 	_cnt_outgoing_streets -= 1
 	
-	_check_for_deletion()
-	
 func add_incoming_street(street):
 	_streets.push_back({ "dir": Direction.IN, "street": street})
 	_reorder()
@@ -156,11 +151,7 @@ func remove_incoming_street(street):
 	
 	_cnt_incoming_streets -= 1
 	
-	_check_for_deletion()
-	
-func _check_for_deletion():
-	if _cnt_incoming_streets == 0 and _cnt_outgoing_streets == 0:
-		queue_free()
+
 
 func has_incoming_streets():
 	return _cnt_incoming_streets > 0
@@ -245,12 +236,53 @@ func next_angle_to_line(end):
 			
 	dd = 2 * PI - dd		
 	return dd	
+
+func _input(event):
+	if event is InputEventMouseMotion:	
+		var distance = event.global_position.distance_to(global_position)
+		
+		if distance < 50:
+			var ids = []
+			for i in _streets:
+				ids.push_back(i.street.get_id())
+				
+			#print(ids)
 	
 func _draw(): 	
-	#draw_circle(Vector2(0, 0), 10, Color(0.2, 0.2, 0.2, 1))
-	draw_rect(Rect2(Vector2(-10, -10), Vector2(20, 20)), color)
-	
-	var label = Label.new()
-	var font = label.get_font("")
+	var points = []
+	var position = self.global_position
+	var SIZE = 20
 
-	#draw_string(font, Vector2(-4, 4), "%s" % get_id())
+	for i in range(_streets.size()):
+		var _i = 0 if i == _streets.size() else i
+		var p = _i - 1 if i > 0 else _streets.size()-1
+
+		if _streets[i].dir == Direction.IN:
+			points.push_back(_streets[p].street.get_side_point_at_point(District.Side.RIGHT, global_position))
+		else:
+			points.push_back(_streets[p].street.get_side_point_at_point(District.Side.LEFT, global_position))
+
+#		var p_norm = _streets[p].street.get_normal_starting_at(position)
+#		var p_perp = Vector2(-p_norm.y, p_norm.x)
+#		var norm = _streets[_i].street.get_normal_starting_at(position)
+#		var perp = Vector2(-norm.y, norm.x)
+#
+#
+#
+#		var angle_between = p_norm.dot(norm)	
+#		points.push_back(norm * SIZE - perp * _streets[_i].street.WIDTH)		
+#		points.push_back(norm * SIZE + perp * _streets[_i].street.WIDTH)
+
+
+
+#	if only_two_streets:
+#		var p_norm = _streets[0].street.get_normal_starting_at(position)
+#		var p_perp = Vector2(-p_norm.y, p_norm.x)
+#		var norm = _streets[1].street.get_normal_starting_at(position)
+#		var perp = Vector2(-norm.y, norm.x)
+#		points.push_back(perp * _streets[0].street.WIDTH)
+#		points.push_back(-p_perp * _streets[1].street.WIDTH)
+
+	#draw_polyline(points, Color.orange, 10)
+	print(points)
+	draw_colored_polygon(points, Color.orange) # Color(42.0 / 255, 42.0 / 255, 43.0 / 255))

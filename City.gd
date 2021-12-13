@@ -18,6 +18,21 @@ onready var Building = get_node("Building")
 func _ready():
 	VisualServer.set_default_clear_color(Color(90.0 / 255, 148.0 / 255, 112.0 / 255 , 1.0))
 
+	get_tree().connect("files_dropped", self, "_files_dropped")
+
+func _files_dropped(files: PoolStringArray, screen: int):
+	for file in files:
+		var image = Image.new()
+		var err = image.load(file)
+		if err != OK:
+			pass
+			# Failed
+		var texture = ImageTexture.new()
+		texture.create_from_image(image, 0)
+		
+		var node = TextureRect.new()
+		node.texture = texture
+		
 
 func _save():
 	var save_game = File.new()
@@ -142,6 +157,7 @@ func _input(event):
 		if event.pressed and event.scancode == KEY_ESCAPE:
 			get_tree().quit()		
 
+	update()
 
 func _on_build_mode_change(mode, param):	
 	var BUILDING_MODES = $CanvasLayer/GUI/HBoxContainer/MainPanel.BUILDING_MODES
@@ -155,3 +171,6 @@ func _on_build_mode_change(mode, param):
 			
 		BUILDING_MODES.Destroy:
 			$BuildingStateMachine.transition_to("Destroy")
+
+#func _draw():
+#	draw_polyline(_district_manager._outer_boundary, Color.orange, 46)

@@ -38,10 +38,12 @@ func _starts_on_street(point):
 	
 	return null
 	
-
-
-
+func recreate_districts(street: Street):
+	assert(street.left_district == null)
+	assert(street.right_district == null)
 	
+	_district_manager.create_districts_for_street(street)
+
 func create_street(start_pos : Vector2, end_pos : Vector2):
 	var start = _intersection_manager.is_near_intersection(start_pos, SNAP_DISTANCE)
 	var end = _intersection_manager.is_near_intersection(end_pos, SNAP_DISTANCE)
@@ -61,26 +63,28 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 			end = _intersection_manager.create_intersection(end_pos)
 			
 	if not split_start and split_end:
+		
 		var _start = split_end.start
 		var _end = split_end.end
-		split_end.get_parent().remove_child(split_end)
-		
+
+
 		var intersection = _intersection_manager.create_intersection(end_pos)
-		_create_street(_start, intersection)	
+		split_end.end = intersection	
 		_create_street(start, intersection)
-		_create_street(intersection, _end)		
+		_create_street(intersection, _end)	
 	
 		return
 		
 	if split_start and not split_end:
 		var _start = split_start.start
 		var _end = split_start.end
-		split_start.get_parent().remove_child(split_start)
+			
 		
 		var intersection = _intersection_manager.create_intersection(start_pos)
-		_create_street(_start, intersection)	
+		split_start.end = intersection
 		_create_street(intersection, end)
 		_create_street(intersection, _end)
+
 		
 		return
 		
@@ -90,19 +94,10 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		var _split_end_end = split_end.end
 		
 		var _split_start_start = split_start.start
-		var _split_start_end = split_start.end
-					
-		var left_district = split_start.get_district(District.Side.LEFT)
-		var right_district = split_start.get_district(District.Side.RIGHT)
-		
-		if left_district:
-			_district_manager.delete(left_district)
-		if right_district:
-			_district_manager.delete(right_district)
+		var _split_start_end = split_start.end					
 
-		
-		split_end.get_parent().remove_child(split_end)
-		split_start.get_parent().remove_child(split_start)
+		_street_manager.delete(split_start)	
+		_street_manager.delete(split_end)	
 
 		var intersection_start = _intersection_manager.create_intersection(start_pos)
 		var intersection_end = _intersection_manager.create_intersection(end_pos)
@@ -110,32 +105,22 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		var new_street = _create_street(intersection_end, intersection_start)
 		
 		_create_street(_split_end_start, intersection_end)	
-		_create_street(intersection_end, _split_end_end)
-					
+		_create_street(intersection_end, _split_end_end)					
 		
 		_create_street(_split_start_start, intersection_start)	
 		_create_street(intersection_start, _split_start_end)			
 		
-		_district_manager._create_district_on_side(new_street, District.Side.LEFT)
-		_district_manager._create_district_on_side(new_street, District.Side.RIGHT)			
-		
-		#emit_signal("street_count_changed", get_all().size())
-		
 		return
+	
 	
 	var street = _create_street(start, end)
 	emit_signal("street_created", street)
-	
-	
-	#emit_signal("street_count_changed", get_all().size())
-				
-
 
 		
 func _create_street(start_intersection : Intersection, end_intersection : Intersection) -> Street:
 	var street = _street_manager.create()
 	street.set_start(start_intersection)
-	street.set_end(end_intersection)	
+	street.set_end(end_intersection)
 	
 	return street
 

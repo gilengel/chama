@@ -39,6 +39,17 @@ static func area_polygon_2d(polygon: PoolVector2Array) -> float:
 
 	return 0.5 * abs(sum)
 	
+static func average_centroid_polygon_2d(polygon: PoolVector2Array) -> Vector2:
+	var result = Vector2(0, 0)
+	
+	var size = polygon.size()
+	for i in range(size):
+		result += polygon[i]
+		
+	result /= size
+	
+	return result
+		
 static func centroid_polygon_2d(polygon: PoolVector2Array) -> Vector2:
 	var sum_x : float = 0.0
 	var sum_y : float = 0.0
@@ -64,11 +75,8 @@ static func centroid_polygon_2d(polygon: PoolVector2Array) -> Vector2:
 	
 
 
-
-
-static func clip_polygon_2d_with_line(polygon: PoolVector2Array, line_start: Vector2, line_end: Vector2) -> Array:
-	return []
-
+static func _sort_by_x(a: Vector2, b: Vector2) -> bool:
+	return a.x < b.x
 
 static func order_polygon_2d_clockwise(polygon: PoolVector2Array) -> PoolVector2Array:
 	var min_x = 8000000000

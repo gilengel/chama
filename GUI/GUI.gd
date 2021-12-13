@@ -16,7 +16,18 @@ func _ready():
 #	pass
 
 
-func _on_street_count_changed(count):
+func _on_DistrictManager_district_count_changed(count):
+	num_districts = count
+	
+	statistics_label.text = "Streets: %s\nIntersections: %s\nHouses: %s\nDistricts: %s" % [
+		num_streets,
+		num_intersections,
+		num_houses,
+		num_districts
+	]
+
+
+func _on_StreetManager_street_count_changed(count):
 	num_streets = count
 	
 	statistics_label.text = "Streets: %s\nIntersections: %s\nHouses: %s\nDistricts: %s" % [
@@ -27,8 +38,8 @@ func _on_street_count_changed(count):
 	]
 
 
-func _on_DistrictManager_district_count_changed(count):
-	num_districts = count
+func _on_IntersectionManager_intersection_count_changed(count):
+	num_intersections = count
 	
 	statistics_label.text = "Streets: %s\nIntersections: %s\nHouses: %s\nDistricts: %s" % [
 		num_streets,

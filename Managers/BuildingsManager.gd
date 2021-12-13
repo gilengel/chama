@@ -10,16 +10,11 @@ onready var _street_manager : StreetManager = get_node("../StreetManager")
 
 onready var _gui_main_panel : MainPanel = get_node("/root/City/CanvasLayer/GUI/HBoxContainer/MainPanel")
 
+# ==============================================================================
+
 const BUILDING_GROUP = "Buildings"
 
 # ==============================================================================
-
-#var Building = preload("res://Building.gd")
-#var District = preload("res://District.gd")
-
-# ==============================================================================
-
-
 
 var enabled = false
 var destroy_enabled = false
@@ -53,6 +48,15 @@ func _ready():
 	_gui_main_panel.connect("building_changed", self, "_change_temp_building")
 	_gui_main_panel.connect("destroy_mode_changed", self, "_enable_destroy")
 	
+	_district_manager.connect("deleted", self, "_district_deleted")
+	
+func _district_deleted(district : District):
+	var all_buildings = get_all()
+	for building in all_buildings:
+		if building.district == district:
+			delete(building)
+		
+	
 func _enable_destroy(value):
 	destroy_enabled = value
 	
@@ -73,32 +77,3 @@ func is_point_on_building(point: Vector2):
 			return building
 			
 	return null
-#func _input_destroy(event):
-#	if event is InputEventMouseMotion:		
-#
-#		if temp_street:
-#			temp_street.set_hovered(false)
-#
-#		temp_street =  _street_manager.is_point_on_street(_mouse_world_position)
-#
-#		if temp_street:
-#			temp_street.set_hovered(true)
-#
-#	if event.is_action_pressed("place_object") and temp_street:
-#		_street_manager.delete(temp_street)
-#
-#		temp_street = null
-#
-#func _input(event):
-#	._input(event)
-#
-#	if enabled:
-#		_input_build(event)
-#		return
-#
-#	if destroy_enabled:
-#		_input_destroy(event)
-		
-
-				
-			

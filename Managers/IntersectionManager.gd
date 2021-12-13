@@ -1,13 +1,24 @@
 class_name IntersectionManager
 extends EntityManager
 
+onready var _street_manager = get_node("../StreetManager")
+
 const INTERSECTION_GROUP = "Intersections"
 
-signal intersection_created(intersection)
+signal intersection_count_changed(count)
 
 func _ready():
 	entity_group = INTERSECTION_GROUP
+	
+	_street_manager.connect("deleted", self, "_street_deleted")
 
+func _street_deleted(street: Street):
+	if street.start._streets.empty():
+		delete(street.start)
+		
+	if street.end._streets.empty():
+		delete(street.end)
+		
 func load_entity(data):
 	var intersection = Intersection.new()
 	
@@ -25,7 +36,7 @@ func create_intersection(position):
 	intersection.add_to_group($"../".PERSIST_GROUP)
 	add_child(intersection)
 	
-	emit_signal("intersection_created", intersection)
+	emit_signal("intersection_count_changed", get_all().size())
 	
 	return intersection
 

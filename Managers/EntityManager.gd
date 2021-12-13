@@ -1,6 +1,13 @@
 class_name EntityManager
 extends Node
 
+# ==============================================================================
+
+signal created(entity)
+signal deleted(entity)
+
+# ==============================================================================
+
 var entity_group : String = ""
 
 var _mouse_world_position = Vector2(0, 0)
@@ -18,12 +25,14 @@ func create(type = null):
 	pass
 	
 func delete(entity):
-	assert(get_all().has(entity))
+	#assert(get_all().has(entity))
 	
 	entity.remove_from_group(entity_group)	
 	entity.queue_free()
 	
 	assert(not get_all().has(entity))
+	
+	emit_signal("deleted", entity)
 
 func get_all():
 	assert(not entity_group.empty())

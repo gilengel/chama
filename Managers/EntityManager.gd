@@ -24,7 +24,7 @@ func save():
 func create(type = null):
 	pass
 	
-func delete(entity):
+func delete(entity, emit = true):
 	#assert(get_all().has(entity))
 	
 	entity.remove_from_group(entity_group)	
@@ -32,6 +32,9 @@ func delete(entity):
 	
 	assert(not get_all().has(entity))
 	
+	if not emit:
+		return 
+		
 	emit_signal("deleted", entity)
 
 func get_all():

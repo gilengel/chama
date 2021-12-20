@@ -12,7 +12,7 @@ var _outer_boundary : PoolVector2Array = []
 
 signal district_count_changed(count)
 
-func delete(entity):
+func delete(entity, emit = true):
 	var district = entity as District
 	
 	for neighbour in district.neighbours:
@@ -24,12 +24,12 @@ func delete(entity):
 		neighbour.neighbours.erase(district)
 		
 	.delete(entity)
+	
 	emit_signal("district_count_changed", get_all().size())
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	entity_group = DISTRICT_GROUP
-	_street_manager.connect("street_created", self, "_update_districts_for_street")
 	_street_manager.connect("street_deleted", self, "_delete_districts_for_street")
 	_intersection_manager.connect("intersection_count_changed", self, "_update_district_outer_boundary")
 	
@@ -41,7 +41,7 @@ func _update_district_outer_boundary(size = 0):
 		pts.append(intersection.position)
 
 	
-	_outer_boundary = Geometry.convex_hull_2d(pts)
+	_outer_boundary = ExtendedGeometry.concave_hull_2d(pts)
 	
 func _district_is_outer(points: PoolVector2Array):
 	# special case for the first district
@@ -64,12 +64,25 @@ func _district_is_outer(points: PoolVector2Array):
 	return true
 	
 func create_districts_for_street(street: Street):
-	
+	var street_center = street.start.global_position + street.norm * (street.length * 0.5) 
+
+	var intersections_right = _street_manager.count_intersections_with_line(street_center + (street.perp * 40), street.perp)
+	var intersections_left = _street_manager.count_intersections_with_line(street_center + (street.inverse_perp * 40), street.inverse_perp)
+
+
+	var intersected_district = get_district_at_position(street.end.global_position)
+	if intersected_district:
+		delete(intersected_district)
+
+	intersected_district = get_district_at_position(street.start.global_position + street.norm * street.length * 0.5)
+	if intersected_district:
+		delete(intersected_district)
+
 	var left = enclosed(street, District.Side.LEFT)
 	var left_center = ExtendedGeometry.average_centroid_polygon_2d(left.points)
 	var is_left = street.get_side_of_point(left_center) == District.Side.LEFT
 	
-	if is_left and left.enclosed and enclosed_area_is_free(left):
+	if left.enclosed and not intersections_left.empty():
 		var district = create_district(left.points)
 
 		for street_and_side in left.streets:
@@ -81,13 +94,14 @@ func create_districts_for_street(street: Street):
 			if is_instance_valid(neighbouring_district):
 				neighbouring_district.neighbours.append(district)
 				neighbouring_district.update()
-				district.neighbours.append(neighbouring_district)		
-	
+				district.neighbours.append(neighbouring_district)
+
 	var right = enclosed(street, District.Side.RIGHT)
 	var right_center = ExtendedGeometry.average_centroid_polygon_2d(right.points)
 	var is_right = street.get_side_of_point(right_center) == District.Side.RIGHT
 
-	if is_right and right.enclosed and enclosed_area_is_free(right):
+
+	if right.enclosed and not intersections_right.empty():
 		var district = create_district(right.points)
 
 		for street_and_side in right.streets:
@@ -140,7 +154,7 @@ func _delete_districts_for_street(street: Street):
 		var enclosed = enclosed(street, side)
 		if enclosed.enclosed:
 			for i in range(enclosed.streets.size()):
-				enclosed.streets[i].set_district(null, enclosed.streets[i].side)
+				enclosed.streets[i].street.set_district(null, enclosed.streets[i].side)
 		
 		var district = street.get_district(side)
 		if is_instance_valid(district):
@@ -155,6 +169,8 @@ func enclosed_area_is_free(ring: Dictionary) -> bool:
 	return true
 	
 func enclosed(start: Street, side : int):
+
+	
 	var next = start.get_next(side)
 	var street = start		
 	var forward = true
@@ -163,6 +179,14 @@ func enclosed(start: Street, side : int):
 	var points = []
 	var i = 0
 	while next != start and next:
+		var text = "%s -> %s %s %s %s" % [
+			next.get_id(),
+			"#" if not next._previous[0] else next._previous[0].get_id(),
+			"#" if not next._previous[1] else next._previous[1].get_id(),
+			"#" if not next._next[0] else next._next[0].get_id(),
+			"#" if not next._next[1] else next._next[1].get_id()		
+		]
+	
 		streets.append({ "street" : street, "side": side})
 		
 		if forward:
@@ -217,13 +241,20 @@ func create_district(points: PoolVector2Array):
 
 	return district
 
+func get_district_at_position(position : Vector2) -> District:
+	for district in get_all():
+		
+		
+		if Geometry.is_point_in_polygon(position, Geometry.offset_polygon_2d(district.polygon, -40)[0]):
+			return district
+			
+	return null
 
-func remove_district_via_street(street: Street, side: int) -> void:
-	var temp_district = enclosed(street, side)
+func delete_at_position(position : Vector2) -> bool:
+	var district = get_district_at_position(position)
 	
-	if street.get_district(side):
-		street.get_district(side).queue_free()
+	if not district:
+		return false
 	
-	if temp_district:
-		for s in temp_district.streets:
-			s.street.set_district(null, s.side)
+	delete(district)
+	return true

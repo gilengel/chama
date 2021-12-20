@@ -9,7 +9,7 @@ func get_ui_name():
 	return "House"
 	
 func min_area():
-	return pow(200, 2)
+	return pow(100, 2)
 	
 func influence():
 	return 0	

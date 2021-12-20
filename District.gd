@@ -61,11 +61,3 @@ func set_points(points):
 
 func is_point_in_district(point):
 	return Geometry.is_point_in_polygon(point, polygon)
-	
-func _draw():
-	var center = ExtendedGeometry.average_centroid_polygon_2d(polygon)
-	
-	draw_circle(center, 20, Color.orange)
-	
-	center = ExtendedGeometry.centroid_polygon_2d(polygon)
-	draw_circle(center, 20, Color.palevioletred)

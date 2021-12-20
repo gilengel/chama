@@ -94,22 +94,65 @@ static func order_polygon_2d_clockwise(polygon: PoolVector2Array) -> PoolVector2
 			max_x = polygon[i].x
 			
 	return Geometry.convex_hull_2d(polygon)
-		
 
+static func _decision_distance(p: Vector2, q: Array):
+	var min_distance = 99999999
 	
-#	var center : Vector2 = Vector2(0, 0)
-#	for pt in polygon:
-#		center += pt
-#
-#	center /= polygon.size()
-#
-#	var p2 = []
-#	for i in range(polygon.size()):
-#		p2.push_back(polygon[i] - center)
-#
-#	p2.sort_custom(ClockwiseSorter, "_sort")
-#
-#	for i in range(p2.size()):
-#		p2[i] += center
-#
-#	return p2
+	var min_index = 1
+	for i in range(q.size()):
+		var distance = q[i].distance_to(p)
+		
+		if distance > 0 and distance < min_distance:
+			min_distance = distance
+			min_index = i
+			
+	return min_distance
+	
+static func _distance_to_edge(p: Vector2, edge: Array):
+	return min(p.distance_to(edge[0]), p.distance_to(edge[1]))
+	
+static func _distance_to_triangle(p: Vector2, triangle: Array):
+	return min(min(p.distance_to(triangle[0]), p.distance_to(triangle[1])), min(p.distance_to(triangle[1]), p.distance_to(triangle[2])))
+	
+static func _nearest_point_to_edge(polygon: PoolVector2Array, edge: Array):
+	var distance = 99999999
+	var point = polygon[0]
+	for p in polygon:
+		var p_distance = _distance_to_edge(p, edge)
+		
+		if p_distance > 0 and p_distance < distance:
+			distance = p_distance
+			point = p
+	
+	return point
+
+static func concave_hull_2d(polygon: PoolVector2Array):
+	var convex_hull = Geometry.convex_hull_2d(polygon)
+		
+	var convex_pairs = []
+	
+	for i in range(convex_hull.size() - 1):
+		convex_pairs.push_back([convex_hull[i], convex_hull[i + 1]])
+	
+	var N = 1
+	
+	var concave_hull : Array = convex_pairs
+	
+	for i in range(1, concave_hull.size()-1):
+		var edge = concave_hull[i]
+		
+		var p = _nearest_point_to_edge(polygon, edge)
+		var eh = edge[0].distance_to(edge[1])
+		var dd = _decision_distance(p, edge)
+		
+		if float(eh / dd) > N:
+			concave_hull.erase(concave_hull[i])
+			concave_hull.push_back([edge[0], p])	
+			concave_hull.push_back([edge[1], p])
+	
+	var result = []
+	for i in range(concave_hull.size()):
+		result.push_back(concave_hull[i][0])
+		result.push_back(concave_hull[i][1])
+		
+	return result

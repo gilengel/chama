@@ -101,4 +101,5 @@ script = ExtResource( 15 )
 [connection signal="mode_changed" from="CanvasLayer/GUI/HBoxContainer/MainPanel" to="." method="_on_build_mode_change"]
 [connection signal="street_count_changed" from="StreetManager" to="CanvasLayer/GUI" method="_on_StreetManager_street_count_changed"]
 [connection signal="district_count_changed" from="DistrictManager" to="CanvasLayer/GUI" method="_on_DistrictManager_district_count_changed"]
+[connection signal="deleted" from="IntersectionManager" to="CanvasLayer/GUI" method="_on_IntersectionManager_deleted"]
 [connection signal="intersection_count_changed" from="IntersectionManager" to="CanvasLayer/GUI" method="_on_IntersectionManager_intersection_count_changed"]

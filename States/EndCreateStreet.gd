@@ -12,14 +12,16 @@ var _starting_street
 var _starting_intersection
 var _valid_street
 
+var _splitted_starting_streets
+
+var _end
+var _temp_end
+
 # ==============================================================================
 
 const SNAP_DISTANCE = 25
 
-const MIN_ANGLE = 0.785398 # 45°
-const MAX_CONNECTIONS_PER_INTERSECTION = 4
-const MIN_LENGTH = 50
-const MAX_LENGTH = 2000
+
 
 # ==============================================================================
 
@@ -27,7 +29,7 @@ signal street_created(street)
 
 # ==============================================================================
 
-var temp_street : Line2D = null
+var temp_street : Street = null
 
 # ==============================================================================
 
@@ -38,15 +40,12 @@ func _starts_on_street(point):
 	
 	return null
 	
-func recreate_districts(street: Street):
-	assert(street.left_district == null)
-	assert(street.right_district == null)
-	
-	_district_manager.create_districts_for_street(street)
 
 func create_street(start_pos : Vector2, end_pos : Vector2):
 	var start = _intersection_manager.is_near_intersection(start_pos, SNAP_DISTANCE)
 	var end = _intersection_manager.is_near_intersection(end_pos, SNAP_DISTANCE)
+	
+	
 	
 	var split_start : Street = null
 	var split_end : Street = null
@@ -70,8 +69,10 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 
 		var intersection = _intersection_manager.create_intersection(end_pos)
 		split_end.end = intersection	
-		_create_street(start, intersection)
+		var street = _create_street(start, intersection)
 		_create_street(intersection, _end)	
+		
+		emit_signal("street_created", street)
 	
 		return
 		
@@ -82,9 +83,10 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		
 		var intersection = _intersection_manager.create_intersection(start_pos)
 		split_start.end = intersection
-		_create_street(intersection, end)
+		var street = _create_street(intersection, end)
 		_create_street(intersection, _end)
 
+		emit_signal("street_created", street)
 		
 		return
 		
@@ -102,13 +104,15 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		var intersection_start = _intersection_manager.create_intersection(start_pos)
 		var intersection_end = _intersection_manager.create_intersection(end_pos)
 		
-		var new_street = _create_street(intersection_end, intersection_start)
+		var street = _create_street(intersection_end, intersection_start)
 		
 		_create_street(_split_end_start, intersection_end)	
 		_create_street(intersection_end, _split_end_end)					
 		
 		_create_street(_split_start_start, intersection_start)	
-		_create_street(intersection_start, _split_start_end)			
+		_create_street(intersection_start, _split_start_end)	
+		
+		emit_signal("street_created", street)		
 		
 		return
 	
@@ -124,63 +128,54 @@ func _create_street(start_intersection : Intersection, end_intersection : Inters
 	
 	return street
 
-func _exceeds_min_angle(start, end):
-	
-	if _starting_intersection:
-		var prev_angle = _starting_intersection.previous_angle_to_line(end)
-		var next_angle = _starting_intersection.next_angle_to_line(end)
-		
-		if prev_angle < MIN_ANGLE:
-			return false
-		if next_angle < MIN_ANGLE:
-			return false
-			
-	return true
 
-func _violates_min_length(start, end):
-	return start.distance_to(end) < MIN_LENGTH
 
-func _violates_max_length(start, end):
-	return start.distance_to(end) > MAX_LENGTH
 
-func _violates_max_streets_on_intersection(start, end):
-	if _starting_intersection:
-		return _starting_intersection._streets.size() >= MAX_CONNECTIONS_PER_INTERSECTION
-
-func _violates_intersecting_another_street():
-	if (_intersection_manager.is_near_intersection(temp_street.points[0], SNAP_DISTANCE) or
-		_intersection_manager.is_near_intersection(temp_street.points[1], SNAP_DISTANCE)):
-	
-		return false
-			
-	for street in _street_manager.get_all():
-		if Geometry.segment_intersects_segment_2d(street.start.global_position, street.end.global_position, temp_street.points[0], temp_street.points[1]):
-			return true
-	
-	return false
 	
 func _update_temp_end(position):
-	var near_intersection = _intersection_manager.is_near_intersection(position, SNAP_DISTANCE)
-	if near_intersection:
-		position = near_intersection.position
-
-	temp_street.points[1] = position
 	
-	var s = temp_street.points[0]
-	var e = temp_street.points[1]
-	if (_exceeds_min_angle(s, e) and 
-		not _violates_max_streets_on_intersection(s, e) and 
-		not _violates_min_length(s, e) and
-		not _violates_max_length(s, e) and
-		not _violates_intersecting_another_street()):
+	var near_intersection = _intersection_manager.is_near_intersection(position, SNAP_DISTANCE, [temp_street.start])
 
-		temp_street.default_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+	if near_intersection and temp_street.end != near_intersection:
+		position = near_intersection.position
+		
+		_end = near_intersection
+		temp_street.end = _end		
+	else: 		
+		_end = _temp_end		
+		_end.position = position
+				
+	temp_street._update_geometry()
+	
+	temp_street.visible = temp_street.length >= 80
+	
+	# necessary to get the changes of the street propagated to the intersection
+	temp_street.end.update()
+	temp_street.start.update()
+	
+	var s = temp_street.end.global_position
+	var e = temp_street.start.global_position
+	
+	var angles = temp_street.start.get_angles_to_adjacent_streets(temp_street)
+	
+	print(angles)
+	for i in range(1):
+		if angles[i] > -Street.MIN_ANGLE and angles[i] < Street.MIN_ANGLE:
+
+			var norms = temp_street.start.get_norm_of_adjacent_streets(temp_street)
+			var length = temp_street.length
+
+			temp_street.end.global_position = temp_street.start.global_position + norms[i].rotated(deg2rad(45.0 if angles[i] <= 0 else -45)) * length
+		
+
+
+	if temp_street.is_constructable():
+		temp_street.normal_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 		_valid_street = true
 	else:
-		temp_street.default_color = Color.red
+		temp_street.normal_color = Color.red
 		_valid_street = false
 
-	
 
 	
 # Virtual function. Receives events from the `_unhandled_input()` callback.
@@ -188,31 +183,50 @@ func handle_input(_event: InputEvent) -> void:
 	.handle_input(_event)
 	
 	if _event is InputEventMouseButton:
-		if _event.is_action_released("place_object"):
-			if _valid_street:
-				create_street(temp_street.points[0], temp_street.points[1])
-				temp_street.queue_free()
-			else:
-				temp_street.queue_free()
+		if _event.is_action_released("place_object") and temp_street.is_constructable():
+			var start_pos = temp_street.start.global_position 
+			var end_pos = temp_street.end.global_position
+			
+			# corner case if starting and ending street are splitted
+			var end_street = _street_manager.is_point_on_street(end_pos)
+			if not _splitted_starting_streets.empty() and end_street:
+				_district_manager.delete_at_position(temp_street.global_position + temp_street.norm * (temp_street.length * 0.5))
+			#	_district_manager.delete(end_street.right_district)
+				
+			_street_manager.delete(temp_street)
+			
+			create_street(start_pos, end_pos)			
 			
 			state_machine.transition_to("StartCreateStreet")
 			
 		if _event.is_action_released("cancel_action"):
-			temp_street.queue_free()
+			if not _splitted_starting_streets.empty():
+				_splitted_starting_streets[0].end = _splitted_starting_streets[1].end
+				_street_manager.delete(_splitted_starting_streets[1])
+				
+			_street_manager.delete(temp_street)
+			
 			state_machine.transition_to("StartCreateStreet")
 		
 	if _event is InputEventMouseMotion:
 		_update_temp_end(_mouse_world_position)
+		temp_street.start.update()
 
 
 # Virtual function. Called by the state machine upon changing the active state. The `msg` parameter
 # is a dictionary with arbitrary data the state can use to initialize itself.
 func enter(_msg := {}) -> void:
 	assert(_msg.has("start_position"))
+	
+	_splitted_starting_streets = _msg.start_splitted
 
-	temp_street = Line2D.new()
-	temp_street.width = Street.WIDTH * 2
-	temp_street.default_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+	temp_street = _msg.street
+	
+	_end = temp_street.end
+	_temp_end = _end
+	#temp_street = Line2D.new()
+	#temp_street.width = Street.WIDTH * 2
+	temp_street.color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 	add_child(temp_street)
 	
-	temp_street.points = [_msg.start_position, _msg.start_position]
+	#temp_street.points = [_msg.start_position, _msg.start_position]

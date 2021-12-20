@@ -18,7 +18,15 @@ func _street_deleted(street: Street):
 		
 	if street.end._streets.empty():
 		delete(street.end)
+
+func delete(entity, emit = true):
+	.delete(entity)
+	
+	if not emit:
+		return
 		
+	emit_signal("intersection_count_changed", get_all().size())
+	
 func load_entity(data):
 	var intersection = Intersection.new()
 	
@@ -39,6 +47,16 @@ func create_intersection(position):
 	emit_signal("intersection_count_changed", get_all().size())
 	
 	return intersection
+	
+func create(type = null):
+	var intersection = Intersection.new()
+	intersection.add_to_group(INTERSECTION_GROUP)
+	intersection.add_to_group($"../".PERSIST_GROUP)
+	add_child(intersection)
+	
+	emit_signal("intersection_count_changed", get_all().size())
+	
+	return intersection	
 
 func is_near_intersection(point, allowed_distance, ignored_intersections = []) -> Intersection:
 	

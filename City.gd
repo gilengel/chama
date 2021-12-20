@@ -173,4 +173,4 @@ func _on_build_mode_change(mode, param):
 			$BuildingStateMachine.transition_to("Destroy")
 
 #func _draw():
-#	draw_polyline(_district_manager._outer_boundary, Color.orange, 46)
+#	draw_polyline(_district_manager._outer_boundary, Color.orange, 40)

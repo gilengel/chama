@@ -68,15 +68,17 @@ func load_entity(data):
 	if data.d_r as float  >= 0:
 		street.right_district =  _district_manager.get_by_id(data.d_r as float)
 		
-func delete(street):
+func delete(street, emit = true):
+	if emit:
+		emit_signal("street_deleted", street)
+		
 	street.start.remove_street(street)
 	street.end.remove_street(street)
 	
-	emit_signal("street_deleted", street)
-	
 	.delete(street)
 	
-	emit_signal("street_count_changed", get_all().size())
+	if emit:
+		emit_signal("street_count_changed", get_all().size())
 	
 # Called when the node enters the scene tree for the first time.
 func _ready():	
@@ -88,12 +90,6 @@ func _enable_destroy(value):
 	if value:
 		enabled = false
 	
-func _change_temp_street(street : Buildable):
-	if street:
-		enabled = true
-	else:
-		enabled = false	
-			
 func is_point_on_street(pt : Vector2) -> Street :
 	for s in get_tree().get_nodes_in_group(STREET_GROUP):
 		if Geometry.is_point_in_polygon(pt, s.global_polygon()):
@@ -101,7 +97,18 @@ func is_point_on_street(pt : Vector2) -> Street :
 			
 	return null
 				
-
+func count_intersections_with_line(start: Vector2, dir: Vector2) -> Array:
+	var end = start + dir * 99999
+	
+	var count = 0
+	var result = []
+	for street in get_all():
+		if Geometry.segment_intersects_segment_2d(street.start.global_position, street.end.global_position, start, end):
+			count += 1
+			result.push_back(street.get_id())
+			
+	#return count
+	return result
 
 
 func create(type = null):

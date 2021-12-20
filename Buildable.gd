@@ -3,7 +3,9 @@ extends Polygon2D
 
 var hovered = false setget set_hovered
 var hover_color : Color = Color.olivedrab
-var normal_color : Color = Color.black
+var normal_color : Color = Color.black setget set_normal_color
+var error_color : Color = Color.orangered
+
 
 onready var _id = get_index() setget set_id, get_id  
 
@@ -19,6 +21,9 @@ func set_hovered(new_value : bool):
 	else:
 		color = normal_color
 		
+func set_normal_color(new_normal_color : Color):
+	pass
+	
 func get_ui_name():
 	pass
 

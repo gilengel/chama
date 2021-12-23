@@ -1,5 +1,5 @@
 class_name Intersection
-extends Node2D 
+extends Polygon2D 
 
 enum Direction {OUT, IN}
 var _streets = []
@@ -12,7 +12,7 @@ const MAX_FLOAT = 2147483647
 
 const INTERSECTION_STREET_LENGTH = 80
 
-var color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+#var color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 
 onready var _id = get_index() setget set_id, get_id  
 
@@ -62,8 +62,17 @@ func save():
 func update():
 	_reorder()
 	
+	#update_geometry()
+	
 	.update()
+	
+func update_geometry():
+	var pts = []
+	for s in _streets:
+		pts.push_back(s.street.polygon[0] if s.dir == Direction.OUT else s.street.polygon[1] - s.street.norm * s.street.length)
 
+	polygon = PoolVector2Array(pts)
+	
 func remove_street(street):
 	for s in _streets:
 		if s["street"] == street:
@@ -115,7 +124,7 @@ func _reorder():
 			street.set_next(null, District.Side.LEFT)
 			street.set_next(null, District.Side.RIGHT)
 						
-			if previous.get_id() != street.get_id():
+			if previous.get_id() != street.get_id():				
 				street.set_next(previous, District.Side.RIGHT)
 			
 			if next.get_id() != street.get_id():
@@ -195,31 +204,44 @@ func _angle_between_vecs(vec1, vec2):
 		
 	return d
 
-func previous_street(street):
-	var index = _streets.find(street)
+func previous(street):
+	var index = index_of(street)
 	
 	if index == 0:
 		return _streets.back()
 	
-	return _streets[index - 1].street
+	return _streets[index - 1]
+	
+func previous_street(street):
+	return previous(street).street
+	
+func direction(street):
+	var index = index_of(street)
+	
+	assert(index >= 0)
+	
+	return _streets[index].dir
 
 
-func _find(street):
+func index_of(street):
 	for i in range(_streets.size()):
 		if _streets[i].street == street:
 			return i
 	
 	return -1
 
-func next_street(street):
-	var index = _find(street)
+func next(street):
+	var index = index_of(street)
 	
 	assert(index != -1)
 	
 	if index == _streets.size() - 1:
-		return _streets[0].street
+		return _streets[0]
 		
-	return _streets[index + 1].street
+	return _streets[index + 1]	
+	
+func next_street(street):
+	return next(street).street
 
 func get_index_of_street(street) -> int:
 	var index = -1
@@ -300,76 +322,76 @@ func _input(event):
 			for i in _streets:
 				ids.push_back(i.street.get_id())
 	
-func _draw(): 	
-	var points = []
-	var position = self.global_position
-	var SIZE = 20
-	
-	var valid_streets = []
-	for s in _streets:
-		#if s.street.is_constructable():
-			valid_streets.push_back(s)	
-	
-	var colors = []
-	if valid_streets.empty():
-		return
-	
-	if valid_streets.size() == 1:
-		var norm = valid_streets[0].street.norm if valid_streets[0].dir == Direction.OUT else valid_streets[0].street.inverse_norm
-		var perp = Vector2(-norm.y, norm.x)
-		
-		var offset = perp * 10
-		var length = min(INTERSECTION_STREET_LENGTH, valid_streets[0].street.length)
-		points.push_back(offset)	
-		points.push_back(norm * length + offset)	
-		points.push_back(norm * length - offset)	
-		points.push_back(-offset)	
-		
-		colors.append_array([
-			valid_streets[0].street.normal_color,
-			valid_streets[0].street.normal_color,
-			valid_streets[0].street.normal_color,
-			valid_streets[0].street.normal_color
-			])
-	else:
-		for i in range(valid_streets.size()):
-			
-			var _i = 0 if i == valid_streets.size() else i
-			var _p = _i - 1 if _i > 0 else valid_streets.size() - 1
-			
-			var p_norm =  valid_streets[_p].street.norm if valid_streets[_p].dir == Direction.OUT else valid_streets[_p].street.inverse_norm
-			var norm = valid_streets[_i].street.norm if valid_streets[_i].dir == Direction.OUT else valid_streets[_i].street.inverse_norm
-			
-			
-			var p_length = min(INTERSECTION_STREET_LENGTH, valid_streets[_p].street.length)
-			var length = min(INTERSECTION_STREET_LENGTH, valid_streets[_i].street.length)
-		
-			var p_perp = Vector2(-p_norm.y, p_norm.x)			
-			var perp = Vector2(-norm.y, norm.x)
-		
-			var intersection = Geometry.line_intersects_line_2d(p_norm * 10 + p_perp * 10, p_norm, norm * 10 - perp * 10, norm)
-			
-			# special case if a street was splitted and previous and current street have the same 
-			# normal. In this case we cannot use the intersection 
-			var t = (p_norm.rotated(3.141593) - norm).abs()
-			if is_equal_approx(t.x, 0.0) and is_equal_approx(t.y, 0.0):
-				intersection = p_perp * 10
-	
-	
-			if intersection and intersection.length() > INTERSECTION_STREET_LENGTH:
-				intersection = intersection.normalized() * INTERSECTION_STREET_LENGTH
-			
-			points.push_back(p_norm * p_length + p_perp * 10)		
-			points.push_back(intersection)
-			points.push_back(norm * length - perp * 10)
-			
-			colors.push_back(valid_streets[_p].street.normal_color)
-			colors.push_back(Color(42.0 / 255, 42.0 / 255, 43.0 / 255))
-			colors.push_back(valid_streets[_i].street.normal_color)
-			
-
-	draw_polygon(points, colors)
-	#draw_polyline(points, Color.black)
-	#draw_colored_polygon(points, Color(42.0 / 255, 42.0 / 255, 43.0 / 255))
-	
-	draw_circle(Vector2(0, 0), 10, Color.orange)
+#func _draw(): 	
+#	var points = []
+#	var position = self.global_position
+#	var SIZE = 20
+#
+#	var valid_streets = []
+#	for s in _streets:
+#		#if s.street.is_constructable():
+#			valid_streets.push_back(s)	
+#
+#	var colors = []
+#	if valid_streets.empty():
+#		return
+#
+#	if valid_streets.size() == 1:
+#		var norm = valid_streets[0].street.norm if valid_streets[0].dir == Direction.OUT else valid_streets[0].street.inverse_norm
+#		var perp = Vector2(-norm.y, norm.x)
+#
+#		var offset = perp * 10
+#		var length = min(INTERSECTION_STREET_LENGTH, valid_streets[0].street.length)
+#		points.push_back(offset)	
+#		points.push_back(norm * length + offset)	
+#		points.push_back(norm * length - offset)	
+#		points.push_back(-offset)	
+#
+#		colors.append_array([
+#			valid_streets[0].street.normal_color,
+#			valid_streets[0].street.normal_color,
+#			valid_streets[0].street.normal_color,
+#			valid_streets[0].street.normal_color
+#			])
+#	else:
+#		for i in range(valid_streets.size()):
+#
+#			var _i = 0 if i == valid_streets.size() else i
+#			var _p = _i - 1 if _i > 0 else valid_streets.size() - 1
+#
+#			var p_norm =  valid_streets[_p].street.norm if valid_streets[_p].dir == Direction.OUT else valid_streets[_p].street.inverse_norm
+#			var norm = valid_streets[_i].street.norm if valid_streets[_i].dir == Direction.OUT else valid_streets[_i].street.inverse_norm
+#
+#
+#			var p_length = min(INTERSECTION_STREET_LENGTH, valid_streets[_p].street.length)
+#			var length = min(INTERSECTION_STREET_LENGTH, valid_streets[_i].street.length)
+#
+#			var p_perp = Vector2(-p_norm.y, p_norm.x)			
+#			var perp = Vector2(-norm.y, norm.x)
+#
+#			var intersection = Geometry.line_intersects_line_2d(p_norm * 10 + p_perp * 10, p_norm, norm * 10 - perp * 10, norm)
+#
+#			# special case if a street was splitted and previous and current street have the same 
+#			# normal. In this case we cannot use the intersection 
+#			var t = (p_norm.rotated(3.141593) - norm).abs()
+#			if is_equal_approx(t.x, 0.0) and is_equal_approx(t.y, 0.0):
+#				intersection = p_perp * 10
+#
+#
+#			if intersection and intersection.length() > INTERSECTION_STREET_LENGTH:
+#				intersection = intersection.normalized() * INTERSECTION_STREET_LENGTH
+#
+#			points.push_back(p_norm * p_length + p_perp * 10)		
+#			points.push_back(intersection)
+#			points.push_back(norm * length - perp * 10)
+#
+#			colors.push_back(valid_streets[_p].street.normal_color)
+#			colors.push_back(Color(42.0 / 255, 42.0 / 255, 43.0 / 255))
+#			colors.push_back(valid_streets[_i].street.normal_color)
+#
+#
+#	draw_polygon(points, colors)
+#	#draw_polyline(points, Color.black)
+#	#draw_colored_polygon(points, Color(42.0 / 255, 42.0 / 255, 43.0 / 255))
+#
+#	draw_circle(Vector2(0, 0), 10, Color.orange)

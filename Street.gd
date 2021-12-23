@@ -30,6 +30,7 @@ var _next = []
 var _previous = []
 
 enum PT { START_LEFT, END_LEFT, END_RIGHT, START_RIGHT }
+enum Side { LEFT, RIGHT }
 
 func set_district(district: District, side: int) -> void:
 	assert(side >= 0 and side <= 1)
@@ -54,7 +55,7 @@ func get_ui_name():
 	
 func _ready():
 	rng.randomize()
-	#normal_color = Color(rng.randf(), rng.randf(), rng.randf(), 0.7)#Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+	normal_color = Color(rng.randf(), rng.randf(), rng.randf(), 0.0)#Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 	normal_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 		
 	color = normal_color
@@ -165,12 +166,65 @@ func street_points(distance = WIDTH, distance2 = 60):
 	var length = e.distance_to(s)
 
 	var p = []
-	var l = min(Intersection.INTERSECTION_STREET_LENGTH, length)
+#	var l = min(Intersection.INTERSECTION_STREET_LENGTH, length)
 	var offset = perp * distance
-	p.append(norm * l - offset)
-	p.append(norm * (length - l) - offset)
-	p.append(norm * (length - l) + offset)
-	p.append(norm * l + offset)
+#	p.append(norm * l - offset)
+#	p.append(norm * (length - l) - offset)
+#	p.append(norm * (length - l) + offset)
+#	p.append(norm * l + offset)
+	
+	var multiple_streets_at_start = start._streets.size() > 2
+	if multiple_streets_at_start:
+		p.append(Vector2(0, 0))
+	
+	p.append(-offset)	
+	p.append(norm * length - offset)
+	
+	if end._streets.size() > 2:
+		p.append(norm * length)
+		
+	p.append(norm * length + offset)
+	p.append(offset)
+	
+	
+	
+	
+	if _next[District.Side.LEFT]:
+		var l_next = _next[District.Side.LEFT]
+
+		var n_offset = -l_next.perp * WIDTH if l_next.end != end else l_next.perp * WIDTH
+		var intersection = Geometry.line_intersects_line_2d(p[0 if not multiple_streets_at_start else 1], norm, n_offset, l_next.norm)
+
+		if intersection:
+			p[1 if not multiple_streets_at_start else 2] = norm * length + intersection
+
+	if _next[District.Side.RIGHT]:
+		var l_next = _next[District.Side.RIGHT]
+
+		var n_offset = l_next.perp * WIDTH if l_next.end != end else -l_next.perp * WIDTH
+		var intersection = Geometry.line_intersects_line_2d(p[p.size() - 1], norm, n_offset, l_next.norm)
+
+		if intersection:
+			p[p.size() - 2] = norm * length + intersection			
+
+
+	if _previous[District.Side.LEFT]:
+		var l_previous = _previous[District.Side.LEFT]
+
+		var p_offset = -l_previous.perp * WIDTH if l_previous.start != start else l_previous.perp * WIDTH
+		var intersection = Geometry.line_intersects_line_2d(p[0 if not multiple_streets_at_start else 1], norm, p_offset, l_previous.norm)
+
+		if intersection:
+			p[0 if not multiple_streets_at_start else 1] = intersection
+
+	if _previous[District.Side.RIGHT]:
+		var l_previous = _previous[District.Side.RIGHT]
+
+		var p_offset = l_previous.perp * WIDTH if l_previous.start != start else -l_previous.perp * WIDTH
+		var intersection = Geometry.line_intersects_line_2d(p[p.size() - 1], norm, p_offset, l_previous.norm)
+
+		if intersection:
+			p[p.size() - 1] = intersection	
 			
 	return p
 	
@@ -305,16 +359,18 @@ func _exceeds_min_angle():
 #
 #	return false
 
-#func _draw():
+func _draw():
+	draw_polyline(polygon, Color.orange, 2)
+#
 #	var label = Label.new()
 #	var font = label.get_font("")
-#
-#	draw_colored_polygon([
-#		norm * length * 0.8,
-#		norm * (length * 0.8-20) + perp * 10,
-#		norm * (length * 0.8-20) - perp * 10,
-#	], Color.limegreen)
-#
+##
+##	draw_colored_polygon([
+##		norm * length * 0.8,
+##		norm * (length * 0.8-20) + perp * 10,
+##		norm * (length * 0.8-20) - perp * 10,
+##	], Color.limegreen)
+##
 #	var text = "%s -> %s %s %s %s" % [
 #		get_id(),
 #		"#" if not _previous[0] else _previous[0].get_id(),

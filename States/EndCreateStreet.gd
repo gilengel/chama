@@ -150,15 +150,14 @@ func _update_temp_end(position):
 	temp_street.visible = temp_street.length >= 80
 	
 	# necessary to get the changes of the street propagated to the intersection
-	temp_street.end.update()
-	temp_street.start.update()
+	#temp_street.end.update()
+	#temp_street.start.update()
 	
 	var s = temp_street.end.global_position
 	var e = temp_street.start.global_position
 	
 	var angles = temp_street.start.get_angles_to_adjacent_streets(temp_street)
 	
-	print(angles)
 	for i in range(1):
 		if angles[i] > -Street.MIN_ANGLE and angles[i] < Street.MIN_ANGLE:
 

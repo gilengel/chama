@@ -13,7 +13,6 @@ var midpoints = []
 var rng = RandomNumberGenerator.new()
 
 var outline = false
-const WIDTH = 10
 const MIN_LENGTH = 50
 
 var norm = Vector2(0, 0)
@@ -22,6 +21,7 @@ var perp = Vector2(0, 0)
 var inverse_perp = Vector2(0,0)
 var angle = null
 var length : float = 0.0
+var width : float = 10.0
 
 onready var _street_manager = get_node("../../StreetManager")
 onready var _style_manager = get_node("../../StyleManager")
@@ -60,6 +60,8 @@ func _ready():
 		normal_color = _style_manager.get_color(StyleManager.Colors.Street)	
 		hover_color = _style_manager.get_color(StyleManager.Colors.Hover)
 	color = normal_color
+	
+	width = rng.randf_range(8.0, 20.0)
 	
 	
 	polygon.resize(4)
@@ -160,7 +162,8 @@ func _get_previous_indices(side):
 func _get_next_indices(side):
 	return [PT.START_LEFT, PT.START_RIGHT] if _next[side].end != end else [PT.END_RIGHT, PT.END_LEFT]
 	
-func street_points(distance = WIDTH, distance2 = 60):
+func street_points():
+	var half_width = (width / 2.0)
 	var s = start.global_position
 	var e = end.global_position
 	
@@ -168,7 +171,7 @@ func street_points(distance = WIDTH, distance2 = 60):
 
 	var p = []
 #	var l = min(Intersection.INTERSECTION_STREET_LENGTH, length)
-	var offset = perp * distance
+	var offset = perp * half_width
 #	p.append(norm * l - offset)
 #	p.append(norm * (length - l) - offset)
 #	p.append(norm * (length - l) + offset)
@@ -193,7 +196,7 @@ func street_points(distance = WIDTH, distance2 = 60):
 	if _next[District.Side.LEFT]:
 		var l_next = _next[District.Side.LEFT]
 
-		var n_offset = -l_next.perp * WIDTH if l_next.end != end else l_next.perp * WIDTH
+		var n_offset = -l_next.perp * half_width if l_next.end != end else l_next.perp *half_width
 		var intersection = Geometry.line_intersects_line_2d(p[0 if not multiple_streets_at_start else 1], norm, n_offset, l_next.norm)
 
 		if intersection:
@@ -202,7 +205,7 @@ func street_points(distance = WIDTH, distance2 = 60):
 	if _next[District.Side.RIGHT]:
 		var l_next = _next[District.Side.RIGHT]
 
-		var n_offset = l_next.perp * WIDTH if l_next.end != end else -l_next.perp * WIDTH
+		var n_offset = l_next.perp * half_width if l_next.end != end else -l_next.perp * half_width
 		var intersection = Geometry.line_intersects_line_2d(p[p.size() - 1], norm, n_offset, l_next.norm)
 
 		if intersection:
@@ -212,7 +215,7 @@ func street_points(distance = WIDTH, distance2 = 60):
 	if _previous[District.Side.LEFT]:
 		var l_previous = _previous[District.Side.LEFT]
 
-		var p_offset = -l_previous.perp * WIDTH if l_previous.start != start else l_previous.perp * WIDTH
+		var p_offset = -l_previous.perp * half_width if l_previous.start != start else l_previous.perp * half_width
 		var intersection = Geometry.line_intersects_line_2d(p[0 if not multiple_streets_at_start else 1], norm, p_offset, l_previous.norm)
 
 		if intersection:
@@ -221,7 +224,7 @@ func street_points(distance = WIDTH, distance2 = 60):
 	if _previous[District.Side.RIGHT]:
 		var l_previous = _previous[District.Side.RIGHT]
 
-		var p_offset = l_previous.perp * WIDTH if l_previous.start != start else -l_previous.perp * WIDTH
+		var p_offset = l_previous.perp * half_width if l_previous.start != start else -l_previous.perp * half_width
 		var intersection = Geometry.line_intersects_line_2d(p[p.size() - 1], norm, p_offset, l_previous.norm)
 
 		if intersection:

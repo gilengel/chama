@@ -180,6 +180,10 @@ func enclosed(start: Street, side : int):
 
 		street = next
 	
+	var offset = Geometry.offset_polygon_2d(points, -10)
+	if not offset.empty():
+		points = Geometry.offset_polygon_2d(points, -10)[0]
+		
 	return { "enclosed": next == start, "streets": streets, "points": points }
 
 func preload_entity(data):

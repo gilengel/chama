@@ -41,7 +41,7 @@ func _starts_on_street(point):
 	return null
 	
 
-func create_street(start_pos : Vector2, end_pos : Vector2):
+func create_street(start_pos : Vector2, end_pos : Vector2, width : float):
 	var start = _intersection_manager.is_near_intersection(start_pos, SNAP_DISTANCE)
 	var end = _intersection_manager.is_near_intersection(end_pos, SNAP_DISTANCE)
 	
@@ -69,8 +69,8 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 
 		var intersection = _intersection_manager.create_intersection(end_pos)
 		split_end.end = intersection	
-		var street = _create_street(start, intersection)
-		_create_street(intersection, _end)	
+		var street = _create_street(start, intersection, width)
+		_create_street(intersection, _end, width)	
 		
 		emit_signal("street_created", street)
 	
@@ -83,8 +83,8 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		
 		var intersection = _intersection_manager.create_intersection(start_pos)
 		split_start.end = intersection
-		var street = _create_street(intersection, end)
-		_create_street(intersection, _end)
+		var street = _create_street(intersection, end, width)
+		_create_street(intersection, _end, width)
 
 		emit_signal("street_created", street)
 		
@@ -104,27 +104,28 @@ func create_street(start_pos : Vector2, end_pos : Vector2):
 		var intersection_start = _intersection_manager.create_intersection(start_pos)
 		var intersection_end = _intersection_manager.create_intersection(end_pos)
 		
-		var street = _create_street(intersection_end, intersection_start)
+		var street = _create_street(intersection_end, intersection_start, width)
 		
-		_create_street(_split_end_start, intersection_end)	
-		_create_street(intersection_end, _split_end_end)					
+		_create_street(_split_end_start, intersection_end, width)	
+		_create_street(intersection_end, _split_end_end, width)					
 		
-		_create_street(_split_start_start, intersection_start)	
-		_create_street(intersection_start, _split_start_end)	
+		_create_street(_split_start_start, intersection_start, width)	
+		_create_street(intersection_start, _split_start_end, width)	
 		
 		emit_signal("street_created", street)		
 		
 		return
 	
 	
-	var street = _create_street(start, end)
+	var street = _create_street(start, end, width)
 	emit_signal("street_created", street)
 
 		
-func _create_street(start_intersection : Intersection, end_intersection : Intersection) -> Street:
+func _create_street(start_intersection : Intersection, end_intersection : Intersection, width : float) -> Street:
 	var street = _street_manager.create()
 	street.set_start(start_intersection)
 	street.set_end(end_intersection)
+	street.width = width
 	
 	return street
 
@@ -233,10 +234,11 @@ func handle_input(_event: InputEvent) -> void:
 			if not _splitted_starting_streets.empty() and end_street:
 				_district_manager.delete_at_position(temp_street.global_position + temp_street.norm * (temp_street.length * 0.5))
 			#	_district_manager.delete(end_street.right_district)
-				
+			
+			var width = temp_street.width
 			_street_manager.delete(temp_street)
 			
-			create_street(start_pos, end_pos)			
+			create_street(start_pos, end_pos, width)			
 			
 			state_machine.transition_to("StartCreateStreet")
 			

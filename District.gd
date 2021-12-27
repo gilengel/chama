@@ -13,6 +13,8 @@ var rng = RandomNumberGenerator.new()
 
 var houses: Array = []
 
+onready var _style_manager = get_node("../../StyleManager")
+
 class BinaryTreeNode:
 	var parent : BinaryTreeNode = null
 	var left : BinaryTreeNode = null
@@ -25,7 +27,8 @@ class BinaryTreeNode:
 	
 
 func _ready():	
-	normal_color = Color(rng.randf(), rng.randf(), rng.randf(), 0.3)
+	if _style_manager:
+		normal_color = _style_manager.get_color(StyleManager.Colors.District)
 	._ready()
 
 func _save_neighbour_ids():

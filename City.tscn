@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=2]
+[gd_scene load_steps=17 format=2]
 
 [ext_resource path="res://Managers/DistrictManager.gd" type="Script" id=1]
 [ext_resource path="res://Managers/IntersectionManager.gd" type="Script" id=2]
@@ -15,6 +15,7 @@
 [ext_resource path="res://GUI/MainPanel.tscn" type="PackedScene" id=13]
 [ext_resource path="res://States/CreateBuilding.gd" type="Script" id=14]
 [ext_resource path="res://States/Idle.gd" type="Script" id=15]
+[ext_resource path="res://StyleManager.gd" type="Script" id=16]
 
 [node name="City" type="Node2D"]
 script = ExtResource( 3 )
@@ -69,6 +70,9 @@ script = ExtResource( 4 )
 
 [node name="StreetManager" type="Node" parent="."]
 script = ExtResource( 5 )
+
+[node name="StyleManager" type="Node" parent="."]
+script = ExtResource( 16 )
 
 [node name="DistrictManager" type="Node2D" parent="."]
 script = ExtResource( 1 )

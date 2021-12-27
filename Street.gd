@@ -24,7 +24,7 @@ var angle = null
 var length : float = 0.0
 
 onready var _street_manager = get_node("../../StreetManager")
-
+onready var _style_manager = get_node("../../StyleManager")
 
 var _next = []
 var _previous = []
@@ -55,9 +55,9 @@ func get_ui_name():
 	
 func _ready():
 	rng.randomize()
-	normal_color = Color(rng.randf(), rng.randf(), rng.randf(), 0.0)#Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 	normal_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
-		
+	if _style_manager:
+		normal_color = _style_manager.get_color(StyleManager.Colors.Street)	
 	color = normal_color
 	
 	
@@ -328,7 +328,7 @@ func is_constructable():
 	var max_length = _violates_max_length()
 	var exceeds_min_angle = _exceeds_min_angle()
 	
-	return not _violates_min_length() and not _violates_max_length() and _exceeds_min_angle()
+	return not min_length and not max_length and exceeds_min_angle
 
 func _violates_min_length():
 	return start.global_position.distance_to(end.global_position) < MIN_LENGTH
@@ -359,24 +359,24 @@ func _exceeds_min_angle():
 #
 #	return false
 
-func _draw():
-	draw_polyline(polygon, Color.orange, 2)
-
-	var label = Label.new()
-	var font = label.get_font("")
+#func _draw():
+#	#draw_polyline(polygon, _style_manager.get_color(StyleManager.Colors.Outline), 2)
 #
-#	draw_colored_polygon([
-#		norm * length * 0.8,
-#		norm * (length * 0.8-20) + perp * 10,
-#		norm * (length * 0.8-20) - perp * 10,
-#	], Color.limegreen)
-#
-	var text = "%s -> %s %s %s %s" % [
-		get_id(),
-		"#" if not _previous[0] else _previous[0].get_id(),
-		"#" if not _previous[1] else _previous[1].get_id(),
-		"#" if not _next[0] else _next[0].get_id(),
-		"#" if not _next[1] else _next[1].get_id()		
-	]
-	draw_string(font, norm * length * 0.5, text, Color(1, 1, 1))
-	label.free()
+#	var label = Label.new()
+#	var font = label.get_font("")
+##
+##	draw_colored_polygon([
+##		norm * length * 0.8,
+##		norm * (length * 0.8-20) + perp * 10,
+##		norm * (length * 0.8-20) - perp * 10,
+##	], Color.limegreen)
+##
+#	var text = "%s -> %s %s %s %s" % [
+#		get_id(),
+#		"#" if not _previous[0] else _previous[0].get_id(),
+#		"#" if not _previous[1] else _previous[1].get_id(),
+#		"#" if not _next[0] else _next[0].get_id(),
+#		"#" if not _next[1] else _next[1].get_id()		
+#	]
+#	draw_string(font, norm * length * 0.5, text, Color(1, 1, 1))
+#	label.free()

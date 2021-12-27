@@ -5,6 +5,7 @@ extends State
 onready var _intersection_manager = get_node("../../IntersectionManager")
 onready var _street_manager = get_node("../../StreetManager")
 onready var _district_manager = get_node("../../DistrictManager")
+onready var _style_manager = get_node("../../StyleManager")
 
 # ==============================================================================
 
@@ -191,7 +192,7 @@ func _update_temp_end(position):
 				
 	temp_street._update_geometry()
 	
-	temp_street.visible = temp_street.length >= 80
+	#temp_street.visible = temp_street.length >= 80
 	
 	var s = temp_street.end.global_position
 	var e = temp_street.start.global_position
@@ -205,15 +206,15 @@ func _update_temp_end(position):
 			var norms = temp_street.start.get_norm_of_adjacent_streets(temp_street)
 			var length = temp_street.length
 
-			temp_street.end.global_position = temp_street.start.global_position + norms[i].rotated(deg2rad(45.0 if angles[i] <= 0 else -45)) * length
+			temp_street.end.global_position = temp_street.start.global_position + norms[i].rotated(0.78539833793 if angles[i] <= 0 else -0.78539833793) * length
 
 
 
 	if temp_street.is_constructable():
-		temp_street.normal_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+		temp_street.normal_color = _style_manager.get_color(StyleManager.Colors.Street)
 		_valid_street = true
 	else:
-		temp_street.normal_color = Color.red
+		temp_street.normal_color = _style_manager.get_color(StyleManager.Colors.Error)
 		_valid_street = false
 
 
@@ -258,8 +259,6 @@ func handle_input(_event: InputEvent) -> void:
 		temp_street.start.update()
 
 
-# Virtual function. Called by the state machine upon changing the active state. The `msg` parameter
-# is a dictionary with arbitrary data the state can use to initialize itself.
 func enter(_msg := {}) -> void:
 	assert(_msg.has("start_position"))
 	
@@ -268,9 +267,4 @@ func enter(_msg := {}) -> void:
 	temp_street = _msg.street
 	
 	_temp_end = temp_street.end
-	#temp_street = Line2D.new()
-	#temp_street.width = Street.WIDTH * 2
-	temp_street.color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 	add_child(temp_street)
-	
-	#temp_street.points = [_msg.start_position, _msg.start_position]

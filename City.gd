@@ -10,13 +10,15 @@ onready var _street_manager = get_node("StreetManager")
 onready var _district_manager = get_node("DistrictManager")
 onready var _intersection_manager = get_node("IntersectionManager")
 onready var _building_manager = get_node("BuildingsManager")
+onready var _style_manager = get_node("StyleManager")
 
 onready var Building = get_node("Building")
 
 # ==============================================================================
 
 func _ready():
-	VisualServer.set_default_clear_color(Color(90.0 / 255, 148.0 / 255, 112.0 / 255 , 1.0))
+	
+	VisualServer.set_default_clear_color(_style_manager.get_color(StyleManager.Colors.Background))
 
 	get_tree().connect("files_dropped", self, "_files_dropped")
 

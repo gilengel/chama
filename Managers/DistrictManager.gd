@@ -121,32 +121,7 @@ func create_districts_for_street(street: Street):
 
 
 
-	
-#func _create_district_on_side(street: Street, side: int):
-#	assert(side >= 0 and side <= 1)
-#
-#	var temp_district = enclosed(street, side)
-#
-#	if temp_district.enclosed and not _district_is_outer(temp_district.points):
-#		var district = create_district(temp_district.points)
-#
-#		for street_and_side in temp_district.streets:
-#			street_and_side.street.set_district(district, street_and_side.side)
-#
-#			var other_side = District.Side.LEFT if street_and_side.side == District.Side.RIGHT else District.Side.RIGHT
-#			var neighbouring_district = street_and_side.street.get_district(other_side)
-#
-#			if is_instance_valid(neighbouring_district):
-#				neighbouring_district.neighbours.append(district)
-#				neighbouring_district.update()
-#				district.neighbours.append(neighbouring_district)
-	
-#func _update_districts_for_street(street: Street):
-#	if street.end._streets.size() == 1 or street.start._streets.size() == 1:
-#		return
-#
-#	_create_district_on_side(street, District.Side.LEFT)
-#	_create_district_on_side(street, District.Side.RIGHT)
+
 
 func _delete_districts_for_street(street: Street):
 	for side in [District.Side.LEFT, District.Side.RIGHT]:

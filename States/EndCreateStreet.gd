@@ -14,7 +14,6 @@ var _valid_street
 
 var _splitted_starting_streets
 
-var _end
 var _temp_end
 
 # ==============================================================================
@@ -130,42 +129,84 @@ func _create_street(start_intersection : Intersection, end_intersection : Inters
 
 
 
+func _get_intersection_with_another_street(end):
+	for street in _street_manager.get_all():
+		var ignore = false if street.get_id() != temp_street.get_id() else true
+		for j in _splitted_starting_streets:
+			if street.get_id() == j.get_id():
+				ignore = true
+				
+		if ignore:
+			continue
+		
+		var intersection = Geometry.segment_intersects_segment_2d(street.start.global_position, street.end.global_position, temp_street.start.global_position, end)
+		
+		if intersection and intersection != street.start.global_position and intersection != street.end.global_position:
+			return { "street": street, "intersection": intersection }
 
+	return null
 	
 func _update_temp_end(position):
+	#temp_street.end.position = position
 	
-	var near_intersection = _intersection_manager.is_near_intersection(position, SNAP_DISTANCE, [temp_street.start])
 
-	if near_intersection and temp_street.end != near_intersection:
-		position = near_intersection.position
+	var near_intersections = _intersection_manager.get_near_intersections(position, SNAP_DISTANCE)
+	near_intersections.erase(temp_street.end)
+	near_intersections.erase(temp_street.start)
+
+	if not near_intersections.empty():
+		temp_street.end = near_intersections.front()
 		
-		_end = near_intersection
-		temp_street.end = _end		
-	else: 		
-		_end = _temp_end		
-		_end.position = position
+	
+	var street_interaction = _get_intersection_with_another_street(position)
+	
+	
+	if street_interaction:	
+		var start_distance = street_interaction.intersection.distance_to(street_interaction.street.start.position)
+		var end_distance = street_interaction.intersection.distance_to(street_interaction.street.end.position)
+		#print("%s %s" % [start_distance, end_distance])
+		
+		if start_distance < SNAP_DISTANCE:
+			#_temp_end = temp_street.end
+			temp_street.end = street_interaction.street.start		
+		elif end_distance < SNAP_DISTANCE:
+			#_temp_end = temp_street.end	
+			temp_street.end = street_interaction.street.end
+		else:					
+			var _end = temp_street.end
+			temp_street.end = _temp_end
+			
+			_end.remove_street(temp_street)
+
+				
+			temp_street.end.position = street_interaction.intersection
+	else:
+		if temp_street.end != _temp_end:
+			temp_street.end = _temp_end
+			
+		temp_street.end.position = position
+
+		
+
 				
 	temp_street._update_geometry()
 	
 	temp_street.visible = temp_street.length >= 80
 	
-	# necessary to get the changes of the street propagated to the intersection
-	#temp_street.end.update()
-	#temp_street.start.update()
-	
 	var s = temp_street.end.global_position
 	var e = temp_street.start.global_position
-	
+
 	var angles = temp_street.start.get_angles_to_adjacent_streets(temp_street)
-	
-	for i in range(1):
+
+	for i in range(2):
 		if angles[i] > -Street.MIN_ANGLE and angles[i] < Street.MIN_ANGLE:
+			
 
 			var norms = temp_street.start.get_norm_of_adjacent_streets(temp_street)
 			var length = temp_street.length
 
 			temp_street.end.global_position = temp_street.start.global_position + norms[i].rotated(deg2rad(45.0 if angles[i] <= 0 else -45)) * length
-		
+
 
 
 	if temp_street.is_constructable():
@@ -202,8 +243,13 @@ func handle_input(_event: InputEvent) -> void:
 			if not _splitted_starting_streets.empty():
 				_splitted_starting_streets[0].end = _splitted_starting_streets[1].end
 				_street_manager.delete(_splitted_starting_streets[1])
+			
+			if _temp_end != temp_street.end:
+				_intersection_manager.delete(_temp_end)
 				
 			_street_manager.delete(temp_street)
+			
+			
 			
 			state_machine.transition_to("StartCreateStreet")
 		
@@ -221,8 +267,7 @@ func enter(_msg := {}) -> void:
 
 	temp_street = _msg.street
 	
-	_end = temp_street.end
-	_temp_end = _end
+	_temp_end = temp_street.end
 	#temp_street = Line2D.new()
 	#temp_street.width = Street.WIDTH * 2
 	temp_street.color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)

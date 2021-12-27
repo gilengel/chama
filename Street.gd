@@ -361,22 +361,22 @@ func _exceeds_min_angle():
 
 func _draw():
 	draw_polyline(polygon, Color.orange, 2)
+
+	var label = Label.new()
+	var font = label.get_font("")
 #
-#	var label = Label.new()
-#	var font = label.get_font("")
-##
-##	draw_colored_polygon([
-##		norm * length * 0.8,
-##		norm * (length * 0.8-20) + perp * 10,
-##		norm * (length * 0.8-20) - perp * 10,
-##	], Color.limegreen)
-##
-#	var text = "%s -> %s %s %s %s" % [
-#		get_id(),
-#		"#" if not _previous[0] else _previous[0].get_id(),
-#		"#" if not _previous[1] else _previous[1].get_id(),
-#		"#" if not _next[0] else _next[0].get_id(),
-#		"#" if not _next[1] else _next[1].get_id()		
-#	]
-#	draw_string(font, norm * length * 0.5, text, Color(1, 1, 1))
-#	label.free()
+#	draw_colored_polygon([
+#		norm * length * 0.8,
+#		norm * (length * 0.8-20) + perp * 10,
+#		norm * (length * 0.8-20) - perp * 10,
+#	], Color.limegreen)
+#
+	var text = "%s -> %s %s %s %s" % [
+		get_id(),
+		"#" if not _previous[0] else _previous[0].get_id(),
+		"#" if not _previous[1] else _previous[1].get_id(),
+		"#" if not _next[0] else _next[0].get_id(),
+		"#" if not _next[1] else _next[1].get_id()		
+	]
+	draw_string(font, norm * length * 0.5, text, Color(1, 1, 1))
+	label.free()

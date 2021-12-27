@@ -255,7 +255,7 @@ func get_norm_of_adjacent_streets(street) -> Array:
 	var index = get_index_of_street(street)
 	var p = index - 1 if index > 0 else _streets.size() - 1
 	var n = index + 1 if index < _streets.size() - 1 else 0
-
+	
 	var p_norm = _streets[p].street.norm if _streets[p].dir == Direction.OUT else _streets[p].street.inverse_norm
 	var n_norm = _streets[n].street.norm if _streets[n].dir == Direction.OUT else _streets[n].street.inverse_norm
 	
@@ -273,7 +273,7 @@ func get_angles_to_adjacent_streets(street) -> Array:
 	var p_angle = norm.angle_to(adjacent_norms[0]) 
 	var n_angle = norm.angle_to(adjacent_norms[1])
 	
-	return [p_angle, abs(n_angle)]
+	return [p_angle, n_angle]
 	
 	
 func previous_angle_to_line(end):

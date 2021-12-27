@@ -58,6 +58,14 @@ func create(type = null):
 	
 	return intersection	
 
+func get_near_intersections(point, allowed_distance) -> Array:
+	var result = []
+	for intersection in get_all():
+		if intersection.position.distance_to(point) < allowed_distance:
+			result.push_back(intersection)
+			
+	return result
+
 func is_near_intersection(point, allowed_distance, ignored_intersections = []) -> Intersection:
 	
 	for node in get_tree().get_nodes_in_group(INTERSECTION_GROUP):

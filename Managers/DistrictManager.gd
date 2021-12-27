@@ -125,17 +125,15 @@ func create_districts_for_street(street: Street):
 
 func _delete_districts_for_street(street: Street):
 	for side in [District.Side.LEFT, District.Side.RIGHT]:
-			
+		var district = street.get_district(side)
+		if is_instance_valid(district):
+			delete(district)
+						
 		var enclosed = enclosed(street, side)
 		if enclosed.enclosed:
 			for i in range(enclosed.streets.size()):
 				enclosed.streets[i].street.set_district(null, enclosed.streets[i].side)
-		
-		var district = street.get_district(side)
-		if is_instance_valid(district):
-			delete(district)
-
-	
+			
 func enclosed_area_is_free(ring: Dictionary) -> bool:
 	for street_side_pair in ring.streets:
 		if street_side_pair.street.get_district(street_side_pair.side):

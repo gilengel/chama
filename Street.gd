@@ -58,6 +58,7 @@ func _ready():
 	normal_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 	if _style_manager:
 		normal_color = _style_manager.get_color(StyleManager.Colors.Street)	
+		hover_color = _style_manager.get_color(StyleManager.Colors.Hover)
 	color = normal_color
 	
 	

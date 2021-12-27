@@ -9,7 +9,8 @@ enum Colors {
 	Background,
 	Debug,
 	District,
-	Error
+	Error,
+	Hover
 }
 
 var _colors : Dictionary = {}

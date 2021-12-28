@@ -29,6 +29,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://Buildings/Church.gd"
 }, {
+"base": "Street",
+"class": "CurvedStreet",
+"language": "GDScript",
+"path": "res://CurvedStreet.gd"
+}, {
 "base": "Buildable",
 "class": "District",
 "language": "GDScript",
@@ -109,6 +114,7 @@ _global_script_class_icons={
 "Building": "",
 "BuildingsManager": "",
 "Church": "",
+"CurvedStreet": "",
 "District": "",
 "DistrictManager": "",
 "EntityManager": "",

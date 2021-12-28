@@ -169,7 +169,7 @@ func _on_build_mode_change(mode, param):
 			$BuildingStateMachine.transition_to("CreateBuilding", {"building" : param })
 		
 		BUILDING_MODES.Street:
-			$BuildingStateMachine.transition_to("StartCreateStreet")
+			$BuildingStateMachine.transition_to("StartCreateStreet", { "street" : param })
 			
 		BUILDING_MODES.Destroy:
 			$BuildingStateMachine.transition_to("Destroy")

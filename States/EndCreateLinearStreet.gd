@@ -132,7 +132,7 @@ func _create_street(start_intersection : Intersection, end_intersection : Inters
 
 
 func _get_intersection_with_another_street(end):
-	for street in _street_manager.get_all():
+	for street in _street_manager.get_all([temp_street]):
 		var ignore = false if street.get_id() != temp_street.get_id() else true
 		for j in _splitted_starting_streets:
 			if street.get_id() == j.get_id():
@@ -147,6 +147,7 @@ func _get_intersection_with_another_street(end):
 			return { "street": street, "intersection": intersection }
 
 	return null
+	
 	
 func _update_temp_end(position):
 	#temp_street.end.position = position
@@ -166,8 +167,7 @@ func _update_temp_end(position):
 	if street_interaction:	
 		var start_distance = street_interaction.intersection.distance_to(street_interaction.street.start.position)
 		var end_distance = street_interaction.intersection.distance_to(street_interaction.street.end.position)
-		#print("%s %s" % [start_distance, end_distance])
-		
+
 		if start_distance < SNAP_DISTANCE:
 			#_temp_end = temp_street.end
 			temp_street.end = street_interaction.street.start		
@@ -192,9 +192,7 @@ func _update_temp_end(position):
 
 				
 	temp_street._update_geometry()
-	
-	#temp_street.visible = temp_street.length >= 80
-	
+		
 	var s = temp_street.end.global_position
 	var e = temp_street.start.global_position
 
@@ -240,7 +238,7 @@ func handle_input(_event: InputEvent) -> void:
 			
 			create_street(start_pos, end_pos, width)			
 			
-			state_machine.transition_to("StartCreateStreet")
+			state_machine.transition_to("StartCreateStreet", { "street": "Street" })
 			
 		if _event.is_action_released("cancel_action"):
 			if not _splitted_starting_streets.empty():
@@ -254,7 +252,7 @@ func handle_input(_event: InputEvent) -> void:
 			
 			
 			
-			state_machine.transition_to("StartCreateStreet")
+			state_machine.transition_to("StartCreateStreet", { "street": "Street" })
 		
 	if _event is InputEventMouseMotion:
 		_update_temp_end(_mouse_world_position)

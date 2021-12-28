@@ -8,6 +8,8 @@ var _starting_street
 var _starting_intersection
 var _valid_street
 
+var _street
+
 const SNAP_DISTANCE = 25
 
 var start_position : Vector2 = Vector2(0, 0)
@@ -35,8 +37,6 @@ func _update_temp_street_start(position: Vector2):
 							   (_starting_street.norm.y * lambda) + _starting_street.start.position.y)
 							
 		start_position = position			
-
-
 	
 # Virtual function. Receives events from the `_unhandled_input()` callback.
 func handle_input(_event: InputEvent) -> void:
@@ -45,7 +45,8 @@ func handle_input(_event: InputEvent) -> void:
 	if _event is InputEventMouseButton:
 		if _event.is_action_pressed("place_object"):		
 			_update_temp_street_start(_mouse_world_position)
-			var street = _street_manager.create()
+			
+			var street = _street_manager.create() if _street == "Street" else _street_manager.create_curved()
 			var start : Intersection = _intersection_manager.is_near_intersection(start_position, SNAP_DISTANCE)
 			
 			var split = _starting_street and not start
@@ -64,13 +65,26 @@ func handle_input(_event: InputEvent) -> void:
 
 			var end = _intersection_manager.create()
 			end.global_position = start_position
-			
+
 			street.start = start
 			street.end = end
 			
 			
-			state_machine.transition_to("EndCreateStreet", {
-				street = street,
-				start_position = start_position,
-				start_splitted = [_starting_street, split_street] if split_street else []
-			})
+			if street is CurvedStreet:
+				state_machine.transition_to("EndCreateCurvedStreet", {
+					street = street,
+					start_position = start_position,
+					start_splitted = [_starting_street, split_street] if split_street else []
+				})	
+			else:
+				state_machine.transition_to("EndCreateLinearStreet", {
+					street = street,
+					start_position = start_position,
+					start_splitted = [_starting_street, split_street] if split_street else []
+				})
+	
+func enter(_msg := {}) -> void:
+	assert(_msg.has("street"))
+	assert(_msg.street is String)
+	
+	_street = _msg.street

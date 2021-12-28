@@ -32,6 +32,11 @@ var _previous = []
 enum PT { START_LEFT, END_LEFT, END_RIGHT, START_RIGHT }
 enum Side { LEFT, RIGHT }
 
+const CLASS_NAME = "Street"
+
+func get_class() -> String:
+	return CLASS_NAME
+
 func set_district(district: District, side: int) -> void:
 	assert(side >= 0 and side <= 1)
 	
@@ -55,13 +60,14 @@ func get_ui_name():
 	
 func _ready():
 	rng.randomize()
-	normal_color = Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
+	normal_color = Color(rng.randf(), rng.randf(), rng.randf(), 0.3)
+		#Color(42.0 / 255, 42.0 / 255, 43.0 / 255)
 	if _style_manager:
 		normal_color = _style_manager.get_color(StyleManager.Colors.Street)	
 		hover_color = _style_manager.get_color(StyleManager.Colors.Hover)
 	color = normal_color
 	
-	width = rng.randf_range(8.0, 20.0)
+	width = 20 #rng.randf_range(8.0, 20.0)
 	
 	
 	polygon.resize(4)
@@ -363,24 +369,27 @@ func _exceeds_min_angle():
 #
 #	return false
 
-#func _draw():
-#	#draw_polyline(polygon, _style_manager.get_color(StyleManager.Colors.Outline), 2)
+func _draw():
+	#draw_polyline(polygon, _style_manager.get_color(StyleManager.Colors.Outline), 2)
+
+	var label = Label.new()
+	var font = label.get_font("")
+
+#	draw_circle(Vector2(0, 0), 10, Color.orange)
+#	draw_circle(end.position - start.position, 10, Color.pink)
 #
-#	var label = Label.new()
-#	var font = label.get_font("")
-##
-##	draw_colored_polygon([
-##		norm * length * 0.8,
-##		norm * (length * 0.8-20) + perp * 10,
-##		norm * (length * 0.8-20) - perp * 10,
-##	], Color.limegreen)
-##
-#	var text = "%s -> %s %s %s %s" % [
-#		get_id(),
-#		"#" if not _previous[0] else _previous[0].get_id(),
-#		"#" if not _previous[1] else _previous[1].get_id(),
-#		"#" if not _next[0] else _next[0].get_id(),
-#		"#" if not _next[1] else _next[1].get_id()		
-#	]
-#	draw_string(font, norm * length * 0.5, text, Color(1, 1, 1))
-#	label.free()
+#	draw_colored_polygon([
+#		norm * length * 0.8,
+#		norm * (length * 0.8-20) + perp * 10,
+#		norm * (length * 0.8-20) - perp * 10,
+#	], Color.limegreen)
+
+	var text = "%s -> %s %s %s %s" % [
+		get_id(),
+		"#" if not _previous[0] else _previous[0].get_id(),
+		"#" if not _previous[1] else _previous[1].get_id(),
+		"#" if not _next[0] else _next[0].get_id(),
+		"#" if not _next[1] else _next[1].get_id()		
+	]
+	draw_string(font, norm * length * 0.5 + Vector2(50, 0), text, Color(1, 1, 1))
+	label.free()

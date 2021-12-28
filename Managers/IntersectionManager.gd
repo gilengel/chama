@@ -13,10 +13,10 @@ func _ready():
 	_street_manager.connect("deleted", self, "_street_deleted")
 
 func _street_deleted(street: Street):
-	if street.start._streets.empty():
+	if street.start and street.start._streets.empty():
 		delete(street.start)
 		
-	if street.end._streets.empty():
+	if street.end and street.end._streets.empty():
 		delete(street.end)
 
 func delete(entity, emit = true):

@@ -37,10 +37,22 @@ func delete(entity, emit = true):
 		
 	emit_signal("deleted", entity)
 
-func get_all():
+func get_all(filter: Array = []):
 	assert(not entity_group.empty())
 	
-	return get_tree().get_nodes_in_group(entity_group)
+	#TODO check if this is really necessary
+	var valid = []
+	
+	for entity in get_tree().get_nodes_in_group(entity_group):
+		for filtered in filter:
+			if entity == filtered:
+				continue
+				
+		if is_instance_valid(entity):
+			valid.push_back(entity)
+			
+	return valid
+	#return get_tree().get_nodes_in_group(entity_group)
 	
 func get_by_id(id: int):
 	assert(not entity_group.empty())

@@ -72,8 +72,11 @@ func delete(street, emit = true):
 	if emit:
 		emit_signal("street_deleted", street)
 		
-	street.start.remove_street(street)
-	street.end.remove_street(street)
+	if street.start:
+		street.start.remove_street(street)
+	
+	if street.end:
+		street.end.remove_street(street)
 	
 	.delete(street)
 	
@@ -90,8 +93,11 @@ func _enable_destroy(value):
 	if value:
 		enabled = false
 	
-func is_point_on_street(pt : Vector2) -> Street :
+func is_point_on_street(pt : Vector2, ignored : Array = []) -> Street :
 	for s in get_tree().get_nodes_in_group(STREET_GROUP):
+		if ignored.find(s) != -1:
+			continue
+			
 		if Geometry.is_point_in_polygon(pt, s.global_polygon()):
 			return s
 			
@@ -110,20 +116,37 @@ func count_intersections_with_line(start: Vector2, dir: Vector2) -> Array:
 	#return count
 	return result
 
+func get_new_id():
+	var highest_id = 0
+	for s in get_all():
+		if s.get_id() > highest_id:
+			highest_id = s.get_id()	
+			
+	return highest_id + 1	
 
 func create(type = null):
 	var street = Street.new()
 	street.add_to_group(STREET_GROUP)
 	street.add_to_group($"../".PERSIST_GROUP)
 	
-	var highest_id = 0
-	for s in get_all():
-		if s.get_id() > highest_id:
-			highest_id = s.get_id()	
-	
+
+	var id = get_new_id()
 	add_child(street)
-	street._id = highest_id + 1
+	street._id = id
 	
 	emit_signal("street_count_changed", get_all().size())
 	
 	return street
+
+func create_curved():
+	var street = CurvedStreet.new()
+	street.add_to_group(STREET_GROUP)
+	street.add_to_group($"../".PERSIST_GROUP)	
+
+	var id = get_new_id()
+	add_child(street)
+	street._id = id
+	
+	emit_signal("street_count_changed", get_all().size())
+	
+	return street	

@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=2]
+[gd_scene load_steps=18 format=2]
 
 [ext_resource path="res://Managers/DistrictManager.gd" type="Script" id=1]
 [ext_resource path="res://Managers/IntersectionManager.gd" type="Script" id=2]
@@ -10,12 +10,13 @@
 [ext_resource path="res://States/StartCreateStreet.gd" type="Script" id=8]
 [ext_resource path="res://GUI/GUI.gd" type="Script" id=9]
 [ext_resource path="res://States/StateMaschine.gd" type="Script" id=10]
-[ext_resource path="res://States/EndCreateStreet.gd" type="Script" id=11]
+[ext_resource path="res://States/EndCreateLinearStreet.gd" type="Script" id=11]
 [ext_resource path="res://Managers/BuildingsManager.tscn" type="PackedScene" id=12]
 [ext_resource path="res://GUI/MainPanel.tscn" type="PackedScene" id=13]
 [ext_resource path="res://States/CreateBuilding.gd" type="Script" id=14]
 [ext_resource path="res://States/Idle.gd" type="Script" id=15]
 [ext_resource path="res://StyleManager.gd" type="Script" id=16]
+[ext_resource path="res://States/EndCreateCurvedStreet.gd" type="Script" id=17]
 
 [node name="City" type="Node2D"]
 script = ExtResource( 3 )
@@ -85,13 +86,16 @@ script = ExtResource( 2 )
 
 [node name="BuildingStateMachine" type="Node" parent="."]
 script = ExtResource( 10 )
-initial_state = NodePath("StartCreateStreet")
+initial_state = NodePath("Idle")
 
 [node name="StartCreateStreet" type="Node" parent="BuildingStateMachine"]
 script = ExtResource( 8 )
 
-[node name="EndCreateStreet" type="Node" parent="BuildingStateMachine"]
+[node name="EndCreateLinearStreet" type="Node" parent="BuildingStateMachine"]
 script = ExtResource( 11 )
+
+[node name="EndCreateCurvedStreet" type="Node" parent="BuildingStateMachine"]
+script = ExtResource( 17 )
 
 [node name="CreateBuilding" type="Node" parent="BuildingStateMachine"]
 script = ExtResource( 14 )

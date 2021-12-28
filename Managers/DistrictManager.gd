@@ -4,7 +4,8 @@ extends EntityManager
 onready var _street_manager = get_node("../StreetManager")
 onready var _intersection_manager = get_node("../IntersectionManager")
 
-onready var state_end_create_street = get_node("../BuildingStateMachine/EndCreateStreet")
+onready var state_end_create_street = get_node("../BuildingStateMachine/EndCreateLinearStreet")
+onready var state_end_create_curved_street = get_node("../BuildingStateMachine/EndCreateCurvedStreet")
 
 const DISTRICT_GROUP = "Districts"
 
@@ -34,6 +35,7 @@ func _ready():
 	_intersection_manager.connect("intersection_count_changed", self, "_update_district_outer_boundary")
 	
 	state_end_create_street.connect("street_created", self, "create_districts_for_street")
+	state_end_create_curved_street.connect("street_created", self, "create_districts_for_street")
 	
 func _update_district_outer_boundary(size = 0):
 	var pts = []

@@ -44,7 +44,7 @@ func _add_street_toggle_button(node: Buildable, tab: Control):
 	btn.toggle_mode = true
 	btn.text = node.get_ui_name()
 	btn.group = _btn_group
-	btn.set_meta("street", node)
+	btn.set_meta("street", node.get_class())
 	
 	btn.connect("toggled", self, "_toggle_street")
 	

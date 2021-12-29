@@ -4,6 +4,7 @@ extends State
 
 onready var _street_manager = get_node("../../StreetManager")
 onready var _building_manager = get_node("../../BuildingsManager")
+onready var _intersection_manager = get_node("../../IntersectionManager")
 
 # ==============================================================================
 
@@ -32,7 +33,21 @@ func handle_input(_event: InputEvent) -> void:
 
 	if _event.is_action_pressed("place_object") and temp_buildable:
 		if temp_buildable is Street:
-			_street_manager.delete(temp_buildable)
+			var street = temp_buildable
+			_street_manager.delete(street)
+			
+			if street.start._streets.size() == 2:
+				var norm_1 = street.start._streets[0].street.norm
+				var norm_2 = street.start._streets[1].street.norm
+				
+				var street_2 = street.start._streets[1].street
+				
+				var end = street_2.end
+				street.start._streets[0].street.set_end(end)
+				_intersection_manager.delete(street.start)
+				_street_manager.delete(street_2)
+				
+				
 
 		if temp_buildable is Building:
 			_building_manager.delete(temp_buildable)

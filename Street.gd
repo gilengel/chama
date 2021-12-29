@@ -384,12 +384,12 @@ func _draw():
 #		norm * (length * 0.8-20) - perp * 10,
 #	], Color.limegreen)
 
-	var text = "%s -> %s %s %s %s" % [
-		get_id(),
-		"#" if not _previous[0] else _previous[0].get_id(),
-		"#" if not _previous[1] else _previous[1].get_id(),
-		"#" if not _next[0] else _next[0].get_id(),
-		"#" if not _next[1] else _next[1].get_id()		
-	]
-	draw_string(font, norm * length * 0.5 + Vector2(50, 0), text, Color(1, 1, 1))
-	label.free()
+#	var text = "%s -> %s %s %s %s" % [
+#		get_id(),
+#		"#" if not _previous[0] else _previous[0].get_id(),
+#		"#" if not _previous[1] else _previous[1].get_id(),
+#		"#" if not _next[0] else _next[0].get_id(),
+#		"#" if not _next[1] else _next[1].get_id()		
+#	]
+#	draw_string(font, norm * length * 0.5 + Vector2(50, 0), text, Color(1, 1, 1))
+#	label.free()

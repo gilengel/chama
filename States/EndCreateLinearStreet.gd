@@ -169,10 +169,8 @@ func _update_temp_end(position):
 		var end_distance = street_interaction.intersection.distance_to(street_interaction.street.end.position)
 
 		if start_distance < SNAP_DISTANCE:
-			#_temp_end = temp_street.end
 			temp_street.end = street_interaction.street.start		
 		elif end_distance < SNAP_DISTANCE:
-			#_temp_end = temp_street.end	
 			temp_street.end = street_interaction.street.end
 		else:					
 			var _end = temp_street.end

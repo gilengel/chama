@@ -77,7 +77,6 @@ func delete(street, emit = true):
 	
 	if street.end:
 		street.end.remove_street(street)
-	
 	.delete(street)
 	
 	if emit:

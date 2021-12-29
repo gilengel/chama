@@ -1,0 +1,10 @@
+[package]
+name = "rust_procmap"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = { version = "0.5.0", features = ["dynamic"] } # dynamic linking for faster compile time see https://bevyengine.org/learn/book/getting-started/setup/
+bevy_prototype_lyon = "0.3.1"

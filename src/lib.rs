@@ -1,26 +1,56 @@
 use std::cmp::Ordering;
+use std::rc::Rc;
 
-use geo::line_intersection::LineIntersection;
+use geo::euclidean_length::EuclideanLength;
 use geo::line_intersection::line_intersection;
+use geo::line_intersection::LineIntersection;
 use geo::prelude::EuclideanDistance;
+use geo::LineString;
+use geo::Polygon;
 use geo_types::Coordinate;
 use geo_types::Line;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use geo::euclidean_distance;
 
 use geo_types::Point;
 
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlCanvasElement;
 
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 #[derive(Clone)]
 struct Street {
     line: Line<f64>,
+    polygon: Polygon<f64>,
 
     width: f64,
+
+    next_left: Option<Rc<Street>>,
+    next_right: Option<Rc<Street>>,
+
+    previous_left: Option<Rc<Street>>,
+    previous_right: Option<Rc<Street>>,
 }
 
+impl Default for Street {
+    fn default() -> Self {
+        Street {
+            line: Line::new(Point::new(0.0, 0.0), Point::new(0.0, 0.0)),
+            width: 20.0,
+            next_left: None,
+            next_right: None,
+            previous_left: None,
+            previous_right: None,
+            polygon: Polygon::new(LineString::from(vec![Coordinate { x: 0., y: 0. }]), vec![],),
+        }
+    }
+}
 
 impl Street {
     pub fn start(&self) -> Coordinate<f64> {
@@ -36,30 +66,59 @@ impl Street {
     }
 
     pub fn set_end(&mut self, end: Coordinate<f64>) {
-        self.line.end = end
+        self.line.end = end;
+
+        self.update_geometry();
     }
 
-    pub fn render(&self, context: &CanvasRenderingContext2d) {
-        context.begin_path();
-        context.move_to(self.start().x, self.start().y);
-        context.line_to(self.end().x, self.end().y);
-        context.set_line_width(self.width);
-        context.stroke();
+    fn update_geometry(&mut self) {
+        let length = self.line.euclidean_length();
+
+        let half_width = self.width / 2.0;
+        let start: Point<f64> = self.start().into();
+        let end = self.end();
+
+        let length = self.line.euclidean_length();
+        let vec = self.end() - self.start();
+        let norm = Point::new(vec.x / length, vec.y / length);
+        let perp = Point::new(-norm.y(), norm.x());
+        let offset = perp * half_width;
+
+        self.polygon = Polygon::new(
+            LineString::from(vec![
+                start - offset,
+                start + norm * length - offset,
+                start + norm * length + offset,
+                start + offset,
+            ]),
+            vec![],
+        );
     }
+
+
+    pub fn render(&self, context: &CanvasRenderingContext2d) {      
+        let mut it = self.polygon.exterior().points_iter();
+        let start = it.next().unwrap();
+
+        context.begin_path();
+        context.move_to(start.x(), start.y());
+        for point in it {
+            context.line_to(point.x(), point.y());
+        }
+        
+
+        context.close_path();
+        context.fill();
+        context.stroke();        
+    }
+
 
     pub fn intersect_with_street(&self, another: &Street) -> Option<LineIntersection<f64>> {
         line_intersection(self.line, another.line)
     }
 }
 
-impl Default for Street {
-    fn default() -> Self {
-        Street {
-            line: Line::new(Point::new(0.0, 0.0), Point::new(0.0, 0.0)),
-            width: 20.0
-        }
-    }
-}
+
 
 #[wasm_bindgen]
 pub struct Editor {
@@ -124,8 +183,14 @@ impl Editor {
     }
 
     pub fn mouse_down(&mut self, x: u32, y: u32) {
-        self.temp_street.set_start(Coordinate { x: x.into(), y: y.into() });
-        self.temp_street.set_end(Coordinate { x: x.into(), y: y.into() });
+        self.temp_street.set_start(Coordinate {
+            x: x.into(),
+            y: y.into(),
+        });
+        self.temp_street.set_end(Coordinate {
+            x: x.into(),
+            y: y.into(),
+        });
 
         self.mouse_pressed = true
     }
@@ -144,7 +209,10 @@ impl Editor {
 
     pub fn mouse_move(&mut self, x: u32, y: u32) {
         if self.mouse_pressed {
-            self.temp_street.set_end(Coordinate { x: x.into(), y: y.into() });
+            self.temp_street.set_end(Coordinate {
+                x: x.into(),
+                y: y.into(),
+            });
 
             if let Some(intersection) = self.intersect_with_streets() {
                 self.temp_street.set_end(intersection)
@@ -155,16 +223,18 @@ impl Editor {
     fn intersect_with_streets(&self) -> Option<Coordinate<f64>> {
         let mut intersections = vec![];
 
-        for street in &self.streets {            
+        for street in &self.streets {
             if let Some(line_intersection) = self.temp_street.intersect_with_street(street) {
                 match line_intersection {
-                    LineIntersection::SinglePoint { intersection, is_proper } => 
-                    {
+                    LineIntersection::SinglePoint {
+                        intersection,
+                        is_proper,
+                    } => {
                         if is_proper {
                             intersections.push(intersection);
                         }
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
         }
@@ -174,20 +244,20 @@ impl Editor {
             let d2 = b.euclidean_distance(&self.temp_street.start());
 
             if d1 < d2 {
-                return Ordering::Less
-            }
-            
-            if d1 == d2 {
-                return Ordering::Equal
+                return Ordering::Less;
             }
 
-            Ordering::Greater            
+            if d1 == d2 {
+                return Ordering::Equal;
+            }
+
+            Ordering::Greater
         });
 
         if intersections.is_empty() {
-            return None
+            return None;
         }
-        
+
         Some(intersections.first().unwrap().clone())
     }
 }

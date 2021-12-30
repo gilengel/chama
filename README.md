@@ -1,6 +1,6 @@
 ![Project Logo](./godot/assets/godot-ferris-128x128.png)
 
-# a-rusty-beginning
+# rust-procmap
 > Put the description here!
 
 ## Table of contents

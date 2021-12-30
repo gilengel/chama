@@ -23,6 +23,7 @@ crate-type = ["cdylib"]
 js-sys = "0.3.55"
 wasm-bindgen = "0.2.78"
 geo-types = "0.7.2"
+geo = "0.18.0"
 
 [dependencies.web-sys]
 version = "0.3.4"

@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::f64::consts::PI;
 use std::rc::Rc;
 
 use geo::line_intersection::line_intersection;
@@ -37,6 +38,18 @@ impl Intersection {
 
     pub fn get_position(&self) -> Coordinate<f64> {
         self.position
+    }
+
+    pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+        context.begin_path();
+        context.arc(self.position.x, self.position.y, 15.0, 0.0, 2.0 * PI)?;
+        context.set_fill_style(&"#FF8C00".into());
+        context.fill();
+
+        context.set_fill_style(&"#000000".into());
+        context.fill_text(&format!("{}", self.connected_streets.len()).to_string(), self.position.x, self.position.y)?;
+
+        Ok(())
     }
 }
 
@@ -119,7 +132,7 @@ impl Street {
         );
     }
 
-    pub fn render(&self, context: &CanvasRenderingContext2d) {
+    pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue>  {
         let mut it = self.polygon.exterior().points_iter();
         let start = it.next().unwrap();
 
@@ -132,6 +145,8 @@ impl Street {
         context.close_path();
         //context.fill();
         context.stroke();
+
+        Ok(())
     }
 
     pub fn intersect_with_street(&self, another: &Street) -> Option<LineIntersection<f64>> {
@@ -148,10 +163,9 @@ pub struct Editor {
     width: u32,
     height: u32,
     streets: Vec<Rc<RefCell<Street>>>,
+    intersections: Vec<Rc<RefCell<Intersection>>>,
 
     temp_street: Rc<RefCell<Street>>,
-    temp_start: Rc<RefCell<Intersection>>,
-    temp_end: Rc<RefCell<Intersection>>,
 
     context: CanvasRenderingContext2d,
 
@@ -182,11 +196,10 @@ impl Editor {
             width: 1920,
             height: 800,
             streets: vec![],
+            intersections: vec![],
             temp_street: Rc::new(RefCell::new(Street::default())),
             context,
             mouse_pressed: false,
-            //temp_start: Rc::new(RefCell::new(Intersection::default())),
-            //temp_end: Rc::new(RefCell::new(Intersection::default())),
         }
     }
 
@@ -198,15 +211,21 @@ impl Editor {
         self.height
     }
 
-    pub fn render(&self) {
+    pub fn render(&self) -> Result<(), JsValue> {
         self.context
             .clear_rect(0.0, 0.0, self.width.into(), self.height.into());
 
-        self.temp_street.as_ref().borrow().render(&self.context);
+        let temp_street = self.temp_street.as_ref().borrow().render(&self.context)?;
 
         for street in &self.streets {
-            street.as_ref().borrow().render(&self.context);
+            street.as_ref().borrow().render(&self.context)?;
         }
+
+        for intersection in &self.intersections {
+            intersection.as_ref().borrow().render(&self.context)?;
+        }
+
+        Ok(())
     }
 
     fn create_street_at_intersections(&self, start: Rc<RefCell<Intersection>>, end: Rc<RefCell<Intersection>>) -> Rc<RefCell<Street>> {
@@ -233,6 +252,13 @@ impl Editor {
             let intersection = Rc::new(RefCell::new(Intersection {position, ..Default::default() }));
             let new_street = self.create_street_at_intersections(Rc::clone(&intersection), Rc::clone(street.end.as_ref().unwrap()));
 
+            {
+                let mut i = intersection.as_ref().borrow_mut();
+                i.connected_streets.push(Rc::clone(&intersected_street));
+                i.connected_streets.push(Rc::clone(&new_street));
+            }
+
+
             self.streets.push(Rc::clone(&new_street));
            
             street.end = Some(Rc::clone(&intersection));
@@ -251,44 +277,49 @@ impl Editor {
         };
 
         {
-            let mut start = self.temp_start.as_ref().borrow_mut();
-            start.set_position(position);
-        }
-
-        {
-            let mut end = self.temp_end.as_ref().borrow_mut();
-            end.set_position(position);
-        }
-
-        {
             let mut temp_street = self.temp_street.as_ref().borrow_mut();
-            temp_street.set_start(Rc::clone(&(self.temp_start)));
-            temp_street.set_end(Rc::clone(&(self.temp_end)));
+            temp_street.set_start(Rc::new(RefCell::new(Intersection { position, ..Default::default() })));
+            temp_street.set_end(Rc::new(RefCell::new(Intersection { position, ..Default::default() })));
         }
 
-
-        if let Some(_intersection) = self.try_create_intersection_at_position(position) {
-            //let intersection = intersection.as_ref().borrow_mut();
-            //intersection.connected_streets.push(Rc::new(RefCell::new(self.temp_street)));
+        if let Some(intersection) = self.try_create_intersection_at_position(position) {
+            let mut temp_street = self.temp_street.as_ref().borrow_mut();
+            temp_street.set_start(Rc::clone(&intersection));
         }
 
         self.mouse_pressed = true
     }
 
-    pub fn mouse_up(&mut self, x: u32, y: u32) {
+    pub fn mouse_up(&mut self, _x: u32, _y: u32) {
         
         if self.mouse_pressed {
+            
             let temp_street = self.temp_street.as_ref().borrow();
             let mut new_street = temp_street.clone();
-            let new_start = (*self.temp_start.as_ref().borrow()).clone();
-            new_street.start = Some(Rc::new(RefCell::new(new_start)));
+            let new_start = Rc::new(RefCell::new((*temp_street.start.as_ref().unwrap().borrow()).clone()));  
 
-            let new_end = (*self.temp_end.as_ref().borrow()).clone();
-            new_street.end = Some(Rc::new(RefCell::new(new_end)));
+               
+            new_street.start = Some(Rc::clone(&new_start));
 
-            self.streets.push(Rc::new(RefCell::new(new_street)));
 
-            //self.temp_street = Street::default();
+            let new_end = Rc::new(RefCell::new((*temp_street.end.as_ref().unwrap().borrow()).clone()));
+            new_street.end = Some(Rc::clone(&new_end));
+
+            
+
+            let new_street = Rc::new(RefCell::new(new_street));
+            self.streets.push(Rc::clone(&new_street));
+            
+
+            self.intersections.push(Rc::clone(&new_start));
+            self.intersections.push(Rc::clone(&new_end));
+
+            {
+                new_start.as_ref().borrow_mut().connected_streets.push(Rc::clone(&new_street));     
+                new_end.as_ref().borrow_mut().connected_streets.push(Rc::clone(&new_street));  
+            }
+
+
         }
 
         self.mouse_pressed = false;
@@ -302,34 +333,38 @@ impl Editor {
         };
         if self.mouse_pressed {
             {
-                let mut end = self.temp_end.as_ref().borrow_mut();
+                let temp_street = self.temp_street.as_ref().borrow_mut();
+                let mut end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();
                 end.set_position(position);
-                //
             }
-
             {
                 let mut temp_street = self.temp_street.as_ref().borrow_mut();
-                
                 temp_street.update_geometry();
-            }
+            }    
+            
+            let mut intersection: Option<Coordinate<f64>> = None;
             {
-                let mut end = self.temp_end.as_ref().borrow_mut();
                 
-                match self.intersect_with_streets() {
-                    Some(intersection) => end.set_position(intersection),
+                let mut temp_street = self.temp_street.as_ref().borrow_mut();                   
+                match self.intersection_with_street(&temp_street) {
+                    Some(position) => {
+                        
+                        let mut end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();  
+                        end.set_position(position);
+
+                        intersection = Some(position.clone());
+                    },
                     None => {}
                 }
-            }
-            {
-                let mut temp_street = self.temp_street.as_ref().borrow_mut();
-                
                 temp_street.update_geometry();
+            }   
+            
+            if let Some(intersection) = intersection {
+                if let Some(_intersection) = self.try_create_intersection_at_position(intersection) {
+                    //let intersection = intersection.as_ref().borrow_mut();
+                    //intersection.connected_streets.push(Rc::new(RefCell::new(self.temp_street)));
+                }                
             }
-
-            //if let Some(_intersection) = self.try_create_intersection_at_position(position) {
-                //let intersection = intersection.as_ref().borrow_mut();
-                //intersection.connected_streets.push(Rc::new(RefCell::new(self.temp_street)));
-            //}
         }
         
     }
@@ -344,12 +379,11 @@ impl Editor {
         None
     }
 
-    fn intersect_with_streets(&self) -> Option<Coordinate<f64>> {
+    fn intersection_with_street(&self, street: &Street) -> Option<Coordinate<f64>> {
         let mut intersections = vec![];
 
-        let temp_street = self.temp_street.as_ref().borrow();
-        for street in &self.streets {
-            if let Some(line_intersection) = temp_street.intersect_with_street(&street.as_ref().borrow()) {
+        for another_street in &self.streets {
+            if let Some(line_intersection) = street.intersect_with_street(&another_street.as_ref().borrow()) {
                 match line_intersection {
                     LineIntersection::SinglePoint {
                         intersection,
@@ -365,9 +399,8 @@ impl Editor {
         }
 
         intersections.sort_by(|a, b| {
-            let temp_street = self.temp_street.as_ref().borrow();
-            let d1 = a.euclidean_distance(&temp_street.start());
-            let d2 = b.euclidean_distance(&temp_street.start());
+            let d1 = a.euclidean_distance(&street.start());
+            let d2 = b.euclidean_distance(&street.start());
 
             if d1 < d2 {
                 return Ordering::Less;

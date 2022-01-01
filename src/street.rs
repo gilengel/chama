@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{rc::Rc, cell::RefCell, f64::consts::PI};
 
 use geo::{Line, Polygon, LineString, Point, Coordinate, prelude::{Contains, Centroid, EuclideanDistance}, line_intersection::LineIntersection};
 use wasm_bindgen::JsValue;
@@ -11,24 +11,28 @@ use crate::intersection::Intersection;
 #[derive(Clone)]
 pub struct Street {
     pub id: u32,
-    line: Line<f64>,
+    pub line: Line<f64>,
     polygon: Polygon<f64>,
 
     width: f64,
 
     pub start: Option<Rc<RefCell<Intersection>>>,
     pub end: Option<Rc<RefCell<Intersection>>>,
+
+    norm: Point<f64>,
 }
 
 impl Default for Street {
     fn default() -> Self {
         Street {
-            id: 0,
+            id: u32::MAX,
             line: Line::new(Point::new(0.0, 0.0), Point::new(0.0, 0.0)),
             width: 20.0,
             polygon: Polygon::new(LineString::from(vec![Coordinate { x: 0., y: 0. }]), vec![]),
             start: None,
             end: None,
+
+            norm: Point::new(0.0, 0.0)
         }
     }
 }
@@ -42,6 +46,10 @@ impl Street {
         self.start = Some(start);
 
         self.line.start = self.start();
+    }
+
+    pub fn norm(&self) -> Point<f64> {
+        self.norm
     }
 
     pub fn end(&self) -> Coordinate<f64> {
@@ -65,15 +73,15 @@ impl Street {
 
         let length = start.euclidean_distance(&end);
         let vec = self.end() - self.start();
-        let norm = Point::new(vec.x / length, vec.y / length);
-        let perp = Point::new(-norm.y(), norm.x());
+        self.norm = Point::new(vec.x / length, vec.y / length);
+        let perp = Point::new(-self.norm.y(), self.norm.x());
         let offset = perp * half_width;
 
         self.polygon = Polygon::new(
             LineString::from(vec![
                 start - offset,
-                start + norm * length - offset,
-                start + norm * length + offset,
+                start + self.norm * length - offset,
+                start + self.norm * length + offset,
                 start + offset,
             ]),
             vec![],
@@ -99,9 +107,23 @@ impl Street {
             &format!("{}", self.id).to_string(),
             center.x(),
             center.y(),
-        )?;    
+        )?;  
 
+        /*
+        let pos = self.line.start_point() + self.norm * self.line.start_point().euclidean_distance(&self.line.end_point()) * 0.8;
+        context.begin_path();
+        context.arc(pos.x(), pos.y(), 20.0, 0.0, 2.0 * PI)?;
+        context.set_fill_style(&"#FF8CFF".into());
+        context.fill();  
+        */      
 
+        /*
+        context.begin_path();
+        context.move_to(self.line.start.x, self.line.start.y);
+        context.line_to(self.line.end.x, self.line.end.y);
+        context.stroke();
+        context.close_path();
+        */
         Ok(())
     }
 

@@ -93,11 +93,11 @@ impl Editor {
     }
 
     pub fn intersections_length(&self) -> usize {
-        self.map.intersections.len()
+        self.map.intersections_length()
     }
 
     pub fn streets_length(&self) -> usize {
-        self.map.streets.len()
+        self.map.streets_length()
     }
 
     pub fn set_render_intersections(&mut self, render: bool) {
@@ -142,7 +142,7 @@ impl Editor {
             let mut new_street = Street::default();
             new_street.set_start(Rc::clone(&intersection));
             new_street.set_end(Rc::clone(&old_end));
-            new_street.id = self.map.streets.len() as u32;
+            new_street.id = self.map.streets_length() as u32;
 
             let new_street = Rc::new(RefCell::new(new_street));
             intersection
@@ -159,7 +159,7 @@ impl Editor {
                     .add_connected_street(Rc::clone(&self.temp_street));
             }
 
-            self.map.streets.push(Rc::clone(&new_street));
+            self.map.add_street(Rc::clone(&new_street));
             self.map.intersections.push(Rc::clone(&intersection));
 
             return Some(intersection);
@@ -254,7 +254,7 @@ impl Editor {
             let temp_street = self.temp_street.as_ref().borrow();
 
             let mut new_street = temp_street.clone();
-            new_street.id = self.map.streets.len() as u32;
+            new_street.id = self.map.streets_length() as u32;
 
             let new_start = Rc::new(RefCell::new((*option_borrow(&temp_street.start)).clone()));
             if new_start.borrow().get_connected_streets().is_empty() {
@@ -277,7 +277,7 @@ impl Editor {
                 new_end.add_connected_street(Rc::clone(&new_street));
             }
 
-            self.map.streets.push(Rc::clone(&new_street));
+            self.map.add_street(Rc::clone(&new_street));
         }
 
         self.mouse_pressed = false;
@@ -295,16 +295,17 @@ impl Editor {
 
             let diff = street_1.norm() - street_2.norm();
             if diff.x() < 0.001 && diff.y() < 0.001 {
+                if let Some(a) = self.map.remove_street(Rc::clone(&connected_streets[1]))
+                /*
                 if let Some(index) = self
                     .map
                     .streets
                     .iter()
                     .position(|i| Rc::ptr_eq(&i, &connected_streets[1]))
+                    */
                 {
                     let end = street_2.end.as_ref().unwrap();
                     street_1.set_end(Rc::clone(&end));
-
-                    self.map.streets.remove(index);
 
                     // remove intersection
                     if let Some(index) = self

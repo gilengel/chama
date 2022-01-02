@@ -1,21 +1,21 @@
+use geo::line_intersection::LineIntersection;
+use geo::prelude::EuclideanDistance;
+use geo::Coordinate;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::rc::Rc;
-use geo::Coordinate;
-use geo::line_intersection::LineIntersection;
-use geo::prelude::EuclideanDistance;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::Renderer;
 use crate::intersection::Intersection;
 use crate::street::Street;
+use crate::Renderer;
 
 pub struct Map {
     width: u32,
     height: u32,
 
-    pub streets: Vec<Rc<RefCell<Street>>>,
+    streets: Vec<Rc<RefCell<Street>>>,
     pub intersections: Vec<Rc<RefCell<Intersection>>>,
 }
 
@@ -39,6 +39,24 @@ impl Map {
     pub fn streets_length(&self) -> usize {
         self.streets.len()
     }
+
+    pub fn add_street(&mut self, street: Rc<RefCell<Street>>) {
+        self.streets.push(street);
+    }
+
+    pub fn remove_street(&mut self, street: Rc<RefCell<Street>>) -> Option<bool> {
+        
+        match self
+        .streets
+        .iter()
+        .position(|i| Rc::ptr_eq(&i, &street)) {
+            Some(index) => {
+                self.streets.remove(index);
+                Some(true)
+            },
+            None => None,
+        }
+    }
 }
 
 impl Default for Map {
@@ -51,6 +69,8 @@ impl Default for Map {
         }
     }
 }
+
+
 
 impl Renderer for Map {
     fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
@@ -73,6 +93,7 @@ impl Renderer for Map {
         Ok(())
     }
 }
+
 
 impl Map {
     pub fn get_intersection_at_position(
@@ -97,8 +118,8 @@ impl Map {
         }
 
         None
-    } 
-    
+    }
+
     pub fn intersection_with_street(&self, street: &Street) -> Option<Coordinate<f64>> {
         let mut intersections = vec![];
 
@@ -142,7 +163,10 @@ impl Map {
         Some(intersections.first().unwrap().clone())
     }
 
-    pub fn get_street_at_position(&self, position: &Coordinate<f64>) -> Option<Rc<RefCell<Street>>> {
+    pub fn get_street_at_position(
+        &self,
+        position: &Coordinate<f64>,
+    ) -> Option<Rc<RefCell<Street>>> {
         for street in &self.streets {
             if street.as_ref().borrow().is_point_on_street(position) {
                 return Some(street.clone());
@@ -150,6 +174,5 @@ impl Map {
         }
 
         None
-    }    
+    }
 }
-

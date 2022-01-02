@@ -48,6 +48,10 @@ impl Street {
         self.line.start = self.start();
     }
 
+    pub fn set_start_position(&mut self, pos: &Coordinate<f64>) {
+        self.start.as_ref().unwrap().borrow_mut().set_position(pos.clone());
+    }
+
     pub fn norm(&self) -> Point<f64> {
         self.norm
     }
@@ -61,6 +65,10 @@ impl Street {
         self.line.end = self.end();
 
         self.update_geometry();
+    }
+
+    pub fn set_end_position(&mut self, pos: &Coordinate<f64>) {
+        self.end.as_ref().unwrap().borrow_mut().set_position(pos.clone());
     }
 
     pub fn update_geometry(&mut self) {

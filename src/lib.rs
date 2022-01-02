@@ -138,7 +138,7 @@ impl Editor {
             }
 
             let mut intersection = Intersection::default();
-            intersection.position = position;
+            intersection.set_position(position);
             intersection.add_connected_street(Rc::clone(&intersected_street));
 
             let intersection = Rc::new(RefCell::new(intersection));
@@ -173,7 +173,12 @@ impl Editor {
         None
     }
 
-    pub fn mouse_down(&mut self, x: u32, y: u32) {
+    pub fn mouse_down(&mut self, x: u32, y: u32, button: u32) {
+        // We only check for left click
+        if button != 0 {
+            return;
+        }
+
         self.mouse_pressed = true;
 
         let position = Coordinate {
@@ -183,7 +188,7 @@ impl Editor {
 
         match self.get_intersection_at_position(&position, 100.0, &vec![]) {
             Some(intersection) => {
-                self.temp_end.as_ref().borrow_mut().position = position;
+                self.temp_end.as_ref().borrow_mut().set_position(position);
 
                 let mut temp_street = self.temp_street.as_ref().borrow_mut();
                 temp_street.set_start(Rc::clone(&intersection));
@@ -204,7 +209,7 @@ impl Editor {
         }
 
         {
-            self.temp_end.as_ref().borrow_mut().position = position;
+            self.temp_end.as_ref().borrow_mut().set_position(position);
             let mut temp_street = self.temp_street.as_ref().borrow_mut();
             temp_street.set_end(Rc::clone(&self.temp_end));
         }
@@ -225,7 +230,22 @@ impl Editor {
         }
     }
 
-    pub fn mouse_up(&mut self, _x: u32, _y: u32) {
+    pub fn mouse_up(&mut self, x: u32, y: u32, button: u32) {
+        let position = Coordinate {
+            x: x.into(),
+            y: y.into(),
+        };
+        // Cancel creation of street with right mouse button click
+        if button == 2 {
+            self.mouse_pressed = false;
+
+            let mut temp_street = self.temp_street.as_ref().borrow_mut();
+            temp_street.set_start_position(&position);
+            temp_street.set_end_position(&position);
+            temp_street.update_geometry();
+            return;
+        }
+
         if self.mouse_pressed {
             {
                 let temp_street = self.temp_street.as_ref().borrow();
@@ -373,14 +393,6 @@ impl Editor {
 
     }
 
-    /*
-    fn delete_street(&mut self, street: Rc<RefCell<Street>>) {
-        if let Some(index) = self.streets.iter().position(|i| Rc::ptr_eq(&i, &street)) {
-            self.streets.remove(index);
-        }
-    }
-    */
-
     fn get_intersection_at_position(
         &self,
         position: &Coordinate<f64>,
@@ -396,7 +408,7 @@ impl Editor {
             }
 
             let a = intersection.as_ref().borrow();
-            let intersection_pos = a.position;
+            let intersection_pos = a.get_position();
             if intersection_pos.euclidean_distance(position) < offset {
                 return Some(Rc::clone(&intersection));
             }
@@ -404,6 +416,7 @@ impl Editor {
 
         None
     }
+
     fn get_street_at_position(&self, position: &Coordinate<f64>) -> Option<Rc<RefCell<Street>>> {
         for street in &self.streets {
             if street.as_ref().borrow().is_point_on_street(position) {

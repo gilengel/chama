@@ -11,7 +11,7 @@ use crate::street::Street;
 #[derive(Clone)]
 pub struct Intersection {
     pub id: Uuid,
-    pub position: Coordinate<f64>,
+    position: Coordinate<f64>,
 
     connected_streets: Vec<Rc<RefCell<Street>>>,
 }

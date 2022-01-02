@@ -7,11 +7,6 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::street::Street;
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
 
 #[derive(Clone)]
 pub struct Intersection {
@@ -47,8 +42,10 @@ impl Intersection {
         context.set_fill_style(&"#FF8C00".into());
         context.fill();
 
+        /*
         context.set_fill_style(&"#000000".into());
 
+        
         context.fill_text(
             &format!("c={}", self.connected_streets.len()).to_string(),
             self.position.x,
@@ -62,6 +59,7 @@ impl Intersection {
 
             y += 16.0;
         }
+        */
 
         Ok(())
     }

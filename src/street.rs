@@ -1,6 +1,6 @@
-use std::{rc::Rc, cell::RefCell, f64::consts::PI};
+use std::{rc::Rc, cell::RefCell};
 
-use geo::{Line, Polygon, LineString, Point, Coordinate, prelude::{Contains, Centroid, EuclideanDistance}, line_intersection::LineIntersection};
+use geo::{Line, Polygon, LineString, Point, Coordinate, prelude::{Contains, EuclideanDistance}, line_intersection::LineIntersection};
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
@@ -91,7 +91,7 @@ impl Street {
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         let mut it = self.polygon.exterior().points_iter();
         let start = it.next().unwrap();
-
+        
         context.begin_path();
         context.move_to(start.x(), start.y());
         for point in it {
@@ -99,31 +99,8 @@ impl Street {
         }  
 
         context.close_path();
-        //context.fill();
-        context.stroke();
-
-        let center = self.polygon.centroid().unwrap();
-        context.fill_text(
-            &format!("{}", self.id).to_string(),
-            center.x(),
-            center.y(),
-        )?;  
-
-        /*
-        let pos = self.line.start_point() + self.norm * self.line.start_point().euclidean_distance(&self.line.end_point()) * 0.8;
-        context.begin_path();
-        context.arc(pos.x(), pos.y(), 20.0, 0.0, 2.0 * PI)?;
-        context.set_fill_style(&"#FF8CFF".into());
-        context.fill();  
-        */      
-
-        /*
-        context.begin_path();
-        context.move_to(self.line.start.x, self.line.start.y);
-        context.line_to(self.line.end.x, self.line.end.y);
-        context.stroke();
-        context.close_path();
-        */
+        context.set_fill_style(&"#2A2A2B".into());
+        context.fill();
         Ok(())
     }
 

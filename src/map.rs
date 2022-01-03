@@ -16,7 +16,7 @@ pub struct Map {
     height: u32,
 
     streets: Vec<Rc<RefCell<Street>>>,
-    pub intersections: Vec<Rc<RefCell<Intersection>>>,
+    intersections: Vec<Rc<RefCell<Intersection>>>,
 }
 
 impl Map {
@@ -45,16 +45,27 @@ impl Map {
     }
 
     pub fn remove_street(&mut self, street: Rc<RefCell<Street>>) -> Option<bool> {
-        
-        match self
-        .streets
-        .iter()
-        .position(|i| Rc::ptr_eq(&i, &street)) {
+        match self.streets.iter().position(|i| Rc::ptr_eq(&i, &street)) {
             Some(index) => {
                 self.streets.remove(index);
                 Some(true)
-            },
+            }
             None => None,
+        }
+    }
+
+    pub fn add_intersection(&mut self, intersection: Rc<RefCell<Intersection>>) {
+        self.intersections.push(intersection);
+    }
+
+    pub fn remove_intersection(&mut self, intersection: Rc<RefCell<Intersection>>) {
+        // remove intersection
+        if let Some(index) = self
+            .intersections
+            .iter()
+            .position(|i| Rc::ptr_eq(&i, &intersection))
+        {
+            self.intersections.remove(index);
         }
     }
 }
@@ -69,8 +80,6 @@ impl Default for Map {
         }
     }
 }
-
-
 
 impl Renderer for Map {
     fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
@@ -93,7 +102,6 @@ impl Renderer for Map {
         Ok(())
     }
 }
-
 
 impl Map {
     pub fn get_intersection_at_position(

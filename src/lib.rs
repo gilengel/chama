@@ -160,7 +160,7 @@ impl Editor {
             }
 
             self.map.add_street(Rc::clone(&new_street));
-            self.map.intersections.push(Rc::clone(&intersection));
+            self.map.add_intersection(Rc::clone(&intersection));
 
             return Some(intersection);
         }
@@ -258,14 +258,14 @@ impl Editor {
 
             let new_start = Rc::new(RefCell::new((*option_borrow(&temp_street.start)).clone()));
             if new_start.borrow().get_connected_streets().is_empty() {
-                self.map.intersections.push(Rc::clone(&new_start));
+                self.map.add_intersection(Rc::clone(&new_start));
             }
             new_street.start = Some(Rc::clone(&new_start));
 
             let new_end = Rc::new(RefCell::new((*option_borrow(&temp_street.end)).clone()));
             new_street.end = Some(Rc::clone(&new_end));
             if new_end.borrow().get_connected_streets().is_empty() {
-                self.map.intersections.push(Rc::clone(&new_end));
+                self.map.add_intersection(Rc::clone(&new_end));
             }
 
             let new_street = Rc::new(RefCell::new(new_street));
@@ -295,27 +295,12 @@ impl Editor {
 
             let diff = street_1.norm() - street_2.norm();
             if diff.x() < 0.001 && diff.y() < 0.001 {
-                if let Some(a) = self.map.remove_street(Rc::clone(&connected_streets[1]))
-                /*
-                if let Some(index) = self
-                    .map
-                    .streets
-                    .iter()
-                    .position(|i| Rc::ptr_eq(&i, &connected_streets[1]))
-                    */
+                if let Some(_) = self.map.remove_street(Rc::clone(&connected_streets[1]))
                 {
                     let end = street_2.end.as_ref().unwrap();
                     street_1.set_end(Rc::clone(&end));
 
-                    // remove intersection
-                    if let Some(index) = self
-                        .map
-                        .intersections
-                        .iter()
-                        .position(|i| Rc::ptr_eq(&i, &temp_street.end.as_ref().unwrap()))
-                    {
-                        self.map.intersections.remove(index);
-                    }
+                    self.map.remove_intersection(Rc::clone(&temp_street.end.as_ref().unwrap()));
                 }
             }
         }

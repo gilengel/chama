@@ -41,9 +41,30 @@ impl Map {
     }
 
     pub fn remove_street(&mut self, street: Rc<RefCell<Street>>) -> Option<bool> {
-        match self.streets.iter().position(|i| Rc::ptr_eq(&i, &street)) {
+        match self
+            .streets
+            .iter_mut()
+            .position(|i| Rc::ptr_eq(&i, &street))
+        {
             Some(index) => {
+                let street_borrow = street.borrow();
+                let start = street_borrow.start.as_ref().unwrap();
+                let mut start_borrow = start.borrow_mut();
+                start_borrow.remove_connected_street(Rc::clone(&street));
+                if start_borrow.get_connected_streets().is_empty() {
+                    self.remove_intersection(Rc::clone(&start));
+                }
+
+                let street_borrow = street.borrow();
+                let end = street_borrow.end.as_ref().unwrap();
+                let mut end_borrow = end.borrow_mut();
+                end_borrow.remove_connected_street(Rc::clone(&street));
+                if end_borrow.get_connected_streets().is_empty() {
+                    self.remove_intersection(Rc::clone(&end));
+                }
+
                 self.streets.remove(index);
+
                 Some(true)
             }
             None => None,
@@ -55,7 +76,6 @@ impl Map {
     }
 
     pub fn remove_intersection(&mut self, intersection: Rc<RefCell<Intersection>>) {
-        // remove intersection
         if let Some(index) = self
             .intersections
             .iter()

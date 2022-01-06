@@ -312,9 +312,6 @@ impl<'a> State for CreateStreetState {
         
         self.temp_street.as_ref().borrow().render(&context)?;
 
-        log!("Die 10 Gebote");
-        
-
         map.render(&context)?;
         Ok(())
     }

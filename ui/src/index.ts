@@ -5,6 +5,7 @@ const wasm = import("../pkg/index.js");
 import { Editor } from "../pkg/index.js";
 
 const editor = Editor.new("map_canvas");
+editor.switch_to_mode(1);
 
 const data = { width: 800, height: 800, realPart: -0.8, imaginaryPart: 0.156 };
 
@@ -21,10 +22,8 @@ const renderLoop = () => {
 requestAnimationFrame(renderLoop);
 
 const canvas = document.getElementById("map_canvas");
-//canvas.width = width;
-//canvas.height = height;
 
-function getMousePos(evt : MouseEvent) {
+function getMousePos(evt: MouseEvent) {
   var rect = canvas.getBoundingClientRect();
   return {
     x: evt.clientX - rect.left,
@@ -54,11 +53,10 @@ canvas.addEventListener("mouseup", (e) => {
   editor.mouse_up(pos.x, pos.y, e.button);
 });
 
-const gotoCreateStreets = document.getElementById("gotoCreateStreets");
-gotoCreateStreets.addEventListener("click", (e) => {
-  editor.switch_to_mode(1);
-});
-const gotoDeleteStreets = document.getElementById("gotoDeleteStreets");
-gotoDeleteStreets.addEventListener("click", (e) => {
-  editor.switch_to_mode(2);
-});
+const actionButtons = document.getElementsByName("primaryAction");
+for (var i = 0; i < actionButtons.length; i++) {
+  actionButtons[i].addEventListener("change", function () {
+    const button = this as HTMLInputElement;
+    editor.switch_to_mode(parseInt(button.value));
+  });
+}

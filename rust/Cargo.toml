@@ -1,18 +1,5 @@
-#[package]
-#name = "rust_procmap"
-#version = "0.1.0"
-#edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-#[dependencies]
-#bevy = { version = "0.5.0", features = ["dynamic"] }
-#bevy_prototype_lyon = "0.3.1"
-
-
 [package]
-resolver = "2"
-name = "rust_procmap"
+name = "rust"
 version = "0.1.0"
 edition = "2021"
 
@@ -22,6 +9,8 @@ crate-type = ["cdylib"]
 [dependencies]
 js-sys = "0.3.55"
 wasm-bindgen = "0.2.78"
+console_error_panic_hook = "0.1.7"
+#wee_alloc = { version = "0.4.5", optional = true }
 geo-types = "0.7.2"
 geo = "0.18.0"
 uuid = { version = "0.8.2", features = ["v4", "wasm-bindgen"] }
@@ -41,3 +30,6 @@ features = [
   'Window',
   'console'
 ]
+
+[profile.release]
+lto = true

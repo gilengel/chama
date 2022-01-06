@@ -10,7 +10,7 @@ use crate::street::Street;
 
 #[derive(Clone)]
 pub struct Intersection {
-    pub id: Uuid,
+    //pub id: Uuid,
     position: Coordinate<f64>,
 
     connected_streets: Vec<Rc<RefCell<Street>>>,
@@ -22,7 +22,7 @@ impl Intersection {
         connected_streets: Vec<Rc<RefCell<Street>>>,
     ) -> Intersection {
         Intersection {
-            id: Uuid::new_v4(),
+            //id: Uuid::new_v4(),
             position,
             connected_streets,
         }
@@ -92,7 +92,7 @@ impl Intersection {
 impl Default for Intersection {
     fn default() -> Self {
         Intersection {
-            id: Uuid::new_v4(),
+            //id: Uuid::new_v4(),
             position: Coordinate { x: 0., y: 0. },
             connected_streets: vec![],
         }

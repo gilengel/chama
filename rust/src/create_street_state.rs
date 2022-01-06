@@ -1,10 +1,19 @@
 use std::{cell::{RefCell, RefMut, Ref}, rc::Rc};
 
+extern crate alloc;
+
+
 use geo::{Coordinate};
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{state::{State}, intersection::Intersection, street::Street, Map, Renderer};
+
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
 
 pub struct CreateStreetState {
     mouse_pressed: bool,
@@ -22,16 +31,22 @@ fn option_borrow<T>(a: &Option<Rc<RefCell<T>>>) -> Ref<T> {
     a.as_ref().unwrap().as_ref().borrow()
 }
 
-impl CreateStreetState {
-    pub fn new() -> Self {
+impl Default for CreateStreetState {
+    fn default() -> CreateStreetState {
         CreateStreetState { 
             mouse_pressed: false,
             temp_street: Rc::new(RefCell::new(Street::default())),
             temp_end: Rc::new(RefCell::new(Intersection::default())),
         }
     }
-  
+}
 
+impl CreateStreetState {
+    pub fn new() -> Self {
+        CreateStreetState::default()
+    }
+   
+    
     fn add_temp_street_to_new_end(&mut self, _: &mut Map) {
         let temp_street = self.temp_street.as_ref().borrow();
         let mut end = option_borrow_mut(&temp_street.end);
@@ -40,8 +55,7 @@ impl CreateStreetState {
             end.add_connected_street(Rc::clone(&self.temp_street));
         }
     }
-
-
+    
     fn remove_temp_street_from_old_end(&mut self, map: &mut Map) {
         let temp_street = self.temp_street.as_ref().borrow();
         let mut end = option_borrow_mut(&temp_street.end);
@@ -112,7 +126,7 @@ impl CreateStreetState {
         }
 
         None
-    }    
+    }   
 }
 
 impl<'a> State for CreateStreetState {
@@ -297,6 +311,8 @@ impl<'a> State for CreateStreetState {
 
         
         self.temp_street.as_ref().borrow().render(&context)?;
+
+        log!("Die 10 Gebote");
         
 
         map.render(&context)?;
@@ -306,24 +322,14 @@ impl<'a> State for CreateStreetState {
     
 
     fn update(&mut self) {
-        todo!()
+
     }
 
     fn enter(&self) {
-        todo!()
+
     }
 
     fn exit(&self) {
-        todo!()
+        
     }
 }
-
-
-/*
-impl From<StateMachine<IdleState>> for StateMachine<CreateStreetState> {
-    fn from(val: StateMachine<IdleState>) -> StateMachine<CreateStreetState> {
-        StateMachine {
-            state: CreateStreetState::new(*val.state.map())
-    }
-}
-*/

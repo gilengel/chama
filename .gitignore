@@ -34,7 +34,7 @@ rust/Cargo.lock
 rust/debug/
 target/
 tramp
-
+/ui/node_modules/
 
 # Added by cargo
 

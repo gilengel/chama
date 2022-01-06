@@ -15,6 +15,15 @@ impl DeleteStreetState {
         }
     }
 }
+
+impl Default for DeleteStreetState {
+    fn default() -> DeleteStreetState {
+        DeleteStreetState { 
+            hovered_street: None
+        }
+    }
+}
+
 impl State for DeleteStreetState {
     fn mouse_down(&mut self, _: u32, _: u32, _: u32, _: &mut Map) {
 

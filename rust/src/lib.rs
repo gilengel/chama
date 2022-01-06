@@ -6,6 +6,7 @@ use state::State;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
+
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlCanvasElement;
 
@@ -21,14 +22,43 @@ mod delete_street_state;
 use crate::create_street_state::CreateStreetState;
 use crate::delete_street_state::DeleteStreetState;
 
+extern crate alloc;
 
+
+//#[cfg(feature = "wee_alloc")]
+//#[global_allocator]
+//static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+#[wasm_bindgen(start)]
+pub fn main_js() -> Result<(), JsValue> {
+    console_error_panic_hook::set_once();
+
+    Ok(())
+}
+
+
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
 
 pub trait Renderer {
     fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue>;
 }
 
+/*
 
-
+#[wasm_bindgen]
+extern {
+    fn alert(s: &str);
+}
+#[wasm_bindgen]
+pub fn greet() {
+    alert("Hello, wasm-game-of-life!");
+}
+*/
 
 
 
@@ -42,9 +72,9 @@ pub struct Editor {
     map: Map
 }
 
-fn get_canvas_and_context() -> Result<(HtmlCanvasElement, CanvasRenderingContext2d), JsValue> {
+fn get_canvas_and_context(id: &String) -> Result<(HtmlCanvasElement, CanvasRenderingContext2d), JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
-    let canvas = document.get_element_by_id("map_canvas").unwrap();
+    let canvas = document.get_element_by_id(id).unwrap();
     let canvas: web_sys::HtmlCanvasElement = canvas
         .dyn_into::<web_sys::HtmlCanvasElement>()
         .map_err(|_| ())
@@ -60,8 +90,9 @@ fn get_canvas_and_context() -> Result<(HtmlCanvasElement, CanvasRenderingContext
 
 #[wasm_bindgen]
 impl Editor {
-    pub fn new() -> Editor {
-        let (_, context) = get_canvas_and_context().unwrap();
+    
+    pub fn new(id: String) -> Editor {
+        let (_, context) = get_canvas_and_context(&id).unwrap();
         Editor {
             context,
             render_intersections: true,
@@ -71,15 +102,19 @@ impl Editor {
         }
     }
 
+    
+    
     pub fn switch_to_mode(&mut self, mode: u32) {
-        assert!(mode < 3);
+        //self.state = Box::new(CreateStreetState::new());
+        //assert!(mode < 3);
         
         match mode {
-            0 => todo!(),
+            0 => log!("idle command, nothing to do"),
             1 => self.state = Box::new(CreateStreetState::new()),
             2 => self.state = Box::new(DeleteStreetState::new()),
-            _ => todo!()
-        }        
+            _ => log!("unknown command, nothing to do")
+        }   
+            
     }    
 
     pub fn width(&self) -> u32 {
@@ -89,6 +124,7 @@ impl Editor {
     pub fn height(&self) -> u32 {
         self.map.height()
     }
+    
 
     pub fn intersections_length(&self) -> usize {
         self.map.intersections_length()
@@ -121,4 +157,5 @@ impl Editor {
     pub fn mouse_move(&mut self, x: u32, y: u32) {
         self.state.mouse_move(x, y, &mut self.map);
     }
+    
 }

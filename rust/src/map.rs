@@ -28,6 +28,10 @@ impl Map {
         self.height
     }
 
+    pub fn intersections(&self) -> &Vec<Rc<RefCell<Intersection>>> {
+        &self.intersections
+    }
+
     pub fn intersections_length(&self) -> usize {
         self.intersections.len()
     }

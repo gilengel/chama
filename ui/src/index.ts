@@ -5,7 +5,7 @@ const wasm = import("../pkg/index.js");
 import { Editor } from "../pkg/index.js";
 
 const editor = Editor.new("map_canvas");
-editor.switch_to_mode(1);
+//editor.switch_to_mode(1);
 
 const data = { width: 800, height: 800, realPart: -0.8, imaginaryPart: 0.156 };
 

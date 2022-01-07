@@ -198,9 +198,9 @@ impl Street {
         }
         match &self.right_next {
             Some(l) => {
-                owned_string.push_str(format!("{},", l.as_ref().borrow().id()).as_str())
+                owned_string.push_str(format!("{}", l.as_ref().borrow().id()).as_str())
             },
-            None => owned_string.push_str("#,"),
+            None => owned_string.push_str("#"),
         }
 
         if let Some(position) = self.polygon.exterior().centroid() {

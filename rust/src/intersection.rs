@@ -104,116 +104,28 @@ impl Intersection {
 
     pub fn add_incoming_street(&mut self, street: Rc<RefCell<Street>>) {
         self.connected_streets.push((Direction::In, street));
-
-        log!("incoming connected now {}", self.connected_streets.len());
-        //self.reorder();
     }
 
     pub fn add_outgoing_street(&mut self, street: Rc<RefCell<Street>>) {
         self.connected_streets.push((Direction::Out, street));
-
-        log!("outgoing connected now {}", self.connected_streets.len());
-
-        //self.reorder();
     }
 
     pub fn get_connected_streets(&self) -> &Vec<(Direction, Rc<RefCell<Street>>)> {
         &self.connected_streets
     }
 
-    /*
-    pub fn get_previous_for_street(
-        &self,
-        street: Rc<RefCell<Street>>,
-    ) -> (Option<Rc<RefCell<Street>>>, Option<Rc<RefCell<Street>>>) {
-        self.get_adjacent_streets(Adjacency::Previous, &street)
-    }
-
-    pub fn get_next_for_street(
-        &self,
-        street: Rc<RefCell<Street>>,
-    ) -> (Option<Rc<RefCell<Street>>>, Option<Rc<RefCell<Street>>>) {
-        self.get_adjacent_streets(Adjacency::Next, &street)
-    }
-    */
-
-    /*
-    fn get_adjacent_streets(
-        &self,
-        adjacency: Adjacency,
-        street: &Rc<RefCell<Street>>,
-    ) -> (Option<Rc<RefCell<Street>>>, Option<Rc<RefCell<Street>>>) {
-        if let Some(index) = self
-            .connected_streets
-            .iter()
-            .position(|x| Rc::ptr_eq(&x.1, street))
-        {
-            let (direction, _) = self.connected_streets[index];//.borrow();
-            let (_, previous_street) = if index > 0 {
-                &self.connected_streets[index - 1]
-            } else {
-                self.connected_streets.last().unwrap()
-            };
-
-            let (_, next_street) = if index > 0 {
-                &self.connected_streets[index + 1]
-            } else {
-                self.connected_streets.first().unwrap()
-            };
-
-            match direction {
-                Direction::In => {
-                    // If the streets not start in this node we cannot fetch previous streets from
-                    // this node. Since it is known in which node the street starts we consider
-                    // and assure that this an error if you call the function on the wrong node
-                    assert!(adjacency == Adjacency::Previous);
-
-                    let mut result = (None, None);
-
-                    if Rc::ptr_eq(street, previous_street) {
-                        result.1 = Some(Rc::clone(previous_street));
-                    }
-
-                    if Rc::ptr_eq(street, next_street) {
-                        result.0 = Some(Rc::clone(next_street));
-                    }
-
-                    return result;
-                }
-
-                Direction::Out => {
-                    // If the streets not start in this node we cannot fetch previous streets from
-                    // this node. Since it is known in which node the street starts we consider
-                    // and assure that this an error if you call the function on the wrong node
-                    assert!(adjacency == Adjacency::Next);
-
-                    let mut result = (None, None);
-                    if Rc::ptr_eq(street, next_street) {
-                        result.1 = Some(Rc::clone(next_street));
-                    }
-
-                    if Rc::ptr_eq(street, previous_street) {
-                        result.0 = Some(Rc::clone(previous_street));
-                    }
-
-                    return result;
-                }
-            }
-        }
-
-        (None, None)
-    }
-    */
-
     pub fn reorder(&mut self) {
         fn angle(vec: &Point<f64>) -> f64 {
-            let angle = vec.y().atan2(vec.x());
+            let angle = vec.y().atan2(vec.x()) + (PI / 2.0);
 
+            angle
+            /*
             if angle > 0.0 {
                 return angle;
             }
 
             2.0 * PI + angle
+            */
         }
 
         fn norm_based_on_direction(direction: Direction, street: &Street) -> Point<f64> {
@@ -234,7 +146,7 @@ impl Intersection {
             let street_2 = (*b.1).borrow();
 
             let norm_1 = norm_based_on_direction(a.0, &street_1);
-            let norm_2 = norm_based_on_direction(a.0, &street_2);
+            let norm_2 = norm_based_on_direction(b.0, &street_2);
 
             let angle_1 = angle(&norm_1);
             let angle_2 = angle(&norm_2);
@@ -251,8 +163,12 @@ impl Intersection {
 
         self.connected_streets.sort_by(sort_ascending_by_angle);
 
+        log!("============");
+        
         for i in 0..self.connected_streets.len() {
             let (direction, street) = self.connected_streets[i].borrow();
+
+            log!("{} -> {}", i, street.as_ref().borrow().id());
             
 
             let (_, previous_street) = if i > 0 {
@@ -274,12 +190,12 @@ impl Intersection {
                     street_borrowed.set_next(Side::Left, None);
 
                     
-                    if Rc::ptr_eq(street, previous_street) {
+                    if !Rc::ptr_eq(street, previous_street) {
                         street_borrowed.set_next(Side::Right, Some(Rc::clone(previous_street)));
                     }                    
 
-                    if Rc::ptr_eq(street, next_street) {
-                        street_borrowed.set_next(Side::Left, Some(Rc::clone(previous_street)));
+                    if !Rc::ptr_eq(street, next_street) {
+                        street_borrowed.set_next(Side::Left, Some(Rc::clone(next_street)));
                     }
                 }
 
@@ -288,11 +204,11 @@ impl Intersection {
                     street_borrowed.set_previous(Side::Right, None);
                     street_borrowed.set_previous(Side::Left, None);
 
-                    if Rc::ptr_eq(street, next_street) {
-                        street_borrowed.set_previous(Side::Right, Some(Rc::clone(previous_street)));
+                    if !Rc::ptr_eq(street, next_street) {
+                        street_borrowed.set_previous(Side::Right, Some(Rc::clone(next_street)));
                     }
 
-                    if Rc::ptr_eq(street, previous_street) {
+                    if !Rc::ptr_eq(street, previous_street) {
                         street_borrowed.set_previous(Side::Left, Some(Rc::clone(previous_street)));
                     }
                 }

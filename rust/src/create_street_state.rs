@@ -80,7 +80,7 @@ impl CreateStreetState {
             ));
         }
 
-        end.unwrap().borrow_mut().reorder();
+        //end.unwrap().borrow_mut().reorder();
     }
 
     fn remove_temp_street_from_old_end(&mut self, map: &mut Map) {
@@ -332,9 +332,14 @@ impl<'a> State for CreateStreetState {
                     .as_ref()
                     .borrow_mut()
                     .add_outgoing_street(Rc::clone(&new_street_rc));
+
+                    log!("new start {}", new_start.as_ref().borrow().get_connected_streets().len());    
             } else {
                 let mut existing_start = temp_street.start.as_ref().unwrap().as_ref().borrow_mut();
+                log!("existed {}", existing_start.get_connected_streets().len());
+
                 existing_start.add_outgoing_street(Rc::clone(&new_street_rc));
+
             }
 
             if temp_street
@@ -355,10 +360,10 @@ impl<'a> State for CreateStreetState {
                 new_end
                     .as_ref()
                     .borrow_mut()
-                    .add_outgoing_street(Rc::clone(&new_street_rc));
+                    .add_incoming_street(Rc::clone(&new_street_rc));
             } else {
                 let mut existing_end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();
-                existing_end.add_outgoing_street(Rc::clone(&new_street_rc));
+                existing_end.add_incoming_street(Rc::clone(&new_street_rc));
             }
 
             map.add_street(Rc::clone(&new_street_rc));
@@ -375,7 +380,7 @@ impl<'a> State for CreateStreetState {
                 .intersections()
                 .iter()
                 .position(|e| {
-                    Rc::ptr_eq(e, &new_street_rc.as_ref().borrow().start.as_ref().unwrap())
+                    Rc::ptr_eq(e, &new_street_rc.as_ref().borrow().end.as_ref().unwrap())
                 })
                 .unwrap();
             map.intersections()[end].borrow_mut().reorder();

@@ -332,11 +332,8 @@ impl<'a> State for CreateStreetState {
                     .as_ref()
                     .borrow_mut()
                     .add_outgoing_street(Rc::clone(&new_street_rc));
-
-                    log!("new start {}", new_start.as_ref().borrow().get_connected_streets().len());    
             } else {
                 let mut existing_start = temp_street.start.as_ref().unwrap().as_ref().borrow_mut();
-                log!("existed {}", existing_start.get_connected_streets().len());
 
                 existing_start.add_outgoing_street(Rc::clone(&new_street_rc));
 
@@ -392,7 +389,9 @@ impl<'a> State for CreateStreetState {
     fn render(&self, map: &Map, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
 
-        self.temp_street.as_ref().borrow().render(&context)?;
+        if self.mouse_pressed {
+            self.temp_street.as_ref().borrow().render(&context)?;
+        }
 
         map.render(&context)?;
 

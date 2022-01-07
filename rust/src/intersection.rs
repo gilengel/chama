@@ -162,15 +162,10 @@ impl Intersection {
         }
 
         self.connected_streets.sort_by(sort_ascending_by_angle);
-
-        log!("============");
         
         for i in 0..self.connected_streets.len() {
             let (direction, street) = self.connected_streets[i].borrow();
-
-            log!("{} -> {}", i, street.as_ref().borrow().id());
-            
-
+      
             let (_, previous_street) = if i > 0 {
                 &self.connected_streets[i - 1]
             } else {

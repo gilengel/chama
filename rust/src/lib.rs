@@ -12,6 +12,7 @@ use web_sys::HtmlCanvasElement;
 
 mod intersection;
 mod street;
+mod district;
 mod map;
 
 mod state;

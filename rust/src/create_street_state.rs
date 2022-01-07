@@ -10,6 +10,7 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
+    district::create_district_for_street,
     intersection::{Direction, Intersection, Side},
     state::State,
     street::Street,
@@ -85,24 +86,9 @@ impl CreateStreetState {
 
     fn remove_temp_street_from_old_end(&mut self, map: &mut Map) {
         let temp_street = self.temp_street.as_ref().borrow();
+
         let mut end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();
         end.remove_connected_street(Rc::clone(&self.temp_street));
-
-        if end.get_connected_streets().len() == 2 {
-            let connected_streets = end.get_connected_streets();
-            let mut street_1 = connected_streets[0].1.borrow_mut();
-            let street_2 = &connected_streets[1].1.borrow();
-
-            let diff = street_1.norm() - street_2.norm();
-            if diff.x() < 0.001 && diff.y() < 0.001 {
-                if let Some(_) = map.remove_street(Rc::clone(&connected_streets[1].1)) {
-                    let end = street_2.end.as_ref().unwrap();
-                    street_1.set_end(Rc::clone(&end));
-
-                    map.remove_intersection(Rc::clone(&temp_street.end.as_ref().unwrap()));
-                }
-            }
-        }
     }
 
     fn try_create_intersection_at_position(
@@ -336,7 +322,6 @@ impl<'a> State for CreateStreetState {
                 let mut existing_start = temp_street.start.as_ref().unwrap().as_ref().borrow_mut();
 
                 existing_start.add_outgoing_street(Rc::clone(&new_street_rc));
-
             }
 
             if temp_street
@@ -376,11 +361,14 @@ impl<'a> State for CreateStreetState {
             let end = map
                 .intersections()
                 .iter()
-                .position(|e| {
-                    Rc::ptr_eq(e, &new_street_rc.as_ref().borrow().end.as_ref().unwrap())
-                })
+                .position(|e| Rc::ptr_eq(e, &new_street_rc.as_ref().borrow().end.as_ref().unwrap()))
                 .unwrap();
             map.intersections()[end].borrow_mut().reorder();
+
+            let districts = create_district_for_street(Rc::clone(&new_street_rc));
+            if let Some(left_district) = districts.0 {
+                map.add_district(Rc::new(RefCell::new(left_district)));
+            }
         }
 
         self.mouse_pressed = false;

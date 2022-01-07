@@ -7,6 +7,7 @@ use std::rc::Rc;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
+use crate::district::District;
 use crate::intersection::Intersection;
 use crate::street::Street;
 use crate::Renderer;
@@ -17,6 +18,7 @@ pub struct Map {
 
     streets: Vec<Rc<RefCell<Street>>>,
     intersections: Vec<Rc<RefCell<Intersection>>>,
+    districts: Vec<Rc<RefCell<District>>>
 }
 
 impl Map {
@@ -42,6 +44,10 @@ impl Map {
 
     pub fn add_street(&mut self, street: Rc<RefCell<Street>>) {
         self.streets.push(street);
+    }
+
+    pub fn add_district(&mut self, district: Rc<RefCell<District>>) {
+        self.districts.push(district);
     }
 
     pub fn remove_street(&mut self, street: Rc<RefCell<Street>>) -> Option<bool> {
@@ -95,6 +101,7 @@ impl Default for Map {
             height: 800,
             streets: vec![],
             intersections: vec![],
+            districts: vec![]
         }
     }
 }
@@ -106,6 +113,10 @@ impl Renderer for Map {
         //if self.render_streets {
         //    self.temp_street.as_ref().borrow().render(&self.context)?;
 
+        for district in &self.districts {
+            district.as_ref().borrow().render(&context)?;
+        }
+
         for street in &self.streets {
             street.as_ref().borrow().render(&context)?;
         }
@@ -116,6 +127,8 @@ impl Renderer for Map {
             intersection.as_ref().borrow().render(&context)?;
         }
         //}
+
+
 
         Ok(())
     }

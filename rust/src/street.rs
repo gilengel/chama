@@ -175,6 +175,7 @@ impl Street {
         context.set_fill_style(&"#2A2A2B".into());
         context.fill();
 
+        /*
         let mut owned_string: String = format!("{} -> ", self.id);
 
 
@@ -211,6 +212,7 @@ impl Street {
                 position.y(),
             )?;
         }
+        */
 
         Ok(())
     }

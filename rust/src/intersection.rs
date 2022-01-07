@@ -67,12 +67,13 @@ impl Intersection {
         
         context.set_fill_style(&"#FFFFFF".into());
 
-
+        
         context.fill_text(
             &format!("c={}", self.connected_streets.len()).to_string(),
             self.position.x,
             self.position.y - 20.0,
         )?;
+        
 
         let mut y = self.position.y;
         for street in &self.connected_streets {

@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use geo::{
     line_intersection::LineIntersection,
-    prelude::{Contains, EuclideanDistance, Centroid},
+    prelude::{Contains, EuclideanDistance},
     Coordinate, Line, LineString, Point, Polygon,
 };
 use wasm_bindgen::JsValue;
@@ -59,9 +59,11 @@ impl Street {
         self.start.as_ref().unwrap().borrow().get_position()
     }
 
+    /*
     pub fn id(&self) -> u32 {
         self.id
     }
+    */
 
     pub fn set_start(&mut self, start: Rc<RefCell<Intersection>>) {
         self.start = Some(start);

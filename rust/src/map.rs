@@ -22,6 +22,13 @@ pub struct Map {
 }
 
 impl Map {
+    pub fn new(width: u32, height: u32) -> Self {
+        Map {
+            width,
+            height,
+            ..Default::default()
+        }
+    }
     pub fn width(&self) -> u32 {
         self.width
     }

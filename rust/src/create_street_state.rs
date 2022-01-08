@@ -1,5 +1,5 @@
 use std::{
-    cell::{Ref, RefCell, RefMut},
+    cell::{RefCell},
     rc::Rc,
 };
 
@@ -11,12 +11,13 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     district::create_district_for_street,
-    intersection::{Direction, Intersection, Side},
+    intersection::{Direction, Intersection},
     state::State,
     street::Street,
     Map, Renderer,
 };
 
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
@@ -72,10 +73,10 @@ impl CreateStreetState {
             }
         }
 
-        let mut end = None;
+        //let mut end = None;
         {
             let t = self.temp_street.as_ref().borrow();
-            end = Some(self.get_temp_end_without_borrowing_temp_street(
+            Some(self.get_temp_end_without_borrowing_temp_street(
                 Rc::clone(t.end.as_ref().unwrap()),
                 map,
             ));
@@ -84,7 +85,7 @@ impl CreateStreetState {
         //end.unwrap().borrow_mut().reorder();
     }
 
-    fn remove_temp_street_from_old_end(&mut self, map: &mut Map) {
+    fn remove_temp_street_from_old_end(&mut self, _map: &mut Map) {
         let temp_street = self.temp_street.as_ref().borrow();
 
         let mut end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();
@@ -143,6 +144,7 @@ impl CreateStreetState {
 
 impl<'a> State for CreateStreetState {
     fn mouse_down(&mut self, x: u32, y: u32, button: u32, map: &mut Map) {
+        log!("MOUSE DOWN ON CREATE STREET");
         // We only check for left click
         if button != 0 {
             return;

@@ -1,16 +1,10 @@
-use std::{borrow::Borrow, cell::RefCell, cmp::Ordering, f64::consts::PI, ops::Index, rc::Rc};
+use std::{borrow::Borrow, cell::RefCell, cmp::Ordering, f64::consts::PI, rc::Rc};
 
 use geo::{Coordinate, Point};
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::street::Street;
-
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
 
 #[derive(Clone, PartialEq, Copy)]
 pub enum Direction {
@@ -24,11 +18,13 @@ pub enum Side {
     Right,
 }
 
+/*
 #[derive(PartialEq)]
 enum Adjacency {
     Previous,
     Next,
 }
+*/
 
 #[derive(Clone)]
 pub struct Intersection {

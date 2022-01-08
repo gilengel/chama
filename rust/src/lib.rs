@@ -92,23 +92,21 @@ fn get_canvas_and_context(id: &String) -> Result<(HtmlCanvasElement, CanvasRende
 #[wasm_bindgen]
 impl Editor {
     
-    pub fn new(id: String) -> Editor {
+    pub fn new(id: String, width: u32, height: u32) -> Editor {
         let (_, context) = get_canvas_and_context(&id).unwrap();
         Editor {
             context,
             render_intersections: true,
             render_streets: true,
             state: Box::new(IdleState::default()),
-            map: Map::default()
+            map: Map::new(width, height)
         }
     }
 
     
     
     pub fn switch_to_mode(&mut self, mode: u32) {
-        //self.state = Box::new(CreateStreetState::new());
-        //assert!(mode < 3);
-        
+
         match mode {
             0 => log!("idle command, nothing to do"),
             1 => self.state = Box::new(CreateStreetState::new()),

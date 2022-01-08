@@ -35,12 +35,6 @@ struct Enclosed {
     points: Vec<Coordinate<f64>>,
 }
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
-
 pub fn create_district_for_street(street: Rc<RefCell<Street>>) -> (Option<District>, Option<District>) {
     let left = enclosed(Side::Left, street);
 

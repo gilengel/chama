@@ -10,7 +10,7 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    district::create_district_for_street,
+    
     intersection::{Direction, Intersection},
     state::State,
     street::Street,
@@ -366,11 +366,6 @@ impl<'a> State for CreateStreetState {
                 .position(|e| Rc::ptr_eq(e, &new_street_rc.as_ref().borrow().end.as_ref().unwrap()))
                 .unwrap();
             map.intersections()[end].borrow_mut().reorder();
-
-            let districts = create_district_for_street(Rc::clone(&new_street_rc));
-            if let Some(left_district) = districts.0 {
-                map.add_district(Rc::new(RefCell::new(left_district)));
-            }
         }
 
         self.mouse_pressed = false;

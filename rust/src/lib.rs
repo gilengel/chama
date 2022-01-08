@@ -19,9 +19,11 @@ mod state;
 mod idle_state;
 mod create_street_state;
 mod delete_street_state;
+mod create_district_state;
 
 use crate::create_street_state::CreateStreetState;
 use crate::delete_street_state::DeleteStreetState;
+use crate::create_district_state::CreateDistrictState;
 
 extern crate alloc;
 
@@ -48,20 +50,6 @@ macro_rules! log {
 pub trait Renderer {
     fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue>;
 }
-
-/*
-
-#[wasm_bindgen]
-extern {
-    fn alert(s: &str);
-}
-#[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, wasm-game-of-life!");
-}
-*/
-
-
 
 #[wasm_bindgen]
 pub struct Editor {
@@ -111,6 +99,7 @@ impl Editor {
             0 => log!("idle command, nothing to do"),
             1 => self.state = Box::new(CreateStreetState::new()),
             2 => self.state = Box::new(DeleteStreetState::new()),
+            3 => self.state = Box::new(CreateDistrictState::new()),
             _ => log!("unknown command, nothing to do")
         }   
             

@@ -134,6 +134,16 @@ impl Street {
         }
     }
 
+    pub fn get_side_of_position(&self, position: &Coordinate<f64>) -> Side {
+        let start : Point<f64> = self.start().into();
+
+        if start.cross_prod(self.end().into(), (*position).into()) < 0.0 {
+            return Side::Left;
+        }
+        
+        Side::Right
+    }
+
     pub fn update_geometry(&mut self) {
         let half_width = self.width / 2.0;
         let start: Point<f64> = self.start().into();

@@ -33,12 +33,12 @@
     {
       value: 3,
       icon: "add",
-      tooltip: "Create Street2",
+      tooltip: "Create District",
     },
     {
       value: 4,
       icon: "delete",
-      tooltip: "Delete Street2",
+      tooltip: "Delete District",
     },    
   ]
 

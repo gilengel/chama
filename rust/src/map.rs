@@ -221,4 +221,24 @@ impl Map {
 
         None
     }
+
+    pub fn get_nearest_street_to_position(&self, position: &Coordinate<f64>) -> Option<&Rc<RefCell<Street>>> {
+        self.streets.iter().min_by(|x, y| {
+            let x = x.borrow().line;
+            let y = y.borrow().line;
+
+            
+            let d1 = x.euclidean_distance(position);
+            let d2 = y.euclidean_distance(position);
+            if d1 < d2 {
+                return Ordering::Less;
+            }
+
+            if d1 > d2  {
+                return Ordering::Greater;
+            }
+
+            Ordering::Equal
+        })
+    }
 }

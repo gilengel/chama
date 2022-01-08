@@ -35,16 +35,14 @@ struct Enclosed {
     points: Vec<Coordinate<f64>>,
 }
 
-pub fn create_district_for_street(street: Rc<RefCell<Street>>) -> (Option<District>, Option<District>) {
-    let left = enclosed(Side::Left, street);
+pub fn create_district_for_street(side: Side, street: Rc<RefCell<Street>>) -> Option<District> {
+    let district = enclosed(side, street);
 
-    let mut result: (Option<District>, Option<District>) = (None, None);
-    if left.enclosed {
-        result.0 = Some(District { polygon:  Polygon::new(LineString::from(left.points), vec![]) });
+    if !district.enclosed {
+        return None;
     }
 
-
-    result
+    return Some(District { polygon: Polygon::new(LineString::from(district.points), vec![]) });
 }
 
 fn enclosed(side: Side, starting_street: Rc<RefCell<Street>>) -> Enclosed {

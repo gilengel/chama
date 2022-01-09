@@ -17,12 +17,6 @@ use crate::{
     Map, Renderer,
 };
 
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
 
 pub struct CreateStreetState {
     mouse_pressed: bool,
@@ -81,8 +75,6 @@ impl CreateStreetState {
                 map,
             ));
         }
-
-        //end.unwrap().borrow_mut().reorder();
     }
 
     fn remove_temp_street_from_old_end(&mut self, _map: &mut Map) {
@@ -144,7 +136,6 @@ impl CreateStreetState {
 
 impl<'a> State for CreateStreetState {
     fn mouse_down(&mut self, x: u32, y: u32, button: u32, map: &mut Map) {
-        log!("MOUSE DOWN ON CREATE STREET");
         // We only check for left click
         if button != 0 {
             return;
@@ -366,6 +357,8 @@ impl<'a> State for CreateStreetState {
                 .position(|e| Rc::ptr_eq(e, &new_street_rc.as_ref().borrow().end.as_ref().unwrap()))
                 .unwrap();
             map.intersections()[end].borrow_mut().reorder();
+
+            //new_street_rc.borrow_mut().update_geometry();
         }
 
         self.mouse_pressed = false;

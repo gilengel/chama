@@ -114,11 +114,11 @@ impl Intersection {
     }
 
     pub fn reorder(&mut self) {
-        fn angle(vec: &Point<f64>) -> f64 {
-            vec.y().atan2(vec.x()) + (PI / 2.0)
+        fn angle(vec: &Coordinate<f64>) -> f64 {
+            vec.y.atan2(vec.x) + (PI / 2.0)
         }
 
-        fn norm_based_on_direction(direction: Direction, street: &Street) -> Point<f64> {
+        fn norm_based_on_direction(direction: Direction, street: &Street) -> Coordinate<f64> {
             let norm = if direction == Direction::Out {
                 street.norm()
             } else {

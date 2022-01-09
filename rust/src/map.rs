@@ -18,7 +18,45 @@ pub struct Map {
 
     streets: Vec<Rc<RefCell<Street>>>,
     intersections: Vec<Rc<RefCell<Intersection>>>,
-    districts: Vec<Rc<RefCell<District>>>
+    districts: Vec<Rc<RefCell<District>>>,
+}
+
+impl Default for Map {
+    fn default() -> Map {
+        Map {
+            width: 1920,
+            height: 800,
+            streets: vec![],
+            intersections: vec![],
+            districts: vec![],
+        }
+    }
+}
+
+impl Renderer for Map {
+    fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+        //context.clear_rect(0.0, 0.0, self.width.into(), self.height.into());
+
+        //if self.render_streets {
+        //    self.temp_street.as_ref().borrow().render(&self.context)?;
+
+        for district in &self.districts {
+            district.as_ref().borrow().render(&context)?;
+        }
+
+        for street in &self.streets {
+            street.as_ref().borrow().render(&context)?;
+        }
+        //}
+
+        //if self.render_intersections {
+        for intersection in &self.intersections {
+            intersection.as_ref().borrow().render(&context)?;
+        }
+        //}
+
+        Ok(())
+    }
 }
 
 impl Map {
@@ -71,7 +109,7 @@ impl Map {
 
                 let street_borrow = street.borrow();
                 let end = street_borrow.end.as_ref().unwrap();
-                let mut end_borrow = end.borrow_mut();                
+                let mut end_borrow = end.borrow_mut();
                 end_borrow.remove_connected_street(Rc::clone(&street));
                 end_borrow.reorder();
                 if end_borrow.get_connected_streets().is_empty() {
@@ -99,49 +137,7 @@ impl Map {
             self.intersections.remove(index);
         }
     }
-}
 
-impl Default for Map {
-    fn default() -> Map {
-        Map {
-            width: 1920,
-            height: 800,
-            streets: vec![],
-            intersections: vec![],
-            districts: vec![]
-        }
-    }
-}
-
-impl Renderer for Map {
-    fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
-        //context.clear_rect(0.0, 0.0, self.width.into(), self.height.into());
-
-        //if self.render_streets {
-        //    self.temp_street.as_ref().borrow().render(&self.context)?;
-
-        for district in &self.districts {
-            district.as_ref().borrow().render(&context)?;
-        }
-
-        for street in &self.streets {
-            street.as_ref().borrow().render(&context)?;
-        }
-        //}
-
-        //if self.render_intersections {
-        for intersection in &self.intersections {
-            intersection.as_ref().borrow().render(&context)?;
-        }
-        //}
-
-
-
-        Ok(())
-    }
-}
-
-impl Map {
     pub fn get_intersection_at_position(
         &self,
         position: &Coordinate<f64>,
@@ -222,23 +218,48 @@ impl Map {
         None
     }
 
-    pub fn get_nearest_street_to_position(&self, position: &Coordinate<f64>) -> Option<&Rc<RefCell<Street>>> {
+    pub fn get_nearest_street_to_position(
+        &self,
+        position: &Coordinate<f64>,
+    ) -> Option<&Rc<RefCell<Street>>> {
         self.streets.iter().min_by(|x, y| {
             let x = x.borrow().line;
             let y = y.borrow().line;
 
-            
             let d1 = x.euclidean_distance(position);
             let d2 = y.euclidean_distance(position);
             if d1 < d2 {
                 return Ordering::Less;
             }
 
-            if d1 > d2  {
+            if d1 > d2 {
                 return Ordering::Greater;
             }
 
             Ordering::Equal
         })
+    }
+
+    pub fn get_district_at_position(
+        &self,
+        position: &Coordinate<f64>,
+    ) -> Option<Rc<RefCell<District>>> {
+        for district in &self.districts {
+            if district.as_ref().borrow().is_point_on_district(position) {
+                return Some(Rc::clone(district));
+            }
+        }
+
+        None
+    }
+
+    pub fn remove_district(&mut self, district: Rc<RefCell<District>>) {
+        if let Some(index) = self
+            .districts
+            .iter()
+            .position(|i| Rc::ptr_eq(&i, &district))
+        {
+            self.districts.remove(index);
+        }
     }
 }

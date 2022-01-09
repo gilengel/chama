@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use geo::{Coordinate, Polygon, LineString};
+use geo::{Coordinate, Polygon, LineString, prelude::Contains};
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
@@ -11,6 +11,10 @@ pub struct District {
 }
 
 impl District {
+    pub fn is_point_on_district(&self, point: &Coordinate<f64>) -> bool {
+        self.polygon.contains(point)
+    }
+    
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         let mut it = self.polygon.exterior().points_iter();
         let start = it.next().unwrap();

@@ -4,7 +4,7 @@ use geo::{Coordinate, Point};
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::street::Street;
+use crate::{street::Street, interactive_element::{InteractiveElement, InteractiveElementState}, style::Style};
 
 #[derive(Clone, PartialEq, Copy)]
 pub enum Direction {
@@ -34,6 +34,7 @@ pub struct Intersection {
     connected_streets: Vec<(Direction, Rc<RefCell<Street>>)>,
 }
 
+
 impl Intersection {
     pub fn new(
         position: Coordinate<f64>,
@@ -55,6 +56,7 @@ impl Intersection {
     }
 
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+        /*
         context.begin_path();
         context.arc(self.position.x, self.position.y, 15.0, 0.0, 2.0 * PI)?;
         context.set_fill_style(&"#FF8C00".into());
@@ -78,7 +80,7 @@ impl Intersection {
 
             y += 16.0;
         }
-        
+        */
 
         Ok(())
     }
@@ -113,16 +115,7 @@ impl Intersection {
 
     pub fn reorder(&mut self) {
         fn angle(vec: &Point<f64>) -> f64 {
-            let angle = vec.y().atan2(vec.x()) + (PI / 2.0);
-
-            angle
-            /*
-            if angle > 0.0 {
-                return angle;
-            }
-
-            2.0 * PI + angle
-            */
+            vec.y().atan2(vec.x()) + (PI / 2.0)
         }
 
         fn norm_based_on_direction(direction: Direction, street: &Street) -> Point<f64> {

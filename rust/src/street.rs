@@ -10,7 +10,12 @@ use web_sys::CanvasRenderingContext2d;
 
 use geo::line_intersection::line_intersection;
 
-use crate::intersection::{Intersection, Side};
+use crate::{
+    interactive_element::InteractiveElement,
+    interactive_element::InteractiveElementState,
+    intersection::{Intersection, Side},
+    style::{InteractiveElementStyle, Style},
+};
 
 #[derive(Clone)]
 pub struct Street {
@@ -31,6 +36,9 @@ pub struct Street {
 
     norm: Point<f64>,
     inverse_norm: Point<f64>,
+
+    style: InteractiveElementStyle,
+    state: InteractiveElementState,
 }
 
 impl Default for Street {
@@ -50,7 +58,28 @@ impl Default for Street {
 
             norm: Point::new(0.0, 0.0),
             inverse_norm: Point::new(0.0, 0.0),
+
+            style: InteractiveElementStyle::default(),
+            state: InteractiveElementState::Normal,
         }
+    }
+}
+
+impl InteractiveElement for Street {
+    fn set_state(&mut self, new_state: InteractiveElementState) {
+        self.state = new_state;
+    }
+
+    fn style(&self) -> &Style {
+        match self.state {
+            InteractiveElementState::Normal => return &self.style.normal,
+            InteractiveElementState::Hover => return &self.style.hover,
+            InteractiveElementState::Selected => return &self.style.selected,
+        }
+    }
+
+    fn state(&self) -> InteractiveElementState {
+        InteractiveElementState::Normal
     }
 }
 
@@ -110,7 +139,7 @@ impl Street {
         match side {
             Side::Left => self.left_previous = street,
             Side::Right => self.right_previous = street,
-        }   
+        }
     }
 
     pub fn get_previous(&self, side: Side) -> Option<&Rc<RefCell<Street>>> {
@@ -124,7 +153,7 @@ impl Street {
         match side {
             Side::Left => self.left_next = street,
             Side::Right => self.right_next = street,
-        }   
+        }
     }
 
     pub fn get_next(&self, side: Side) -> Option<&Rc<RefCell<Street>>> {
@@ -135,12 +164,12 @@ impl Street {
     }
 
     pub fn get_side_of_position(&self, position: &Coordinate<f64>) -> Side {
-        let start : Point<f64> = self.start().into();
+        let start: Point<f64> = self.start().into();
 
         if start.cross_prod(self.end().into(), (*position).into()) < 0.0 {
             return Side::Left;
         }
-        
+
         Side::Right
     }
 
@@ -177,6 +206,10 @@ impl Street {
         let mut it = self.polygon.exterior().points_iter();
         let start = it.next().unwrap();
 
+        let style = self.style();
+
+        context.save();
+
         context.begin_path();
         context.move_to(start.x(), start.y());
         for point in it {
@@ -184,9 +217,16 @@ impl Street {
         }
 
         context.close_path();
-        context.set_fill_style(&"#2A2A2B".into());
+        context.set_fill_style(&style.background_color.clone().into());
         context.fill();
 
+        if style.border_width > 0 {
+            context.set_line_width(style.border_width.into());
+            context.set_stroke_style(&style.border_color.clone().into());
+            context.stroke();
+        }
+
+        context.restore();
         /*
         let mut owned_string: String = format!("{} -> ", self.id);
 

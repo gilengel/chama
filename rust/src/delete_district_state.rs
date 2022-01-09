@@ -2,7 +2,7 @@ use std::{rc::Rc, cell::RefCell};
 
 use geo::Coordinate;
 
-use crate::{state::State, map::Map, Renderer, district::District};
+use crate::{state::State, map::Map, Renderer, district::District, interactive_element::{InteractiveElementState, InteractiveElement}};
 
 pub struct DeleteDistrictState {
     hovered_district: Option<Rc<RefCell<District>>>
@@ -35,7 +35,18 @@ impl State for DeleteDistrictState {
             y: y.into(),
         };
         
+        if let Some(old_hovered_district) = &self.hovered_district {
+            old_hovered_district
+                .borrow_mut()
+                .set_state(InteractiveElementState::Normal);
+        }
+
         if let Some(hovered_district) = map.get_district_at_position(&position) {
+            {
+                hovered_district
+                    .borrow_mut()
+                    .set_state(InteractiveElementState::Hover);
+            }
             self.hovered_district = Some(Rc::clone(&hovered_district));
         }
     }
@@ -68,12 +79,6 @@ impl State for DeleteDistrictState {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
 
         map.render(context)?;
-
-        if let Some(hovered_district) = &self.hovered_district {
-            let hovered_district = hovered_district.borrow();
-            //hovered_street.set_fillstyle("#FF0000");
-            hovered_district.render(context)?;
-        }
 
         Ok(())
     }

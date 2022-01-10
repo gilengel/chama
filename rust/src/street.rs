@@ -151,6 +151,8 @@ impl Street {
             Side::Left => self.left_previous = street,
             Side::Right => self.right_previous = street,
         }
+
+        self.update_geometry();
     }
 
     pub fn get_previous(&self, side: Side) -> Option<&Rc<RefCell<Street>>> {
@@ -205,14 +207,14 @@ impl Street {
 
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         let mut it = self.polygon.exterior().points_iter();
-        let start = it.next().unwrap();
+        let start: Coordinate<f64> = it.next().unwrap().into();
 
         let style = self.style();
 
         context.save();
 
         context.begin_path();
-        context.move_to(start.x(), start.y());
+        context.move_to(start.x, start.y);
         for point in it {
             context.line_to(point.x(), point.y());
         }
@@ -221,11 +223,26 @@ impl Street {
         context.set_fill_style(&style.background_color.clone().into());
         context.fill();
 
+
+
         if style.border_width > 0 {
             context.set_line_width(style.border_width.into());
             context.set_stroke_style(&style.border_color.clone().into());
             context.stroke();
         }
+
+        context.begin_path();        
+        let p1 = start + self.norm * (self.line.euclidean_length() - 5.0);
+        let _p = start + self.norm * (self.line.euclidean_length() - self.width + 5.0);
+        let p2 = _p + self.perp() * (-self.width / 2.0 + 5.0);
+        let p3 = _p + self.perp() * (self.width / 2.0 - 5.0);
+        context.move_to(p1.x, p1.y);
+        context.line_to(p2.x, p2.y);
+        context.line_to(p3.x, p3.y);
+        
+        context.close_path();
+        context.set_fill_style(&style.background_color.clone().into());
+        context.stroke();
 
         context.restore();
 

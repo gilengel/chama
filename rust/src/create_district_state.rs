@@ -7,12 +7,7 @@ use crate::{
     street::Street, Renderer,
 };
 
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into())
-    }
-}
+
 pub struct CreateDistrictState {
     hovered_street: Option<Rc<RefCell<Street>>>,
 }
@@ -84,7 +79,7 @@ impl State for CreateDistrictState {
         if let Some(hovered_street) = &self.hovered_street {
             let hovered_street = hovered_street.borrow();
             //hovered_street.set_fillstyle("#FF0000");
-            hovered_street.render(context)?;
+            //hovered_street.render(context)?;
         }
 
         Ok(())

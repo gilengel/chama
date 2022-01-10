@@ -1,26 +1,30 @@
-use std::{
-    cell::{RefCell},
-    rc::Rc,
-};
+use std::{borrow::Borrow, cell::RefCell, rc::Rc};
 
 extern crate alloc;
 
 use geo::Coordinate;
+use js_sys::Int32Array;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    
-    intersection::{Direction, Intersection},
+    intersection::{Direction, Intersection, Side},
     state::State,
     street::Street,
     Map, Renderer,
 };
 
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into())
+    }
+}
 
 pub struct CreateStreetState {
     mouse_pressed: bool,
     temp_street: Rc<RefCell<Street>>,
+    temp_start: Rc<RefCell<Intersection>>,
     temp_end: Rc<RefCell<Intersection>>,
 }
 
@@ -29,6 +33,7 @@ impl Default for CreateStreetState {
         CreateStreetState {
             mouse_pressed: false,
             temp_street: Rc::new(RefCell::new(Street::default())),
+            temp_start: Rc::new(RefCell::new(Intersection::default())),
             temp_end: Rc::new(RefCell::new(Intersection::default())),
         }
     }
@@ -39,19 +44,19 @@ impl CreateStreetState {
         CreateStreetState::default()
     }
 
-    fn get_temp_end_without_borrowing_temp_street(
+    fn get_intersection_from_map(
         &self,
-        e: Rc<RefCell<Intersection>>,
+        intersection: Rc<RefCell<Intersection>>,
         map: &Map,
     ) -> Rc<RefCell<Intersection>> {
-        if Rc::ptr_eq(&self.temp_end, &e) {
+        if Rc::ptr_eq(&self.temp_end, &intersection) {
             return Rc::clone(&self.temp_end);
         }
 
         let index = map
             .intersections()
             .iter()
-            .position(|x| Rc::ptr_eq(x, &e))
+            .position(|x| Rc::ptr_eq(x, &intersection))
             .unwrap();
 
         return Rc::clone(&map.intersections()[index]);
@@ -70,10 +75,9 @@ impl CreateStreetState {
         //let mut end = None;
         {
             let t = self.temp_street.as_ref().borrow();
-            Some(self.get_temp_end_without_borrowing_temp_street(
-                Rc::clone(t.end.as_ref().unwrap()),
-                map,
-            ));
+            let intersection =
+                self.get_intersection_from_map(Rc::clone(t.end.as_ref().unwrap()), map);
+            log!(":)")
         }
     }
 
@@ -82,6 +86,7 @@ impl CreateStreetState {
 
         let mut end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();
         end.remove_connected_street(Rc::clone(&self.temp_street));
+        end.reorder();
     }
 
     fn try_create_intersection_at_position(
@@ -91,6 +96,7 @@ impl CreateStreetState {
     ) -> Option<Rc<RefCell<Intersection>>> {
         if let Some(intersected_street) = map.get_street_at_position(&position) {
             let mut old_street = intersected_street.borrow_mut();
+            //let old_next_right = old_street.get_next(Side::Right);
             let old_end = Rc::clone(&old_street.end.as_ref().unwrap());
             {
                 let mut old_end = old_street.end.as_ref().unwrap().borrow_mut();
@@ -107,6 +113,16 @@ impl CreateStreetState {
             let mut new_street = Street::default();
             new_street.set_start(Rc::clone(&intersection));
             new_street.set_end(Rc::clone(&old_end));
+
+            let old_next_left = old_street.get_next(Side::Left);
+            let old_next_right = old_street.get_next(Side::Right);
+            if let Some(old_next_left) = old_next_left {
+                new_street.set_next(Side::Left, Some(Rc::clone(old_next_left)));
+            }
+            if let Some(old_next_right) = old_next_right {
+                new_street.set_next(Side::Right, Some(Rc::clone(old_next_right)));
+            }
+
             new_street.id = map.streets_length() as u32;
 
             let new_street = Rc::new(RefCell::new(new_street));
@@ -132,6 +148,28 @@ impl CreateStreetState {
 
         None
     }
+
+    fn start_of_street_is_not_connected(&self, street: &Street) -> bool {
+        street
+            .start
+            .as_ref()
+            .unwrap()
+            .as_ref()
+            .borrow()
+            .get_connected_streets()
+            .is_empty()
+    }
+
+    fn end_of_street_is_not_connected(&self, street: &Street) -> bool {
+        street
+            .end
+            .as_ref()
+            .unwrap()
+            .as_ref()
+            .borrow()
+            .get_connected_streets()
+            .is_empty()
+    }
 }
 
 impl<'a> State for CreateStreetState {
@@ -150,6 +188,7 @@ impl<'a> State for CreateStreetState {
 
         match map.get_intersection_at_position(&position, 100.0, &vec![]) {
             Some(intersection) => {
+                self.temp_start = Rc::clone(&intersection);
                 self.temp_end.as_ref().borrow_mut().set_position(position);
 
                 {
@@ -158,17 +197,20 @@ impl<'a> State for CreateStreetState {
                     temp_street.set_end(Rc::clone(&self.temp_end));
                 }
 
-                intersection
-                    .borrow_mut()
-                    .add_outgoing_street(Rc::clone(&self.temp_street));
+                let mut i = intersection.borrow_mut();
+
+                i.add_outgoing_street(Rc::clone(&self.temp_street));
+                i.reorder();
+
                 return;
             }
             None => {
-                let mut temp_street = self.temp_street.as_ref().borrow_mut();
-                temp_street.set_start(Rc::new(RefCell::new(Intersection::new(
+                self.temp_start = Rc::new(RefCell::new(Intersection::new(
                     position,
                     vec![(Direction::Out, Rc::clone(&self.temp_street))],
-                ))));
+                )));
+                let mut temp_street = self.temp_street.as_ref().borrow_mut();
+                temp_street.set_start(Rc::clone(&self.temp_start));
             }
         }
 
@@ -180,16 +222,11 @@ impl<'a> State for CreateStreetState {
 
         if let Some(intersection) = self.try_create_intersection_at_position(position, map) {
             {
+                self.temp_start = Rc::clone(&intersection);
                 self.temp_street
                     .as_ref()
                     .borrow_mut()
-                    .set_start(Rc::clone(&intersection));
-
-                {
-                    intersection
-                        .borrow_mut()
-                        .add_outgoing_street(Rc::clone(&self.temp_street));
-                }
+                    .set_start(Rc::clone(&self.temp_start));
             }
         }
     }
@@ -203,59 +240,65 @@ impl<'a> State for CreateStreetState {
             return;
         }
 
+        match map.get_intersection_at_position(&position, 100.0, &vec![Rc::clone(&self.temp_start)])
         {
-            match map.get_intersection_at_position(&position, 100.0, &vec![]) {
-                Some(intersection) => {
-                    self.remove_temp_street_from_old_end(map);
+            Some(intersection) => {
+                self.remove_temp_street_from_old_end(map);
 
-                    {
-                        self.temp_street
-                            .borrow_mut()
-                            .set_end(Rc::clone(&intersection));
-                        self.temp_street.borrow_mut().update_geometry();
-                    }
-
-                    self.add_temp_street_to_new_end(map);
-
-                    return;
+                {
+                    self.temp_street
+                        .borrow_mut()
+                        .set_end(Rc::clone(&intersection));
+                    //self.temp_street.borrow_mut().update_geometry();
                 }
-                None => {
-                    self.remove_temp_street_from_old_end(map);
 
-                    {
-                        let mut temp_street = self.temp_street.as_ref().borrow_mut();
-                        temp_street.set_end(Rc::clone(&self.temp_end));
-                    }
-
-                    {
-                        let mut end = self.temp_end.borrow_mut();
-                        end.set_position(position);
-                    }
-
-                    self.add_temp_street_to_new_end(map);
-                    /*
-                    {
-                        let mut temp_street = self.temp_street.as_ref().borrow_mut();
-                        temp_street.update_geometry();
-                    }
-                    */
-                }
+                self.add_temp_street_to_new_end(map);
+                return;
             }
+            None => {
+                self.remove_temp_street_from_old_end(map);
 
-            let mut temp_street = self.temp_street.as_ref().borrow_mut();
-
-            match map.intersection_with_street(&temp_street) {
-                Some(intersection) => {
-                    let mut end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();
-                    end.set_position(intersection);
-                }
-                None => {
-                    self.temp_end.borrow_mut().set_position(position);
+                {
+                    let mut temp_street = self.temp_street.as_ref().borrow_mut();
                     temp_street.set_end(Rc::clone(&self.temp_end));
                 }
-            }
 
-            temp_street.update_geometry();
+                {
+                    let mut end = self.temp_end.borrow_mut();
+                    end.set_position(position);
+                }
+
+                self.add_temp_street_to_new_end(map);
+            }
+        }
+
+        let mut intersection = None;
+        {
+            let mut temp_street = self.temp_street.as_ref().borrow();
+
+            intersection = map.intersection_with_street(&temp_street);
+        }
+
+        match intersection {
+            Some(intersection) => {
+                let temp_street = self.temp_street.as_ref().borrow();
+                let mut end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();
+                end.set_position(intersection);
+            }
+            None => {
+                let mut temp_street = self.temp_street.as_ref().borrow_mut();
+                self.temp_end.borrow_mut().set_position(position);
+                temp_street.set_end(Rc::clone(&self.temp_end));
+            }
+        }
+
+        if let Some(index) = map.intersections().iter().position(|e| {
+            Rc::ptr_eq(
+                e,
+                &self.temp_street.as_ref().borrow().start.as_ref().unwrap(),
+            )
+        }) {
+            map.intersections()[index].borrow_mut().reorder();
         }
     }
 
@@ -292,15 +335,7 @@ impl<'a> State for CreateStreetState {
 
             let new_street_rc = Rc::new(RefCell::new(new_street));
 
-            if temp_street
-                .start
-                .as_ref()
-                .unwrap()
-                .as_ref()
-                .borrow()
-                .get_connected_streets()
-                .is_empty()
-            {
+            if self.start_of_street_is_not_connected(&temp_street) {
                 let new_start = Rc::new(RefCell::new(
                     (*temp_street.start.as_ref().unwrap().as_ref().borrow_mut()).clone(),
                 ));
@@ -317,25 +352,19 @@ impl<'a> State for CreateStreetState {
                 existing_start.add_outgoing_street(Rc::clone(&new_street_rc));
             }
 
-            if temp_street
-                .end
-                .as_ref()
-                .unwrap()
-                .as_ref()
-                .borrow()
-                .get_connected_streets()
-                .is_empty()
-            {
-                let new_end = Rc::new(RefCell::new(
-                    (*&temp_street.end.as_ref().unwrap().as_ref().borrow_mut()).clone(),
-                ));
-                map.add_intersection(Rc::clone(&new_end));
-                new_street_rc.borrow_mut().end = Some(Rc::clone(&new_end));
-
-                new_end
+            if self.end_of_street_is_not_connected(&temp_street) {
+                let mut new_end = temp_street
+                    .end
+                    .as_ref()
+                    .unwrap()
                     .as_ref()
                     .borrow_mut()
-                    .add_incoming_street(Rc::clone(&new_street_rc));
+                    .clone();
+                new_end.add_incoming_street(Rc::clone(&new_street_rc));
+
+                let new_end_rc = Rc::new(RefCell::new(new_end));
+                map.add_intersection(Rc::clone(&new_end_rc));
+                new_street_rc.borrow_mut().end = Some(Rc::clone(&new_end_rc));
             } else {
                 let mut existing_end = temp_street.end.as_ref().unwrap().as_ref().borrow_mut();
                 existing_end.add_incoming_street(Rc::clone(&new_street_rc));
@@ -357,8 +386,6 @@ impl<'a> State for CreateStreetState {
                 .position(|e| Rc::ptr_eq(e, &new_street_rc.as_ref().borrow().end.as_ref().unwrap()))
                 .unwrap();
             map.intersections()[end].borrow_mut().reorder();
-
-            //new_street_rc.borrow_mut().update_geometry();
         }
 
         self.mouse_pressed = false;

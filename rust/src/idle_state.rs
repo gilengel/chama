@@ -14,15 +14,13 @@ impl Default for IdleState {
 impl State for IdleState {
 
 
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map) {}
+    fn mouse_move(&mut self, _mouse_pos: Coordinate<f64>, _: &mut Map) {}
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn update(&mut self) {}
+    fn enter(&self, _: &mut Map) {}
 
-    fn enter(&self) {}
-
-    fn exit(&self) {}
+    fn exit(&self, _: &mut Map) {}
 }

@@ -25,9 +25,9 @@ impl Default for CreateDistrictState {
 }
 
 impl State for CreateDistrictState {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+    fn mouse_move(&mut self, _mouse_pos: Coordinate<f64>, _map: &mut Map) {
         /*
         if let Some(hovered_street) = map.get_nearest_street_to_position(&position) {
             self.hovered_street = Some(Rc::clone(&hovered_street));
@@ -37,7 +37,7 @@ impl State for CreateDistrictState {
         */
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _map: &mut Map) {
         /*
         if self.hovered_street.is_some() {
             let hovered_street = self.hovered_street.as_ref().unwrap();
@@ -51,11 +51,10 @@ impl State for CreateDistrictState {
         */
     }
 
-    fn update(&mut self) {}
 
-    fn enter(&self) {}
+    fn enter(&self, map: &mut Map) {}
 
-    fn exit(&self) {}
+    fn exit(&self, map: &mut Map) {}
 
     fn render(
         &self,
@@ -67,7 +66,7 @@ impl State for CreateDistrictState {
         map.render(context)?;
 
         if let Some(hovered_street) = &self.hovered_street {
-            let hovered_street = hovered_street.borrow();
+            let _hovered_street = hovered_street.borrow();
             //hovered_street.set_fillstyle("#FF0000");
             //hovered_street.render(context)?;
         }

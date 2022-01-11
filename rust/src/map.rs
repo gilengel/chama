@@ -53,36 +53,92 @@ impl Renderer for Map {
     }
 }
 
-pub trait Get<'a, T> {
-    fn get(&'a self, id: Uuid) -> &'a T;
+pub trait Get<T> {
+    fn get(&self, id: &Uuid) -> Option<&'_ T>;
 }
 
-pub trait GetMut<'a, T> {
-    fn get_mut(&'a mut self, id: Uuid) -> &'a mut T;
+pub trait GetMut<T> {
+    fn get_mut(&mut self, id: &Uuid) -> Option<&'_ mut T>;
 }
 
-impl Get<'_, Street> for Map {
-    fn get<'a>(&'a self, id: Uuid) -> &'a Street {
-        self.streets.get(&id).unwrap()
+impl Get<Street> for Map {
+    fn get(&self, id: &Uuid) -> Option<&'_ Street> {
+        if self.streets.contains_key(id) {
+            return self.streets.get(id);
+        }
+
+        None
     }
 }
 
-impl Get<'_, Intersection> for Map {
-    fn get<'a>(&'a self, id: Uuid) -> &'a Intersection {
-        self.intersections.get(&id).unwrap()
-    }   
-}
+impl Get<Intersection> for Map {
+    fn get(&self, id: &Uuid) -> Option<&'_ Intersection> {
+        if self.intersections.contains_key(id) {
+            return self.intersections.get(id);
+        }
 
-impl GetMut<'_, Street> for Map {
-    fn get_mut<'a>(&'a mut self, id: Uuid) -> &'a mut Street {
-        self.streets.get_mut(&id).unwrap()
+        None
     }
 }
 
-impl GetMut<'_, Intersection> for Map {
-    fn get_mut<'a>(&'a mut self, id: Uuid) -> &'a mut Intersection {
-        self.intersections.get_mut(&id).unwrap()
-    }   
+impl GetMut<Street> for Map {
+    fn get_mut(&mut self, id: &Uuid) -> Option<&'_ mut Street> {
+        if self.streets.contains_key(id) {
+            return self.streets.get_mut(id);
+        }
+
+        None
+    }
+}
+
+impl GetMut<Intersection> for Map {
+    fn get_mut(&mut self, id: &Uuid) -> Option<&'_ mut Intersection> {
+        if self.intersections.contains_key(id) {
+            return self.intersections.get_mut(id);
+        }
+
+        None
+    }
+}
+
+
+pub trait Update<T> {
+    fn update<S>(&mut self, id: &Uuid);
+}
+
+/*
+impl<T> Update<Street> for T 
+    where 
+    T: GetMut<Street> + Get<Intersection>
+{
+    fn update<Street>(&mut self, id: &Uuid) {  
+        let street = self.get_mut(id).unwrap();
+        let a = self.get(&street.start).unwrap();
+        let b = self.get(&street.end).unwrap();
+        
+        street.line.start = a.get_position();
+        street.line.end = b.get_position();
+
+        street.update_geometry();
+    }
+}
+*/
+
+
+pub trait Insert<T> {
+    fn insert(&mut self, x: T);
+}
+
+impl Insert<Street> for Map {
+    fn insert(&mut self, x: Street) {
+        self.streets.insert(x.id, x);
+    }
+}
+
+impl Insert<Intersection> for Map {
+    fn insert(&mut self, x: Intersection) {
+        self.intersections.insert(x.id, x);
+    }
 }
 
 impl Map {
@@ -93,6 +149,18 @@ impl Map {
             ..Default::default()
         }
     }
+
+    pub fn update<Street>(&mut self, id: Uuid) { 
+        let street = self.streets.get_mut(&id).unwrap();
+        let a = self.intersections.get(&street.start).unwrap();
+        let b = self.intersections.get(&street.end).unwrap();
+        
+        street.line.start = a.get_position();
+        street.line.end = b.get_position();
+
+        street.update_geometry();
+    }
+
     pub fn width(&self) -> u32 {
         self.width
     }
@@ -105,7 +173,7 @@ impl Map {
         &self.intersections
     }
 
-    pub fn streets (&self) -> &HashMap<Uuid, Street> {
+    pub fn streets(&self) -> &HashMap<Uuid, Street> {
         &self.streets
     }
 
@@ -122,7 +190,7 @@ impl Map {
     }
 
     pub fn remove_street(&mut self, street: &Street) -> Option<bool> {
-        if let Some((key, x)) = self.streets.remove_entry(&street.id) {
+        if let Some((_key, _x)) = self.streets.remove_entry(&street.id) {
             todo!();
         }
 
@@ -184,9 +252,7 @@ impl Map {
         let mut intersections = vec![];
 
         for (_, another_street) in &self.streets {
-            if let Some(line_intersection) =
-                street.intersect_with_street(another_street)
-            {
+            if let Some(line_intersection) = street.intersect_with_street(another_street) {
                 match line_intersection {
                     LineIntersection::SinglePoint {
                         intersection,
@@ -223,10 +289,7 @@ impl Map {
         Some(intersections.first().unwrap().clone())
     }
 
-    pub fn get_street_at_position(
-        &self,
-        position: &Coordinate<f64>,
-    ) -> Option<&Street> {
+    pub fn get_street_at_position(&self, position: &Coordinate<f64>) -> Option<&Street> {
         for (_, street) in &self.streets {
             if street.is_point_on_street(position) {
                 return Some(street);
@@ -236,10 +299,7 @@ impl Map {
         None
     }
 
-    pub fn get_nearest_street_to_position(
-        &self,
-        position: &Coordinate<f64>,
-    ) -> Option<&Street> {
+    pub fn get_nearest_street_to_position(&self, position: &Coordinate<f64>) -> Option<&Street> {
         if let Some((_, nearest_street)) = self.streets.iter().min_by(|(_, x), (_, y)| {
             let x = x.line;
             let y = y.line;
@@ -262,10 +322,7 @@ impl Map {
         None
     }
 
-    pub fn get_district_at_position(
-        &self,
-        position: &Coordinate<f64>,
-    ) -> Option<&District> {
+    pub fn get_district_at_position(&self, position: &Coordinate<f64>) -> Option<&District> {
         for (_, district) in &self.districts {
             if district.is_point_on_district(position) {
                 return Some(district);
@@ -275,7 +332,7 @@ impl Map {
         None
     }
 
-    pub fn remove_district(&mut self, district: Rc<RefCell<District>>) {
+    pub fn remove_district(&mut self, _district: Rc<RefCell<District>>) {
         /*
         if let Some(index) = self
             .districts

@@ -1,5 +1,3 @@
-use std::{borrow::Borrow, cell::RefCell, rc::Rc};
-
 extern crate alloc;
 
 use geo::Coordinate;
@@ -8,8 +6,8 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    intersection::{Direction, Intersection, Side},
-    map::{Get, GetMut},
+    intersection::Intersection,
+    map::{Get, GetMut, Insert, Update},
     state::State,
     street::Street,
     Map, Renderer,
@@ -141,15 +139,26 @@ impl<'a> State for CreateStreetState {
         if button != 0 {
             return;
         }
+
+        let start: &mut Intersection = map.get_mut(&self.temp_start).unwrap();
+        start.set_position(mouse_pos);
+
+        self.mouse_pressed = true;
     }
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
         if !self.mouse_pressed {
             return;
         }
+
+        let a: &mut Intersection = map.get_mut(&self.temp_end).unwrap();
+        a.set_position(mouse_pos);
+        
+        map.update::<Street>(self.temp_street);
+        
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
         // Cancel creation of street with right mouse button click
         if button == 2 {
             self.mouse_pressed = false;
@@ -157,6 +166,11 @@ impl<'a> State for CreateStreetState {
         }
 
         if self.mouse_pressed {
+            self.temp_street = Uuid::new_v4();
+            self.temp_start = Uuid::new_v4();
+            self.temp_end = Uuid::new_v4();
+
+            self.enter(map);
         }
 
         self.mouse_pressed = false;
@@ -186,9 +200,23 @@ impl<'a> State for CreateStreetState {
         Ok(())
     }
 
-    fn update(&mut self) {}
+    fn enter(&self, map: &mut Map) {
+        let mut start = Intersection::default();
+        start.id = self.temp_start;
 
-    fn enter(&self) {}
+        let mut end = Intersection::default();
+        end.id = self.temp_end;
 
-    fn exit(&self) {}
+        let mut street = Street::default();
+        street.id = self.temp_street;
+        street.set_start(start.id, map);
+        street.set_end(end.id, map);
+
+        map.insert(start);
+        map.insert(end);
+
+        map.insert(street);
+    }
+
+    fn exit(&self, map: &mut Map) {}
 }

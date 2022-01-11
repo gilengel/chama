@@ -1,11 +1,9 @@
-use std::{cell::RefCell, rc::Rc, cmp};
+use std::{cell::RefCell, rc::Rc};
 
 use geo::{
     euclidean_length::EuclideanLength,
-    intersects::Intersects,
     line_intersection::LineIntersection,
-    prelude::{Centroid, Contains, EuclideanDistance},
-    CoordFloat, Coordinate, Line, LineString, Point, Polygon,
+    prelude::{Centroid, Contains, EuclideanDistance}, Coordinate, Line, LineString, Point, Polygon,
 };
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -17,7 +15,7 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
-    style::{InteractiveElementStyle, Style},
+    style::{InteractiveElementStyle, Style}, map::{Map, Update, GetMut, Get},
 };
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
@@ -102,10 +100,15 @@ impl Street {
         self.id
     }
 
-    pub fn set_start(&mut self, start: &Intersection) {
-        self.start = start.id;
+    pub fn foo(&mut self, start: &Intersection) {
 
-        self.line.start = start.get_position();
+    }
+    pub fn set_start(&mut self, start: Uuid, map: &Map) {
+        self.start = start;
+
+        if let Some(start) = map.get(&start) {
+            self.line.start = (start as &Intersection).get_position();
+        }
     }
 
     /*
@@ -132,11 +135,15 @@ impl Street {
         self.line.end
     }
 
-    pub fn set_end(&mut self, end: &Intersection) {
-        self.end = end.id;
-        self.line.end = end.get_position();
+    pub fn set_end<T>(&mut self, end: Uuid, map: &mut T) where T: Get<Intersection> {
+        self.end = end;
 
-        self.update_geometry();
+        if let Some(end) = map.get(&end) {
+            self.line.end = (end as &Intersection).get_position();
+        }
+       
+
+        //self.update_geometry();
     }
 
     /*
@@ -157,7 +164,7 @@ impl Street {
             Side::Right => self.right_previous = street,
         }
 
-        self.update_geometry();
+        //self.update_geometry();
     }
 
     pub fn get_previous(&self, side: Side) -> Option<&Rc<RefCell<Street>>> {
@@ -173,7 +180,7 @@ impl Street {
             Side::Right => self.right_next = street,
         }
 
-        self.update_geometry();
+        //self.update_geometry();
     }
 
     pub fn get_next(&self, side: Side) -> Option<&Rc<RefCell<Street>>> {
@@ -283,7 +290,6 @@ impl Street {
     }
 
     fn calc_polygon_points(&self) -> Vec<Coordinate<f64>> {
-        todo!();
         /*
         fn equal_ends(street: &Street, other: &Street) -> bool {
             Rc::ptr_eq(&street.end.as_ref().unwrap(), &other.end.as_ref().unwrap())
@@ -295,6 +301,7 @@ impl Street {
                 &other.start.as_ref().unwrap(),
             )
         }
+        */
 
         let half_width = self.width / 2.0;
         let s = self.start();
@@ -313,6 +320,10 @@ impl Street {
         points.push(end);  
         points.push(end + offset);
         points.push(s + offset);
+
+        points
+        /*
+
 
         
         if let Some(next_left) = &self.left_next {
@@ -408,8 +419,6 @@ impl Street {
 
         points
         */
-
-        vec![]
     }
 
     fn line_intersect_line(

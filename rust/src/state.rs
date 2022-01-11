@@ -36,15 +36,11 @@ pub trait State {
         Ok(())
     }
 
-    /// Can be used to update state variables periodically. This function is called by the
-    /// state maschine within the animation loop requested by the editor.
-    fn update(&mut self);
-
     /// Called every time the state is activated by the state maschine. Use it to 
     /// initialize values for the state.
-    fn enter(&self);
+    fn enter(&self, map: &mut Map);
 
     /// Called every time the state is deactivated by the state maschine. Use it to
     /// clean up values in the state.
-    fn exit(&self);
+    fn exit(&self, map: &mut Map);
 }

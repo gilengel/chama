@@ -1,11 +1,11 @@
-use std::{borrow::Borrow, cell::RefCell, cmp::Ordering, f64::consts::PI, rc::Rc};
 
-use geo::{Coordinate, Point};
+
+use geo::{Coordinate};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{street::Street, interactive_element::{InteractiveElement, InteractiveElementState}, style::Style};
+use crate::{street::Street};
 
 #[derive(Clone, PartialEq, Copy)]
 pub enum Direction {
@@ -56,7 +56,7 @@ impl Intersection {
         self.position
     }
 
-    pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+    pub fn render(&self, _context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         /*
         context.begin_path();
         context.arc(self.position.x, self.position.y, 15.0, 0.0, 2.0 * PI)?;

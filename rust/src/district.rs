@@ -112,7 +112,7 @@ pub fn create_district_for_street(side: Side, street: Rc<RefCell<Street>>) -> Op
     });
 }
 
-fn enclosed(side: Side, starting_street: Rc<RefCell<Street>>) -> Enclosed {
+fn enclosed(_side: Side, _starting_street: Rc<RefCell<Street>>) -> Enclosed {
     todo!();
 
     Enclosed {

@@ -3,7 +3,6 @@ use std::{cell::RefCell, rc::Rc};
 use geo::Coordinate;
 
 use crate::{
-    interactive_element::{InteractiveElement, InteractiveElementState},
     map::Map,
     state::State,
     street::Street,
@@ -31,9 +30,9 @@ impl Default for DeleteStreetState {
 }
 
 impl State for DeleteStreetState {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+    fn mouse_move(&mut self, _mouse_pos: Coordinate<f64>, _map: &mut Map) {
         /*
 
         if let Some(old_hovered_street) = &self.hovered_street {
@@ -53,7 +52,7 @@ impl State for DeleteStreetState {
         */
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _map: &mut Map) {
         /*
         if let Some(hovered_street) = map.get_street_at_position(&position) {
             map.remove_street(Rc::clone(&hovered_street));
@@ -62,11 +61,9 @@ impl State for DeleteStreetState {
         */
     }
 
-    fn update(&mut self) {}
+    fn enter(&self, map: &mut Map) {}
 
-    fn enter(&self) {}
-
-    fn exit(&self) {}
+    fn exit(&self, map: &mut Map) {}
 
     fn render(
         &self,

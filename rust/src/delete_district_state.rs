@@ -2,7 +2,7 @@ use std::{rc::Rc, cell::RefCell};
 
 use geo::Coordinate;
 
-use crate::{state::State, map::Map, Renderer, district::District, interactive_element::{InteractiveElementState, InteractiveElement}};
+use crate::{state::State, map::Map, Renderer, district::District};
 
 pub struct DeleteDistrictState {
     hovered_district: Option<Rc<RefCell<District>>>
@@ -25,11 +25,11 @@ impl Default for DeleteDistrictState {
 }
 
 impl State for DeleteDistrictState {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {
 
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+    fn mouse_move(&mut self, _mouse_pos: Coordinate<f64>, _map: &mut Map) {
         /*
         if let Some(old_hovered_district) = &self.hovered_district {
             old_hovered_district
@@ -48,7 +48,7 @@ impl State for DeleteDistrictState {
         */
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _map: &mut Map) {
         /*
         if let Some(hovered_district) = map.get_district_at_position(&position) {
             map.remove_district(Rc::clone(&hovered_district));
@@ -57,15 +57,11 @@ impl State for DeleteDistrictState {
         */
     }
 
-    fn update(&mut self) {
+    fn enter(&self, map: &mut Map) {
 
     }
 
-    fn enter(&self) {
-
-    }
-
-    fn exit(&self) {
+    fn exit(&self, map: &mut Map) {
 
     }
 

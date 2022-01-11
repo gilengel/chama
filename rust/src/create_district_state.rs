@@ -2,11 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use geo::Coordinate;
 
-use crate::{
-    district::create_district_for_street, intersection::Side, map::Map, state::State,
-    street::Street, Renderer,
-};
-
+use crate::{map::Map, state::State, street::Street, Renderer};
 
 pub struct CreateDistrictState {
     hovered_street: Option<Rc<RefCell<Street>>>,
@@ -29,27 +25,20 @@ impl Default for CreateDistrictState {
 }
 
 impl State for CreateDistrictState {
-    fn mouse_down(&mut self, _: u32, _: u32, _: u32, _: &mut Map) {}
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn mouse_move(&mut self, x: u32, y: u32, map: &mut Map) {
-        let position = Coordinate {
-            x: x.into(),
-            y: y.into(),
-        };
-
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+        /*
         if let Some(hovered_street) = map.get_nearest_street_to_position(&position) {
             self.hovered_street = Some(Rc::clone(&hovered_street));
         } else {
             self.hovered_street = None;
         }
+        */
     }
 
-    fn mouse_up(&mut self, x: u32, y: u32, _: u32, map: &mut Map) {
-        let position = Coordinate {
-            x: x.into(),
-            y: y.into(),
-        };
-
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+        /*
         if self.hovered_street.is_some() {
             let hovered_street = self.hovered_street.as_ref().unwrap();
             let street = hovered_street.as_ref().borrow();
@@ -59,6 +48,7 @@ impl State for CreateDistrictState {
                 map.add_district(Rc::new(RefCell::new(district)));
             }
         }
+        */
     }
 
     fn update(&mut self) {}

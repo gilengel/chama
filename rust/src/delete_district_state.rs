@@ -25,16 +25,12 @@ impl Default for DeleteDistrictState {
 }
 
 impl State for DeleteDistrictState {
-    fn mouse_down(&mut self, _: u32, _: u32, _: u32, _: &mut Map) {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {
 
     }
 
-    fn mouse_move(&mut self, x: u32, y: u32, map: &mut Map) {
-        let position = Coordinate {
-            x: x.into(),
-            y: y.into(),
-        };
-        
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+        /*
         if let Some(old_hovered_district) = &self.hovered_district {
             old_hovered_district
                 .borrow_mut()
@@ -49,18 +45,16 @@ impl State for DeleteDistrictState {
             }
             self.hovered_district = Some(Rc::clone(&hovered_district));
         }
+        */
     }
 
-    fn mouse_up(&mut self, x: u32, y: u32, _: u32, map: &mut Map) {
-        let position = Coordinate {
-            x: x.into(),
-            y: y.into(),
-        };
-        
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+        /*
         if let Some(hovered_district) = map.get_district_at_position(&position) {
             map.remove_district(Rc::clone(&hovered_district));
             self.hovered_district = None
         }
+        */
     }
 
     fn update(&mut self) {

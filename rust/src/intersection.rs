@@ -1,6 +1,7 @@
 use std::{borrow::Borrow, cell::RefCell, cmp::Ordering, f64::consts::PI, rc::Rc};
 
 use geo::{Coordinate, Point};
+use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
@@ -28,20 +29,20 @@ enum Adjacency {
 
 #[derive(Clone)]
 pub struct Intersection {
-    //pub id: Uuid,
+    pub id: Uuid,
     position: Coordinate<f64>,
 
-    connected_streets: Vec<(Direction, Rc<RefCell<Street>>)>,
+    connected_streets: Vec<(Direction, Uuid)>,
 }
 
 
 impl Intersection {
     pub fn new(
         position: Coordinate<f64>,
-        connected_streets: Vec<(Direction, Rc<RefCell<Street>>)>,
+        connected_streets: Vec<(Direction, Uuid)>,
     ) -> Intersection {
         Intersection {
-            //id: Uuid::new_v4(),
+            id: Uuid::new_v4(),
             position,
             connected_streets,
         }
@@ -85,35 +86,31 @@ impl Intersection {
         Ok(())
     }
 
-    pub fn remove_connected_street(&mut self, street: Rc<RefCell<Street>>) {
-        if let Some(index) = self
-            .connected_streets
-            .iter()
-            .position(|i| Rc::ptr_eq(&i.1, &street))
-        {
-            self.connected_streets.remove(index);
-        }
+    pub fn remove_connected_street(&mut self, street: &Street) {
+        self.connected_streets.retain(|&x| x.1 == street.id);
     }
 
-    pub fn is_connected_to_street(&self, street: Rc<RefCell<Street>>) -> bool {
+    pub fn is_connected_to_street(&self, street: &Street) -> bool {
         self.connected_streets
             .iter()
-            .any(|e| Rc::ptr_eq(&e.1, &street))
+            .any(|x| x.1 == street.id)
     }
 
-    pub fn add_incoming_street(&mut self, street: Rc<RefCell<Street>>) {
-        self.connected_streets.push((Direction::In, street));
+    pub fn add_incoming_street(&mut self, street: &Street) {
+        self.connected_streets.push((Direction::In, street.id));
     }
 
-    pub fn add_outgoing_street(&mut self, street: Rc<RefCell<Street>>) {
-        self.connected_streets.push((Direction::Out, street));
+    pub fn add_outgoing_street(&mut self, street: &Street) {
+        self.connected_streets.push((Direction::Out, street.id));
     }
 
-    pub fn get_connected_streets(&self) -> &Vec<(Direction, Rc<RefCell<Street>>)> {
+    pub fn get_connected_streets(&self) -> &Vec<(Direction, Uuid)> {
         &self.connected_streets
     }
 
     pub fn reorder(&mut self) {
+        // TODO
+        /*
         fn angle(vec: &Coordinate<f64>) -> f64 {
             vec.y.atan2(vec.x) + (PI / 2.0)
         }
@@ -199,13 +196,14 @@ impl Intersection {
                 }
             }            
         }
+        */
     }
 }
 
 impl Default for Intersection {
     fn default() -> Self {
         Intersection {
-            //id: Uuid::new_v4(),
+            id: Uuid::new_v4(),
             position: Coordinate { x: 0., y: 0. },
             connected_streets: vec![],
         }

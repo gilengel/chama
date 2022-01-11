@@ -1,5 +1,6 @@
 
 
+use geo::Coordinate;
 use idle_state::IdleState;
 use map::Map;
 use state::State;
@@ -121,11 +122,11 @@ impl Editor {
     
 
     pub fn intersections_length(&self) -> usize {
-        self.map.intersections_length()
+        self.map.intersections().len()
     }
 
     pub fn streets_length(&self) -> usize {
-        self.map.streets_length()
+        self.map.streets().len()
     }
 
     pub fn set_render_intersections(&mut self, render: bool) {
@@ -141,15 +142,15 @@ impl Editor {
     }
 
     pub fn mouse_down(&mut self, x: u32, y: u32, button: u32) {
-        self.state.mouse_down(x, y, button, &mut self.map);
+        self.state.mouse_down(Coordinate { x: x.into(), y: y.into() }, button, &mut self.map);
     }
 
     pub fn mouse_up(&mut self, x: u32, y: u32, button: u32) {
-        self.state.mouse_up(x, y, button, &mut self.map);
+        self.state.mouse_up(Coordinate { x: x.into(), y: y.into() }, button, &mut self.map);
     }
 
     pub fn mouse_move(&mut self, x: u32, y: u32) {
-        self.state.mouse_move(x, y, &mut self.map);
+        self.state.mouse_move(Coordinate { x: x.into(), y: y.into() }, &mut self.map);
     }
     
 }

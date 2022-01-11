@@ -31,13 +31,10 @@ impl Default for DeleteStreetState {
 }
 
 impl State for DeleteStreetState {
-    fn mouse_down(&mut self, _: u32, _: u32, _: u32, _: &mut Map) {}
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn mouse_move(&mut self, x: u32, y: u32, map: &mut Map) {
-        let position = Coordinate {
-            x: x.into(),
-            y: y.into(),
-        };
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+        /*
 
         if let Some(old_hovered_street) = &self.hovered_street {
             old_hovered_street
@@ -45,7 +42,7 @@ impl State for DeleteStreetState {
                 .set_state(InteractiveElementState::Normal);
         }
 
-        if let Some(hovered_street) = map.get_street_at_position(&position) {
+        if let Some(hovered_street) = map.get_street_at_position(&mouse_pos) {
             {
                 hovered_street
                     .borrow_mut()
@@ -53,18 +50,16 @@ impl State for DeleteStreetState {
             }
             self.hovered_street = Some(Rc::clone(&hovered_street));
         }
+        */
     }
 
-    fn mouse_up(&mut self, x: u32, y: u32, _: u32, map: &mut Map) {
-        let position = Coordinate {
-            x: x.into(),
-            y: y.into(),
-        };
-
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+        /*
         if let Some(hovered_street) = map.get_street_at_position(&position) {
             map.remove_street(Rc::clone(&hovered_street));
             self.hovered_street = None
         }
+        */
     }
 
     fn update(&mut self) {}

@@ -3,7 +3,9 @@ use geo::prelude::EuclideanDistance;
 use geo::Coordinate;
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::rc::Rc;
+use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
@@ -16,9 +18,9 @@ pub struct Map {
     width: u32,
     height: u32,
 
-    streets: Vec<Rc<RefCell<Street>>>,
-    intersections: Vec<Rc<RefCell<Intersection>>>,
-    districts: Vec<Rc<RefCell<District>>>,
+    streets: HashMap<Uuid, Street>,
+    intersections: HashMap<Uuid, Intersection>,
+    districts: HashMap<Uuid, District>,
 }
 
 impl Default for Map {
@@ -26,37 +28,61 @@ impl Default for Map {
         Map {
             width: 1920,
             height: 800,
-            streets: vec![],
-            intersections: vec![],
-            districts: vec![],
+            streets: HashMap::new(),
+            intersections: HashMap::new(),
+            districts: HashMap::new(),
         }
     }
 }
 
 impl Renderer for Map {
     fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
-        //context.clear_rect(0.0, 0.0, self.width.into(), self.height.into());
-
-        //if self.render_streets {
-        //    self.temp_street.as_ref().borrow().render(&self.context)?;
-
-        for district in &self.districts {
-            district.as_ref().borrow().render(&context)?;
+        for (_, district) in &self.districts {
+            district.render(&context)?;
         }
 
-        for street in &self.streets {
-            street.as_ref().borrow().render(&context)?;
+        for (_, street) in &self.streets {
+            street.render(&context)?;
         }
-        //}
 
-        //if self.render_intersections {
-        for intersection in &self.intersections {
-            intersection.as_ref().borrow().render(&context)?;
+        for (_, intersection) in &self.intersections {
+            intersection.render(&context)?;
         }
-        //}
 
         Ok(())
     }
+}
+
+pub trait Get<'a, T> {
+    fn get(&'a self, id: Uuid) -> &'a T;
+}
+
+pub trait GetMut<'a, T> {
+    fn get_mut(&'a mut self, id: Uuid) -> &'a mut T;
+}
+
+impl Get<'_, Street> for Map {
+    fn get<'a>(&'a self, id: Uuid) -> &'a Street {
+        self.streets.get(&id).unwrap()
+    }
+}
+
+impl Get<'_, Intersection> for Map {
+    fn get<'a>(&'a self, id: Uuid) -> &'a Intersection {
+        self.intersections.get(&id).unwrap()
+    }   
+}
+
+impl GetMut<'_, Street> for Map {
+    fn get_mut<'a>(&'a mut self, id: Uuid) -> &'a mut Street {
+        self.streets.get_mut(&id).unwrap()
+    }
+}
+
+impl GetMut<'_, Intersection> for Map {
+    fn get_mut<'a>(&'a mut self, id: Uuid) -> &'a mut Intersection {
+        self.intersections.get_mut(&id).unwrap()
+    }   
 }
 
 impl Map {
@@ -75,28 +101,34 @@ impl Map {
         self.height
     }
 
-    pub fn intersections(&self) -> &Vec<Rc<RefCell<Intersection>>> {
+    pub fn intersections(&self) -> &HashMap<Uuid, Intersection> {
         &self.intersections
     }
 
-    pub fn intersections_length(&self) -> usize {
-        self.intersections.len()
+    pub fn streets (&self) -> &HashMap<Uuid, Street> {
+        &self.streets
     }
 
-    pub fn streets_length(&self) -> usize {
-        self.streets.len()
+    pub fn add_street(&mut self, street: Street) {
+        self.streets.insert(street.id, street);
     }
 
-    pub fn add_street(&mut self, street: Rc<RefCell<Street>>) {
-        self.streets.push(street);
+    pub fn add_district(&mut self, district: District) {
+        self.districts.insert(district.id, district);
     }
 
-    pub fn add_district(&mut self, district: Rc<RefCell<District>>) {
-        self.districts.push(district);
+    pub fn add_intersection(&mut self, intersection: Intersection) {
+        self.intersections.insert(intersection.id, intersection);
     }
 
-    pub fn remove_street(&mut self, street: Rc<RefCell<Street>>) -> Option<bool> {
-        match self.streets.iter().position(|i| Rc::ptr_eq(&i, &street)) {
+    pub fn remove_street(&mut self, street: &Street) -> Option<bool> {
+        if let Some((key, x)) = self.streets.remove_entry(&street.id) {
+            todo!();
+        }
+
+        None
+        /*
+        match self.streets.iter().position(|(key, x)| key == street.id) {
             Some(index) => {
                 let street_borrow = street.borrow();
                 let start = street_borrow.start.as_ref().unwrap();
@@ -122,40 +154,26 @@ impl Map {
             }
             None => None,
         }
+        */
     }
 
-    pub fn add_intersection(&mut self, intersection: Rc<RefCell<Intersection>>) {
-        self.intersections.push(intersection);
-    }
-
-    pub fn remove_intersection(&mut self, intersection: Rc<RefCell<Intersection>>) {
-        if let Some(index) = self
-            .intersections
-            .iter()
-            .position(|i| Rc::ptr_eq(&i, &intersection))
-        {
-            self.intersections.remove(index);
-        }
+    pub fn remove_intersection(&mut self, intersection: &Intersection) {
+        self.intersections.remove(&intersection.id);
     }
 
     pub fn get_intersection_at_position(
         &self,
         position: &Coordinate<f64>,
         offset: f64,
-        ignored_intersections: &Vec<Rc<RefCell<Intersection>>>,
-    ) -> Option<Rc<RefCell<Intersection>>> {
-        for intersection in &self.intersections {
-            if ignored_intersections
-                .into_iter()
-                .any(|e| Rc::ptr_eq(e, intersection))
-            {
+        ignored_intersections: &Vec<Uuid>,
+    ) -> Option<&Intersection> {
+        for (id, intersection) in &self.intersections {
+            if ignored_intersections.into_iter().any(|e| e == id) {
                 continue;
             }
 
-            let a = intersection.as_ref().borrow();
-            let intersection_pos = a.get_position();
-            if intersection_pos.euclidean_distance(position) < offset {
-                return Some(Rc::clone(&intersection));
+            if intersection.get_position().euclidean_distance(position) < offset {
+                return Some(&intersection);
             }
         }
 
@@ -165,9 +183,9 @@ impl Map {
     pub fn intersection_with_street(&self, street: &Street) -> Option<Coordinate<f64>> {
         let mut intersections = vec![];
 
-        for another_street in &self.streets {
+        for (_, another_street) in &self.streets {
             if let Some(line_intersection) =
-                street.intersect_with_street(&another_street.as_ref().borrow())
+                street.intersect_with_street(another_street)
             {
                 match line_intersection {
                     LineIntersection::SinglePoint {
@@ -208,10 +226,10 @@ impl Map {
     pub fn get_street_at_position(
         &self,
         position: &Coordinate<f64>,
-    ) -> Option<Rc<RefCell<Street>>> {
-        for street in &self.streets {
-            if street.as_ref().borrow().is_point_on_street(position) {
-                return Some(Rc::clone(street));
+    ) -> Option<&Street> {
+        for (_, street) in &self.streets {
+            if street.is_point_on_street(position) {
+                return Some(street);
             }
         }
 
@@ -221,10 +239,10 @@ impl Map {
     pub fn get_nearest_street_to_position(
         &self,
         position: &Coordinate<f64>,
-    ) -> Option<&Rc<RefCell<Street>>> {
-        self.streets.iter().min_by(|x, y| {
-            let x = x.borrow().line;
-            let y = y.borrow().line;
+    ) -> Option<&Street> {
+        if let Some((_, nearest_street)) = self.streets.iter().min_by(|(_, x), (_, y)| {
+            let x = x.line;
+            let y = y.line;
 
             let d1 = x.euclidean_distance(position);
             let d2 = y.euclidean_distance(position);
@@ -237,16 +255,20 @@ impl Map {
             }
 
             Ordering::Equal
-        })
+        }) {
+            return Some(nearest_street);
+        }
+
+        None
     }
 
     pub fn get_district_at_position(
         &self,
         position: &Coordinate<f64>,
-    ) -> Option<Rc<RefCell<District>>> {
-        for district in &self.districts {
-            if district.as_ref().borrow().is_point_on_district(position) {
-                return Some(Rc::clone(district));
+    ) -> Option<&District> {
+        for (_, district) in &self.districts {
+            if district.is_point_on_district(position) {
+                return Some(district);
             }
         }
 
@@ -254,6 +276,7 @@ impl Map {
     }
 
     pub fn remove_district(&mut self, district: Rc<RefCell<District>>) {
+        /*
         if let Some(index) = self
             .districts
             .iter()
@@ -261,5 +284,6 @@ impl Map {
         {
             self.districts.remove(index);
         }
+        */
     }
 }

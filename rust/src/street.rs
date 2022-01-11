@@ -7,6 +7,7 @@ use geo::{
     prelude::{Centroid, Contains, EuclideanDistance},
     CoordFloat, Coordinate, Line, LineString, Point, Polygon,
 };
+use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
@@ -28,14 +29,14 @@ macro_rules! log {
 
 #[derive(Clone)]
 pub struct Street {
-    pub id: u32,
+    pub id: Uuid,
     pub line: Line<f64>,
     polygon: Polygon<f64>,
 
     width: f64,
 
-    pub start: Option<Rc<RefCell<Intersection>>>,
-    pub end: Option<Rc<RefCell<Intersection>>>,
+    pub start: Uuid,
+    pub end: Uuid,
 
     left_next: Option<Rc<RefCell<Street>>>,
     right_next: Option<Rc<RefCell<Street>>>,
@@ -53,12 +54,12 @@ pub struct Street {
 impl Default for Street {
     fn default() -> Self {
         Street {
-            id: u32::MAX,
+            id: Uuid::default(),
             line: Line::new(Point::new(0.0, 0.0), Point::new(0.0, 0.0)),
             width: 20.0,
             polygon: Polygon::new(LineString::from(vec![Coordinate { x: 0., y: 0. }]), vec![]),
-            start: None,
-            end: None,
+            start: Uuid::default(),
+            end: Uuid::default(),
 
             left_next: None,
             right_next: None,
@@ -97,16 +98,17 @@ impl Street {
         self.line.start
     }
 
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> Uuid {
         self.id
     }
 
-    pub fn set_start(&mut self, start: Rc<RefCell<Intersection>>) {
-        self.start = Some(start);
+    pub fn set_start(&mut self, start: &Intersection) {
+        self.start = start.id;
 
-        self.line.start = self.start.as_ref().unwrap().borrow().get_position();
+        self.line.start = start.get_position();
     }
 
+    /*
     pub fn set_start_position(&mut self, pos: &Coordinate<f64>) {
         self.start
             .as_ref()
@@ -116,6 +118,7 @@ impl Street {
 
             self.line.start = pos.clone();    
     }
+    */
 
     pub fn norm(&self) -> Coordinate<f64> {
         self.norm
@@ -129,13 +132,14 @@ impl Street {
         self.line.end
     }
 
-    pub fn set_end(&mut self, end: Rc<RefCell<Intersection>>) {
-        self.end = Some(end);
-        self.line.end = self.end.as_ref().unwrap().borrow().get_position();
+    pub fn set_end(&mut self, end: &Intersection) {
+        self.end = end.id;
+        self.line.end = end.get_position();
 
         self.update_geometry();
     }
 
+    /*
     pub fn set_end_position(&mut self, pos: &Coordinate<f64>) {
         self.end
             .as_ref()
@@ -145,6 +149,7 @@ impl Street {
 
         self.line.end = pos.clone();
     }
+    */
 
     pub fn set_previous(&mut self, side: Side, street: Option<Rc<RefCell<Street>>>) {
         match side {
@@ -278,6 +283,8 @@ impl Street {
     }
 
     fn calc_polygon_points(&self) -> Vec<Coordinate<f64>> {
+        todo!();
+        /*
         fn equal_ends(street: &Street, other: &Street) -> bool {
             Rc::ptr_eq(&street.end.as_ref().unwrap(), &other.end.as_ref().unwrap())
         }
@@ -400,6 +407,9 @@ impl Street {
         }
 
         points
+        */
+
+        vec![]
     }
 
     fn line_intersect_line(

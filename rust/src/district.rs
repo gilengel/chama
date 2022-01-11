@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use geo::{prelude::Contains, Coordinate, LineString, Polygon};
+use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
@@ -12,6 +13,7 @@ use crate::{
 };
 
 pub struct District {
+    pub id: Uuid,
     polygon: Polygon<f64>,
     style: InteractiveElementStyle,
     state: InteractiveElementState,
@@ -19,6 +21,7 @@ pub struct District {
 impl Default for District {
     fn default() -> Self {
         District {
+            id: Uuid::new_v4(),
             polygon: Polygon::new(LineString::from(vec![Coordinate { x: 0., y: 0. }]), vec![]),
             style: InteractiveElementStyle {
                 normal: Style {
@@ -110,6 +113,14 @@ pub fn create_district_for_street(side: Side, street: Rc<RefCell<Street>>) -> Op
 }
 
 fn enclosed(side: Side, starting_street: Rc<RefCell<Street>>) -> Enclosed {
+    todo!();
+
+    Enclosed {
+        enclosed: false,
+        _streets: vec![],
+        points: vec![]
+    }
+    /*
     let mut side = side;
     let start = starting_street.as_ref().borrow();
 
@@ -172,4 +183,5 @@ fn enclosed(side: Side, starting_street: Rc<RefCell<Street>>) -> Enclosed {
         _streets: streets,
         points: points,
     }
+    */
 }

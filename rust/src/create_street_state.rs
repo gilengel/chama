@@ -7,7 +7,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     intersection::Intersection,
-    map::{Get, GetMut, Insert, Update},
+    map::{GetMut, Insert, Update},
     state::State,
     street::Street,
     Map, Renderer,
@@ -218,5 +218,5 @@ impl<'a> State for CreateStreetState {
         map.insert(street);
     }
 
-    fn exit(&self, map: &mut Map) {}
+    fn exit(&self, _map: &mut Map) {}
 }

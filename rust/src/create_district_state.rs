@@ -52,9 +52,9 @@ impl State for CreateDistrictState {
     }
 
 
-    fn enter(&self, map: &mut Map) {}
+    fn enter(&self, _map: &mut Map) {}
 
-    fn exit(&self, map: &mut Map) {}
+    fn exit(&self, _map: &mut Map) {}
 
     fn render(
         &self,

@@ -15,7 +15,7 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
-    style::{InteractiveElementStyle, Style}, map::{Map, Update, GetMut, Get},
+    style::{InteractiveElementStyle, Style}, map::{Map, Get},
 };
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
@@ -100,7 +100,7 @@ impl Street {
         self.id
     }
 
-    pub fn foo(&mut self, start: &Intersection) {
+    pub fn foo(&mut self, _start: &Intersection) {
 
     }
     pub fn set_start(&mut self, start: Uuid, map: &Map) {

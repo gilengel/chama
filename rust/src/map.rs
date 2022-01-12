@@ -4,15 +4,16 @@ use geo::Coordinate;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::f64::consts::PI;
 use std::rc::Rc;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::district::District;
-use crate::intersection::Intersection;
+use crate::intersection::{Direction, Intersection, Side};
 use crate::street::Street;
-use crate::Renderer;
+use crate::{Renderer, log};
 
 pub struct Map {
     width: u32,
@@ -101,21 +102,20 @@ impl GetMut<Intersection> for Map {
     }
 }
 
-
 pub trait Update<T> {
     fn update<S>(&mut self, id: &Uuid);
 }
 
 /*
-impl<T> Update<Street> for T 
-    where 
+impl<T> Update<Street> for T
+    where
     T: GetMut<Street> + Get<Intersection>
 {
-    fn update<Street>(&mut self, id: &Uuid) {  
+    fn update<Street>(&mut self, id: &Uuid) {
         let street = self.get_mut(id).unwrap();
         let a = self.get(&street.start).unwrap();
         let b = self.get(&street.end).unwrap();
-        
+
         street.line.start = a.get_position();
         street.line.end = b.get_position();
 
@@ -123,7 +123,6 @@ impl<T> Update<Street> for T
     }
 }
 */
-
 
 pub trait Insert<T> {
     fn insert(&mut self, x: T);
@@ -141,6 +140,24 @@ impl Insert<Intersection> for Map {
     }
 }
 
+/*
+
+pub trait Remove<T> {
+    fn remove<S>(&mut self, id: &Uuid) -> Option<S>
+}
+
+impl Remove<Street> for Map {
+    fn remove<Street>(&mut self, id: &Uuid) -> Option<Street> {
+        self.streets.remove(id)
+    }
+}
+
+impl Remove<Intersection> for Map {
+    fn remove<Intersection>(&mut self, id: &Uuid) -> Option<Intersection> {
+        self.streets.remove(&x.id)
+    }
+}
+*/
 impl Map {
     pub fn new(width: u32, height: u32) -> Self {
         Map {
@@ -148,17 +165,6 @@ impl Map {
             height,
             ..Default::default()
         }
-    }
-
-    pub fn update<Street>(&mut self, id: Uuid) { 
-        let street = self.streets.get_mut(&id).unwrap();
-        let a = self.intersections.get(&street.start).unwrap();
-        let b = self.intersections.get(&street.end).unwrap();
-        
-        street.line.start = a.get_position();
-        street.line.end = b.get_position();
-
-        street.update_geometry();
     }
 
     pub fn width(&self) -> u32 {
@@ -177,6 +183,16 @@ impl Map {
         &self.streets
     }
 
+    /*
+    pub fn get_street(&self, id: Uuid) {
+        if self.streets.contains_key(id) {
+            return self.streets.get(id);
+        }
+
+        None
+    }
+    */
+
     pub fn add_street(&mut self, street: Street) {
         self.streets.insert(street.id, street);
     }
@@ -189,13 +205,31 @@ impl Map {
         self.intersections.insert(intersection.id, intersection);
     }
 
+    pub fn update_street(&mut self, id: &Uuid) {
+        let mut street = self.streets.remove(id).unwrap();
+        street.update_geometry(&self.intersections, &self.streets);
+
+        self.streets.insert(street.id, street);
+    }
+
+    pub fn update_intersection(&mut self, id: &Uuid) {
+        let intersection = self.intersections.get_mut(id).unwrap();
+        intersection.reorder(&mut self.streets);
+
+        let streets = intersection.get_connected_streets().clone();
+        for (_, id) in streets {
+            self.update_street(&id);
+        }
+    }
+
+    /*
     pub fn remove_street(&mut self, street: &Street) -> Option<bool> {
         if let Some((_key, _x)) = self.streets.remove_entry(&street.id) {
             todo!();
         }
 
         None
-        /*
+
         match self.streets.iter().position(|(key, x)| key == street.id) {
             Some(index) => {
                 let street_borrow = street.borrow();
@@ -222,26 +256,23 @@ impl Map {
             }
             None => None,
         }
-        */
-    }
 
-    pub fn remove_intersection(&mut self, intersection: &Intersection) {
-        self.intersections.remove(&intersection.id);
     }
+    */
 
     pub fn get_intersection_at_position(
         &self,
         position: &Coordinate<f64>,
         offset: f64,
         ignored_intersections: &Vec<Uuid>,
-    ) -> Option<&Intersection> {
+    ) -> Option<Uuid> {
         for (id, intersection) in &self.intersections {
             if ignored_intersections.into_iter().any(|e| e == id) {
                 continue;
             }
 
             if intersection.get_position().euclidean_distance(position) < offset {
-                return Some(&intersection);
+                return Some(*id);
             }
         }
 
@@ -289,10 +320,10 @@ impl Map {
         Some(intersections.first().unwrap().clone())
     }
 
-    pub fn get_street_at_position(&self, position: &Coordinate<f64>) -> Option<&Street> {
-        for (_, street) in &self.streets {
+    pub fn get_street_at_position(&self, position: &Coordinate<f64>) -> Option<Uuid> {
+        for (id, street) in &self.streets {
             if street.is_point_on_street(position) {
-                return Some(street);
+                return Some(*id);
             }
         }
 
@@ -322,6 +353,45 @@ impl Map {
         None
     }
 
+    pub fn foo(&mut self, street_id: &Uuid, start_id: &Uuid) {
+        let a = self.streets.get_mut(street_id).unwrap();
+        let b = self.intersections.get_mut(&a.start).unwrap();
+
+        a.set_start(b);
+    }
+
+    pub fn street(&self, id: &Uuid) -> Option<&Street> {
+        if self.streets.contains_key(id) {
+            return Some(self.streets.get(id).unwrap());
+        }
+
+        None
+    }
+
+    pub fn street_mut(&mut self, id: &Uuid) -> Option<&mut Street> {
+        if self.streets.contains_key(id) {
+            return Some(self.streets.get_mut(id).unwrap());
+        }
+
+        None
+    }
+
+    pub fn intersection(&self, id: &Uuid) -> Option<&Intersection> {
+        if self.intersections.contains_key(id) {
+            return Some(self.intersections.get(id).unwrap());
+        }
+
+        None
+    }
+
+    pub fn intersection_mut(&mut self, id: &Uuid) -> Option<&mut Intersection> {
+        if self.intersections.contains_key(id) {
+            return Some(self.intersections.get_mut(id).unwrap());
+        }
+
+        None
+    }
+
     pub fn get_district_at_position(&self, position: &Coordinate<f64>) -> Option<&District> {
         for (_, district) in &self.districts {
             if district.is_point_on_district(position) {
@@ -330,6 +400,26 @@ impl Map {
         }
 
         None
+    }
+
+    pub fn remove_street(&mut self, id: &Uuid) -> Option<Street> {
+        if let Some(street) = self.streets.remove(id) {
+            if let Some(start) = self.intersections.get_mut(&street.start) {
+                start.remove_connected_street(id);
+            }
+
+            if let Some(end) = self.intersections.get_mut(&street.end) {
+                end.remove_connected_street(id);
+            }
+
+            return Some(street);
+        }
+
+        None
+    }
+
+    pub fn remove_intersection(&mut self, id: &Uuid) -> Option<Intersection> {
+        self.intersections.remove(id)
     }
 
     pub fn remove_district(&mut self, _district: Rc<RefCell<District>>) {

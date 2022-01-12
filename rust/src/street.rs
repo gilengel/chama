@@ -1,9 +1,10 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
-    prelude::{Centroid, Contains, EuclideanDistance}, Coordinate, Line, LineString, Point, Polygon,
+    prelude::{Centroid, Contains, EuclideanDistance},
+    Coordinate, Line, LineString, Point, Polygon,
 };
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -15,15 +16,9 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
-    style::{InteractiveElementStyle, Style}, map::{Map, Get},
+    map::{Get, Map},
+    style::{InteractiveElementStyle, Style}, log,
 };
-
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
 
 #[derive(Clone)]
 pub struct Street {
@@ -36,11 +31,11 @@ pub struct Street {
     pub start: Uuid,
     pub end: Uuid,
 
-    left_next: Option<Rc<RefCell<Street>>>,
-    right_next: Option<Rc<RefCell<Street>>>,
+    left_next: Option<Uuid>,
+    right_next: Option<Uuid>,
 
-    left_previous: Option<Rc<RefCell<Street>>>,
-    right_previous: Option<Rc<RefCell<Street>>>,
+    left_previous: Option<Uuid>,
+    right_previous: Option<Uuid>,
 
     norm: Coordinate<f64>,
     inverse_norm: Coordinate<f64>,
@@ -52,7 +47,7 @@ pub struct Street {
 impl Default for Street {
     fn default() -> Self {
         Street {
-            id: Uuid::default(),
+            id: Uuid::new_v4(),
             line: Line::new(Point::new(0.0, 0.0), Point::new(0.0, 0.0)),
             width: 20.0,
             polygon: Polygon::new(LineString::from(vec![Coordinate { x: 0., y: 0. }]), vec![]),
@@ -64,8 +59,8 @@ impl Default for Street {
             left_previous: None,
             right_previous: None,
 
-            norm: Coordinate { x : 0.0, y: 0.0 },
-            inverse_norm: Coordinate { x : 0.0, y: 0.0 },
+            norm: Coordinate { x: 0.0, y: 0.0 },
+            inverse_norm: Coordinate { x: 0.0, y: 0.0 },
 
             style: InteractiveElementStyle::default(),
             state: InteractiveElementState::Normal,
@@ -100,9 +95,7 @@ impl Street {
         self.id
     }
 
-    pub fn foo(&mut self, _start: &Intersection) {
-
-    }
+    /*
     pub fn set_start(&mut self, start: Uuid, map: &Map) {
         self.start = start;
 
@@ -110,7 +103,17 @@ impl Street {
             self.line.start = (start as &Intersection).get_position();
         }
     }
+    */
 
+    pub fn set_start(&mut self, start: &Intersection) {
+        self.start = start.id;
+        self.line.start = start.get_position();
+    }
+
+    pub fn set_end(&mut self, end: &Intersection) {
+        self.end = end.id;
+        self.line.end = end.get_position();
+    }
     /*
     pub fn set_start_position(&mut self, pos: &Coordinate<f64>) {
         self.start
@@ -119,7 +122,7 @@ impl Street {
             .borrow_mut()
             .set_position(pos.clone());
 
-            self.line.start = pos.clone();    
+            self.line.start = pos.clone();
     }
     */
 
@@ -135,17 +138,6 @@ impl Street {
         self.line.end
     }
 
-    pub fn set_end<T>(&mut self, end: Uuid, map: &mut T) where T: Get<Intersection> {
-        self.end = end;
-
-        if let Some(end) = map.get(&end) {
-            self.line.end = (end as &Intersection).get_position();
-        }
-       
-
-        //self.update_geometry();
-    }
-
     /*
     pub fn set_end_position(&mut self, pos: &Coordinate<f64>) {
         self.end
@@ -158,35 +150,35 @@ impl Street {
     }
     */
 
-    pub fn set_previous(&mut self, side: Side, street: Option<Rc<RefCell<Street>>>) {
+    pub fn set_previous(&mut self, side: Side, id: Option<Uuid>) {
         match side {
-            Side::Left => self.left_previous = street,
-            Side::Right => self.right_previous = street,
+            Side::Left => self.left_previous = id,
+            Side::Right => self.right_previous = id,
         }
 
         //self.update_geometry();
     }
 
-    pub fn get_previous(&self, side: Side) -> Option<&Rc<RefCell<Street>>> {
+    pub fn get_previous(&self, side: Side) -> Option<Uuid> {
         match side {
-            Side::Left => self.left_previous.as_ref(),
-            Side::Right => self.right_previous.as_ref(),
+            Side::Left => self.left_previous,
+            Side::Right => self.right_previous,
         }
     }
 
-    pub fn set_next(&mut self, side: Side, street: Option<Rc<RefCell<Street>>>) {
+    pub fn set_next(&mut self, side: Side, id: Option<Uuid>) {
         match side {
-            Side::Left => self.left_next = street,
-            Side::Right => self.right_next = street,
+            Side::Left => self.left_next = id,
+            Side::Right => self.right_next = id,
         }
 
         //self.update_geometry();
     }
 
-    pub fn get_next(&self, side: Side) -> Option<&Rc<RefCell<Street>>> {
+    pub fn get_next(&self, side: Side) -> Option<Uuid> {
         match side {
-            Side::Left => self.left_next.as_ref(),
-            Side::Right => self.right_next.as_ref(),
+            Side::Left => self.left_next,
+            Side::Right => self.right_next,
         }
     }
 
@@ -200,20 +192,33 @@ impl Street {
         Side::Right
     }
 
-    pub fn update_geometry(&mut self) {
-        
+    pub fn update_geometry(
+        &mut self,
+        intersections: &HashMap<Uuid, Intersection>,
+        streets: &HashMap<Uuid, Street>,
+    ) {
+        let start = intersections.get(&self.start).unwrap();
+        let end = intersections.get(&self.end).unwrap();
+        self.line.start = start.get_position();
+        self.line.end = end.get_position();
+
         let start = self.line.start;
         let end = self.line.end;
 
         let length = start.euclidean_distance(&end);
         let vec = end - start;
-        self.norm = Coordinate { x: vec.x / length, y: vec.y / length };
+        self.norm = Coordinate {
+            x: vec.x / length,
+            y: vec.y / length,
+        };
 
         let inverse_vec = start - end;
-        self.inverse_norm = Coordinate { x: inverse_vec.x / length, y: inverse_vec.y / length };
+        self.inverse_norm = Coordinate {
+            x: inverse_vec.x / length,
+            y: inverse_vec.y / length,
+        };
 
-
-        let pts = self.calc_polygon_points();
+        let pts = self.calc_polygon_points(streets);
         self.polygon = Polygon::new(LineString::from(pts), vec![]);
     }
 
@@ -235,15 +240,13 @@ impl Street {
         context.set_fill_style(&style.background_color.clone().into());
         context.fill();
 
-
-
         if style.border_width > 0 {
             context.set_line_width(style.border_width.into());
             context.set_stroke_style(&style.border_color.clone().into());
             context.stroke();
         }
 
-        context.begin_path();        
+        context.begin_path();
         let p1 = start + self.norm * (self.line.euclidean_length() - 5.0);
         let _p = start + self.norm * (self.line.euclidean_length() - self.width + 5.0);
         let p2 = _p + self.perp() * (-self.width / 2.0 + 5.0);
@@ -251,45 +254,52 @@ impl Street {
         context.move_to(p1.x, p1.y);
         context.line_to(p2.x, p2.y);
         context.line_to(p3.x, p3.y);
-        
+
         context.close_path();
         context.set_fill_style(&style.background_color.clone().into());
         context.stroke();
 
         context.restore();
 
+        /*
         let mut owned_string: String = format!("{} -> ", self.id);
 
         match &self.left_previous {
-            Some(l) => owned_string.push_str(format!("{},", l.as_ref().borrow().id()).as_str()),
+            Some(l) => owned_string.push_str(&l.to_string()),
             None => owned_string.push_str("#,"),
         }
         match &self.right_previous {
-            Some(l) => owned_string.push_str(format!("{},", l.as_ref().borrow().id()).as_str()),
+            Some(l) => owned_string.push_str(&l.to_string()),
             None => owned_string.push_str("#,"),
         }
         match &self.left_next {
-            Some(l) => owned_string.push_str(format!("{},", l.as_ref().borrow().id()).as_str()),
+            Some(l) => owned_string.push_str(&l.to_string()),
             None => owned_string.push_str("#,"),
         }
         match &self.right_next {
-            Some(l) => owned_string.push_str(format!("{}", l.as_ref().borrow().id()).as_str()),
+            Some(l) => owned_string.push_str(&l.to_string()),
             None => owned_string.push_str("#"),
         }
+        
 
         if let Some(position) = self.polygon.exterior().centroid() {
             context.set_fill_style(&"#FFFFFF".into());
             context.fill_text(&owned_string, position.x(), position.y())?;
         }
+        */
+        
 
         Ok(())
     }
 
     fn perp(&self) -> Coordinate<f64> {
-        Coordinate { x: -self.norm.y, y: self.norm.x }
+        Coordinate {
+            x: -self.norm.y,
+            y: self.norm.x,
+        }
     }
 
-    fn calc_polygon_points(&self) -> Vec<Coordinate<f64>> {
+    fn calc_polygon_points(&self, streets: &HashMap<Uuid, Street>) -> Vec<Coordinate<f64>> {
         /*
         fn equal_ends(street: &Street, other: &Street) -> bool {
             Rc::ptr_eq(&street.end.as_ref().unwrap(), &other.end.as_ref().unwrap())
@@ -314,45 +324,33 @@ impl Street {
         let offset: Coordinate<f64> = (perp * half_width).into();
 
         let end = s + (self.norm() * length).into();
-        points.push(s.into()); 
+        points.push(s.into());
         points.push(s - offset);
-        points.push(end - offset);       
-        points.push(end);  
+        points.push(end - offset);
+        points.push(end);
         points.push(end + offset);
         points.push(s + offset);
 
-        points
-        /*
-
-
-        
         if let Some(next_left) = &self.left_next {
-            let next_left = next_left.borrow();
+            let next_left = streets.get(next_left).unwrap();
 
-            let factor = if equal_ends(self, &next_left) {
-                1.0
-            } else {
-                -1.0
-            };
+            let factor = if self.end == next_left.end { 1.0 } else { -1.0 };
 
             let offset = next_left.start() + next_left.perp() * half_width * factor;
             let start = points[1];
 
-            if let Some(intersection) = self.line_intersect_line(
-                start,
-                self.norm,
-                offset,
-                next_left.norm,
-            ) {
+            if let Some(intersection) =
+                self.line_intersect_line(start, self.norm, offset, next_left.norm)
+            {
                 let pts_len = points.len();
                 points[2] = intersection;
             }
         }
-        
-        if let Some(right_next) = &self.right_next {
-            let right_next = right_next.borrow();
 
-            let factor = if equal_ends(self, &right_next) {
+        if let Some(right_next) = &self.right_next {
+            let right_next = streets.get(right_next).unwrap();
+
+            let factor = if self.end == right_next.end {
                 -1.0
             } else {
                 1.0
@@ -361,21 +359,18 @@ impl Street {
             let offset = right_next.start() + right_next.perp() * half_width * factor;
             let start = *points.last().unwrap();
 
-            if let Some(intersection) = self.line_intersect_line(
-                start,
-                self.norm,
-                offset,
-                right_next.norm,
-            ) {
+            if let Some(intersection) =
+                self.line_intersect_line(start, self.norm, offset, right_next.norm)
+            {
                 let pts_len = points.len();
                 points[pts_len - 2] = intersection;
             }
         }
 
         if let Some(previous_left) = &self.left_previous {
-            let previous_left = previous_left.borrow();
+            let previous_left = streets.get(previous_left).unwrap();
 
-            let factor = if equal_starts(self, &previous_left) {
+            let factor = if self.start == previous_left.start {
                 1.0
             } else {
                 -1.0
@@ -384,21 +379,17 @@ impl Street {
             let start = points[1];
             let other_start = previous_left.start() + previous_left.perp() * half_width * factor;
 
-            if let Some(intersection) = self.line_intersect_line(
-                start,
-                self.norm,
-                other_start,
-                previous_left.norm,
-            ) {
+            if let Some(intersection) =
+                self.line_intersect_line(start, self.norm, other_start, previous_left.norm)
+            {
                 points[1] = intersection;
             }
-            
         }
 
         if let Some(right_previous) = &self.right_previous {
-            let right_previous = right_previous.borrow();
+            let right_previous = streets.get(right_previous).unwrap();
 
-            let factor = if equal_starts(self, &right_previous) {
+            let factor = if self.start == right_previous.start {
                 -1.0
             } else {
                 1.0
@@ -412,13 +403,10 @@ impl Street {
                 right_previous.norm,
             ) {
                 *points.last_mut().unwrap() = intersection;
-
-                
             }
         }
 
         points
-        */
     }
 
     fn line_intersect_line(
@@ -438,7 +426,7 @@ impl Street {
                     is_proper: _,
                 } => {
                     return Some(intersection);
-                },                
+                }
                 _ => {}
             }
         }

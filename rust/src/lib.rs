@@ -31,6 +31,13 @@ use crate::delete_street_state::DeleteStreetState;
 
 extern crate alloc;
 
+#[macro_export] macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
+
 //#[cfg(feature = "wee_alloc")]
 //#[global_allocator]
 //static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;

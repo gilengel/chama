@@ -1,11 +1,12 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::format, rc::Rc};
 
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
     prelude::{Centroid, Contains, EuclideanDistance},
-    Coordinate, Line, LineString, Point, Polygon,
+    CoordFloat, Coordinate, Line, LineString, Point, Polygon,
 };
+use rand::{random, thread_rng, Rng};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -16,8 +17,9 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
+    log,
     map::{Get, Map},
-    style::{InteractiveElementStyle, Style}, log,
+    style::{InteractiveElementStyle, Style},
 };
 
 #[derive(Clone)]
@@ -40,7 +42,7 @@ pub struct Street {
     norm: Coordinate<f64>,
     inverse_norm: Coordinate<f64>,
 
-    style: InteractiveElementStyle,
+    pub style: InteractiveElementStyle,
     state: InteractiveElementState,
 }
 
@@ -261,38 +263,34 @@ impl Street {
 
         context.restore();
 
-        /*
-        let mut owned_string: String = format!("{} -> ", self.id);
+        let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
 
         match &self.left_previous {
-            Some(l) => owned_string.push_str(&l.to_string()),
+            Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
             None => owned_string.push_str("#,"),
         }
         match &self.right_previous {
-            Some(l) => owned_string.push_str(&l.to_string()),
+            Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
             None => owned_string.push_str("#,"),
         }
         match &self.left_next {
-            Some(l) => owned_string.push_str(&l.to_string()),
+            Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
             None => owned_string.push_str("#,"),
         }
         match &self.right_next {
-            Some(l) => owned_string.push_str(&l.to_string()),
+            Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
             None => owned_string.push_str("#"),
         }
-        
 
         if let Some(position) = self.polygon.exterior().centroid() {
             context.set_fill_style(&"#FFFFFF".into());
             context.fill_text(&owned_string, position.x(), position.y())?;
         }
-        */
-        
 
         Ok(())
     }
 
-    fn perp(&self) -> Coordinate<f64> {
+    pub fn perp(&self) -> Coordinate<f64> {
         Coordinate {
             x: -self.norm.y,
             y: self.norm.x,
@@ -300,6 +298,17 @@ impl Street {
     }
 
     fn calc_polygon_points(&self, streets: &HashMap<Uuid, Street>) -> Vec<Coordinate<f64>> {
+        fn are_norms_equal(pt1: &Coordinate<f64>, pt2: &Coordinate<f64>) -> bool {
+            let r = *pt1 - *pt2;
+            let r2 = *pt1 + *pt2;
+
+            if (r.x.abs() < 0.001 && r.y.abs() < 0.001) || (r2.x.abs() < 0.001 && r2.y.abs() < 0.001) {
+                return true;
+            }
+
+            false
+        }
+
         /*
         fn equal_ends(street: &Street, other: &Street) -> bool {
             Rc::ptr_eq(&street.end.as_ref().unwrap(), &other.end.as_ref().unwrap())
@@ -339,11 +348,12 @@ impl Street {
             let offset = next_left.start() + next_left.perp() * half_width * factor;
             let start = points[1];
 
-            if let Some(intersection) =
-                self.line_intersect_line(start, self.norm, offset, next_left.norm)
-            {
-                let pts_len = points.len();
-                points[2] = intersection;
+            if !are_norms_equal(&self.norm, &next_left.norm) {
+                if let Some(intersection) =
+                    self.line_intersect_line(start, self.norm, offset, next_left.norm)
+                {
+                    points[2] = intersection;
+                }
             }
         }
 
@@ -359,11 +369,14 @@ impl Street {
             let offset = right_next.start() + right_next.perp() * half_width * factor;
             let start = *points.last().unwrap();
 
-            if let Some(intersection) =
-                self.line_intersect_line(start, self.norm, offset, right_next.norm)
-            {
-                let pts_len = points.len();
-                points[pts_len - 2] = intersection;
+            if !are_norms_equal(&self.norm, &right_next.norm) {
+                if let Some(intersection) =
+                    self.line_intersect_line(start, self.norm, offset, right_next.norm)
+                {
+                    let pts_len = points.len();
+
+                    points[pts_len - 2] = intersection;
+                }
             }
         }
 
@@ -379,10 +392,12 @@ impl Street {
             let start = points[1];
             let other_start = previous_left.start() + previous_left.perp() * half_width * factor;
 
-            if let Some(intersection) =
-                self.line_intersect_line(start, self.norm, other_start, previous_left.norm)
-            {
-                points[1] = intersection;
+            if !are_norms_equal(&self.norm, &previous_left.norm) {
+                if let Some(intersection) =
+                    self.line_intersect_line(start, self.norm, other_start, previous_left.norm)
+                {
+                    points[1] = intersection;
+                }
             }
         }
 
@@ -396,13 +411,15 @@ impl Street {
             };
 
             let offset = right_previous.start() + right_previous.perp() * half_width * factor;
-            if let Some(intersection) = self.line_intersect_line(
-                *points.last().unwrap(),
-                self.norm,
-                offset,
-                right_previous.norm,
-            ) {
-                *points.last_mut().unwrap() = intersection;
+            if !are_norms_equal(&self.norm, &right_previous.norm) {
+                if let Some(intersection) = self.line_intersect_line(
+                    *points.last().unwrap(),
+                    self.norm,
+                    offset,
+                    right_previous.norm,
+                ) {
+                    *points.last_mut().unwrap() = intersection;
+                }
             }
         }
 

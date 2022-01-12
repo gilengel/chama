@@ -320,8 +320,10 @@ impl Map {
         Some(intersections.first().unwrap().clone())
     }
 
-    pub fn get_street_at_position(&self, position: &Coordinate<f64>) -> Option<Uuid> {
+    pub fn get_street_at_position(&self, position: &Coordinate<f64>, ignored_streets: &Vec<Uuid>) -> Option<Uuid> {
         for (id, street) in &self.streets {
+            if ignored_streets.contains(id) { continue; }
+
             if street.is_point_on_street(position) {
                 return Some(*id);
             }

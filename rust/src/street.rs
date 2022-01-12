@@ -1,12 +1,11 @@
-use std::{cell::RefCell, collections::HashMap, fmt::format, rc::Rc};
+use std::{collections::HashMap};
 
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
-    prelude::{Centroid, Contains, EuclideanDistance},
-    CoordFloat, Coordinate, Line, LineString, Point, Polygon,
+    prelude::{Centroid, Contains, EuclideanDistance}, Coordinate, Line, LineString, Point, Polygon,
 };
-use rand::{random, thread_rng, Rng};
+use rand::{Rng};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -17,8 +16,7 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
-    log,
-    map::{Get, Map},
+    map::{Get},
     style::{InteractiveElementStyle, Style},
 };
 

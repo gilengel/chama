@@ -4,16 +4,16 @@ use geo::Coordinate;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::f64::consts::PI;
+
 use std::rc::Rc;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::district::District;
-use crate::intersection::{Direction, Intersection, Side};
+use crate::intersection::{Intersection};
 use crate::street::Street;
-use crate::{Renderer, log};
+use crate::{Renderer};
 
 pub struct Map {
     width: u32,
@@ -355,7 +355,7 @@ impl Map {
         None
     }
 
-    pub fn foo(&mut self, street_id: &Uuid, start_id: &Uuid) {
+    pub fn foo(&mut self, street_id: &Uuid, _start_id: &Uuid) {
         let a = self.streets.get_mut(street_id).unwrap();
         let b = self.intersections.get_mut(&a.start).unwrap();
 

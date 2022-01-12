@@ -1,22 +1,21 @@
 extern crate alloc;
 
-use std::fmt::format;
+
 
 use geo::{
     line_intersection::{line_intersection, LineIntersection},
     Coordinate, Line, Point, prelude::EuclideanDistance,
 };
-use js_sys::Date;
+
 use rand::{thread_rng, Rng};
 use uuid::Uuid;
-use wasm_bindgen::{JsValue, UnwrapThrowExt};
+use wasm_bindgen::{JsValue};
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     interactive_element::InteractiveElement,
     intersection::Intersection,
-    log,
-    map::{Get, GetMut, Insert, Update},
+    map::{Get, GetMut, Insert},
     state::State,
     street::Street,
     Map, Renderer,
@@ -283,7 +282,7 @@ impl<'a> State for CreateStreetState {
         map.update_intersection(&end);
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _map: &mut Map) {
         // Cancel creation of street with right mouse button click
         if button == 2 {
             self.mouse_pressed = false;
@@ -322,7 +321,7 @@ impl<'a> State for CreateStreetState {
         Ok(())
     }
 
-    fn enter(&self, map: &mut Map) {
+    fn enter(&self, _map: &mut Map) {
         /*
         let mut start = Intersection::default();
         start.id = self.temp_start;

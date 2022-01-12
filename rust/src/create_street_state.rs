@@ -237,9 +237,11 @@ impl<'a> State for CreateStreetState {
             None => {
                 match map.get_street_at_position(&mouse_pos, &vec![self.temp_street]) {
                     Some(hovered_street) => {                        
-                        let pos = self
-                            .project_point_onto_middle_of_street(mouse_pos, &hovered_street, map)
-                            .unwrap();
+                        let pos = match self
+                            .project_point_onto_middle_of_street(mouse_pos, &hovered_street, map){
+                                Some(x) => x,
+                                None => mouse_pos,
+                            };
                         
                         let p: Point<f64> = pos.into();
                         let s: Point<f64> = map.intersection(&self.temp_start).unwrap().get_position().into();

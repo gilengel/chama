@@ -9,7 +9,7 @@ use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     intersection::Side,
     street::Street,
-    style::{InteractiveElementStyle, Style},
+    style::{InteractiveElementStyle, Style}, map::Map,
 };
 
 pub struct District {
@@ -95,12 +95,12 @@ impl District {
 
 struct Enclosed {
     enclosed: bool,
-    _streets: Vec<(Side, Rc<RefCell<Street>>)>,
+    _streets: Vec<(Side, Uuid)>,
     points: Vec<Coordinate<f64>>,
 }
 
-pub fn create_district_for_street(side: Side, street: Rc<RefCell<Street>>) -> Option<District> {
-    let district = enclosed(side, street);
+pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map) -> Option<District> {
+    let district = enclosed(side, street, map);
 
     if !district.enclosed {
         return None;
@@ -112,57 +112,45 @@ pub fn create_district_for_street(side: Side, street: Rc<RefCell<Street>>) -> Op
     });
 }
 
-fn enclosed(_side: Side, _starting_street: Rc<RefCell<Street>>) -> Enclosed {
-    todo!();
-
-    Enclosed {
-        enclosed: false,
-        _streets: vec![],
-        points: vec![]
-    }
-    /*
+fn enclosed(side: Side, street: Uuid, map: &mut Map) -> Enclosed {
     let mut side = side;
-    let start = starting_street.as_ref().borrow();
+    let start = street;
 
-    let mut next: Option<Rc<RefCell<Street>>> = match start.get_next(side) {
-        Some(n) => Some(Rc::clone(n)),
+    let mut next = match map.street(&street).unwrap().get_next(side) {
+        Some(id) => Some(id),
         None => None,
     };
 
-    let mut street = Rc::clone(&starting_street);
+    let mut street = start;
     let mut forward = true;
 
-    let mut streets: Vec<(Side, Rc<RefCell<Street>>)> = vec![];
+    let mut streets: Vec<(Side, Uuid)> = vec![];
     let mut points: Vec<Coordinate<f64>> = vec![];
 
-    while next.is_some() && !Rc::ptr_eq(&next.as_ref().unwrap(), &starting_street) {
-        streets.push((side, Rc::clone(&street)));
+    while next.is_some() && next.unwrap() != start {
+        streets.push((side, street));
 
         {
-            let street = street.as_ref().borrow();
+            let street = map.street(&street).unwrap();
 
             if forward {
                 next = match street.get_next(side) {
-                    Some(n) => Some(Rc::clone(n)),
+                    Some(id) => Some(id),
                     None => None,
                 };
                 points.push(street.start());
             } else {
                 next = match street.get_previous(side) {
-                    Some(n) => Some(Rc::clone(n)),
+                    Some(id) => Some(id),
                     None => None,
                 };
                 points.push(street.end());
             }
 
+            
             if next.is_some()
-                && (Rc::ptr_eq(
-                    street.start.as_ref().unwrap(),
-                    &next.as_ref().unwrap().borrow().start.as_ref().unwrap(),
-                ) || Rc::ptr_eq(
-                    street.end.as_ref().unwrap(),
-                    &next.as_ref().unwrap().borrow().end.as_ref().unwrap(),
-                ))
+                && ((street.start == map.street(&next.unwrap()).unwrap().start) ||
+                    (street.end == map.street(&next.unwrap()).unwrap().end))
             {
                 forward = !forward;
 
@@ -173,15 +161,14 @@ fn enclosed(_side: Side, _starting_street: Rc<RefCell<Street>>) -> Enclosed {
             }
         }
 
-        if next.is_some() {
-            street = Rc::clone(&next.as_ref().unwrap());
+        if let Some(next) = next {
+            street = next;
         }
     }
 
     Enclosed {
-        enclosed: next.is_some() && Rc::ptr_eq(&next.as_ref().unwrap(), &starting_street),
+        enclosed: next.is_some() && next.unwrap() == start,
         _streets: streets,
         points: points,
     }
-    */
 }

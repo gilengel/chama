@@ -102,6 +102,16 @@ impl GetMut<Intersection> for Map {
     }
 }
 
+impl GetMut<District> for Map {
+    fn get_mut(&mut self, id: &Uuid) -> Option<&'_ mut District> {
+        if self.districts.contains_key(id) {
+            return self.districts.get_mut(id);
+        }
+
+        None
+    }
+}
+
 pub trait Update<T> {
     fn update<S>(&mut self, id: &Uuid);
 }
@@ -394,10 +404,10 @@ impl Map {
         None
     }
 
-    pub fn get_district_at_position(&self, position: &Coordinate<f64>) -> Option<&District> {
+    pub fn get_district_at_position(&self, position: &Coordinate<f64>) -> Option<Uuid> {
         for (_, district) in &self.districts {
             if district.is_point_on_district(position) {
-                return Some(district);
+                return Some(district.id);
             }
         }
 
@@ -447,15 +457,7 @@ impl Map {
         self.intersections.remove(id)
     }
 
-    pub fn remove_district(&mut self, _district: Rc<RefCell<District>>) {
-        /*
-        if let Some(index) = self
-            .districts
-            .iter()
-            .position(|i| Rc::ptr_eq(&i, &district))
-        {
-            self.districts.remove(index);
-        }
-        */
+    pub fn remove_district(&mut self, id: &Uuid) {
+        self.districts.remove(id);
     }
 }

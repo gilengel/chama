@@ -1,11 +1,13 @@
 use std::{cell::RefCell, rc::Rc};
 
 use geo::Coordinate;
+use uuid::Uuid;
+use wasm_bindgen::UnwrapThrowExt;
 
-use crate::{map::Map, state::State, street::Street, Renderer};
+use crate::{map::{Map, Get}, state::State, street::Street, Renderer, district::create_district_for_street, log};
 
 pub struct CreateDistrictState {
-    hovered_street: Option<Rc<RefCell<Street>>>,
+    hovered_street: Option<Uuid>,
 }
 
 impl CreateDistrictState {
@@ -27,28 +29,24 @@ impl Default for CreateDistrictState {
 impl State for CreateDistrictState {
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn mouse_move(&mut self, _mouse_pos: Coordinate<f64>, _map: &mut Map) {
-        /*
-        if let Some(hovered_street) = map.get_nearest_street_to_position(&position) {
-            self.hovered_street = Some(Rc::clone(&hovered_street));
-        } else {
-            self.hovered_street = None;
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+        
+        match map.get_nearest_street_to_position(&mouse_pos) {
+            Some(street) => self.hovered_street = Some(street.id),
+            None => self.hovered_street = None,
         }
-        */
+        
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _map: &mut Map) {
-        /*
-        if self.hovered_street.is_some() {
-            let hovered_street = self.hovered_street.as_ref().unwrap();
-            let street = hovered_street.as_ref().borrow();
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+        if let Some(hovered_street_id) = self.hovered_street {
+            let hovered_street = map.get(&hovered_street_id).unwrap() as &Street;
+            let side = hovered_street.get_side_of_position(&mouse_pos);
 
-            let side = street.get_side_of_position(&position);
-            if let Some(district) = create_district_for_street(side, Rc::clone(&hovered_street)) {
-                map.add_district(Rc::new(RefCell::new(district)));
+            if let Some(district) = create_district_for_street(side, hovered_street_id, map) {
+                map.add_district(district);
             }
-        }
-        */
+        }       
     }
 
 
@@ -64,12 +62,6 @@ impl State for CreateDistrictState {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
 
         map.render(context)?;
-
-        if let Some(hovered_street) = &self.hovered_street {
-            let _hovered_street = hovered_street.borrow();
-            //hovered_street.set_fillstyle("#FF0000");
-            //hovered_street.render(context)?;
-        }
 
         Ok(())
     }

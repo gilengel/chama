@@ -406,13 +406,36 @@ impl Map {
 
     pub fn remove_street(&mut self, id: &Uuid) -> Option<Street> {
         if let Some(street) = self.streets.remove(id) {
+            let mut is_start_empty = false;
+            let mut start_id = Uuid::default();
             if let Some(start) = self.intersections.get_mut(&street.start) {
                 start.remove_connected_street(id);
+
+                is_start_empty = start.get_connected_streets().is_empty();
+                start_id = start.id;
             }
 
+            if is_start_empty {
+                self.remove_intersection(&start_id);
+            } else {
+                self.update_intersection(&start_id);
+            }
+
+            let mut is_end_empty = false;
+            let mut end_id = Uuid::default();
             if let Some(end) = self.intersections.get_mut(&street.end) {
                 end.remove_connected_street(id);
+
+                is_end_empty = end.get_connected_streets().is_empty();
+                end_id = end.id;
             }
+
+            if is_end_empty {
+                self.remove_intersection(&end_id);
+            } else {
+                self.update_intersection(&end_id);
+            }
+
 
             return Some(street);
         }

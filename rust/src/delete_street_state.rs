@@ -1,16 +1,18 @@
 use std::{cell::RefCell, rc::Rc};
 
 use geo::Coordinate;
+use uuid::Uuid;
 
 use crate::{
-    map::Map,
+    interactive_element::{InteractiveElement, InteractiveElementState},
+    map::{GetMut, Map},
     state::State,
     street::Street,
     Renderer,
 };
 
 pub struct DeleteStreetState {
-    hovered_street: Option<Rc<RefCell<Street>>>,
+    hovered_street: Option<Uuid>,
 }
 
 impl DeleteStreetState {
@@ -32,33 +34,28 @@ impl Default for DeleteStreetState {
 impl State for DeleteStreetState {
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn mouse_move(&mut self, _mouse_pos: Coordinate<f64>, _map: &mut Map) {
-        /*
-
-        if let Some(old_hovered_street) = &self.hovered_street {
-            old_hovered_street
-                .borrow_mut()
-                .set_state(InteractiveElementState::Normal);
-        }
-
-        if let Some(hovered_street) = map.get_street_at_position(&mouse_pos) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+        if self.hovered_street.is_some() {
+            if let Some(street) = map.get_mut(&self.hovered_street.unwrap()) as Option<&mut Street>
             {
-                hovered_street
-                    .borrow_mut()
-                    .set_state(InteractiveElementState::Hover);
+                street.set_state(InteractiveElementState::Normal)
             }
-            self.hovered_street = Some(Rc::clone(&hovered_street));
         }
-        */
+
+        if let Some(hovered_street) = map.get_street_at_position(&mouse_pos, &vec![]) {
+            self.hovered_street = Some(hovered_street);
+
+            if let Some(street) = map.get_mut(&self.hovered_street.unwrap()) as Option<&mut Street>
+            {
+                street.set_state(InteractiveElementState::Hover)
+            }
+        }
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _map: &mut Map) {
-        /*
-        if let Some(hovered_street) = map.get_street_at_position(&position) {
-            map.remove_street(Rc::clone(&hovered_street));
-            self.hovered_street = None
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+        if let Some(hovered_street) = self.hovered_street {
+            map.remove_street(&hovered_street);
         }
-        */
     }
 
     fn enter(&self, _map: &mut Map) {}
@@ -73,12 +70,6 @@ impl State for DeleteStreetState {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
 
         map.render(context)?;
-
-        if let Some(hovered_street) = &self.hovered_street {
-            let hovered_street = hovered_street.borrow();
-            //hovered_street.set_fillstyle("#FF0000");
-            hovered_street.render(context)?;
-        }
 
         Ok(())
     }

@@ -1,19 +1,17 @@
 extern crate alloc;
 
-
-
 use geo::{
     line_intersection::{line_intersection, LineIntersection},
-    Coordinate, Line, Point, prelude::EuclideanDistance,
+    prelude::EuclideanDistance,
+    Coordinate, Line, Point,
 };
 
 use rand::{thread_rng, Rng};
 use uuid::Uuid;
-use wasm_bindgen::{JsValue};
+use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    interactive_element::InteractiveElement,
     intersection::Intersection,
     map::{Get, GetMut, Insert},
     state::State,
@@ -21,7 +19,7 @@ use crate::{
     Map, Renderer,
 };
 
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+#[allow(unused_macros)]
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into())
@@ -166,12 +164,12 @@ impl<'a> State for CreateStreetState {
 
         let mut end = self.create_new_end();
         end.add_incoming_street(&self.temp_street);
-        end.set_position(mouse_pos - Coordinate { x: 0.0, y: 100.0 });
+        end.set_position(mouse_pos);
         street.set_end(&end);
         map.insert(end);
 
         if let Some(hovered_intersection) =
-            map.get_intersection_at_position(&mouse_pos, 100.0, &vec![])
+            map.get_intersection_at_position(&mouse_pos, 100.0, &vec![self.temp_end])
         {
             self.temp_start = hovered_intersection;
 
@@ -236,19 +234,25 @@ impl<'a> State for CreateStreetState {
             }
             None => {
                 match map.get_street_at_position(&mouse_pos, &vec![self.temp_street]) {
-                    Some(hovered_street) => {                        
-                        let pos = match self
-                            .project_point_onto_middle_of_street(mouse_pos, &hovered_street, map){
-                                Some(x) => x,
-                                None => mouse_pos,
-                            };
-                        
+                    Some(hovered_street) => {
+                        let pos = match self.project_point_onto_middle_of_street(
+                            mouse_pos,
+                            &hovered_street,
+                            map,
+                        ) {
+                            Some(x) => x,
+                            None => mouse_pos,
+                        };
+
                         let p: Point<f64> = pos.into();
-                        let s: Point<f64> = map.intersection(&self.temp_start).unwrap().get_position().into();
+                        let s: Point<f64> = map
+                            .intersection(&self.temp_start)
+                            .unwrap()
+                            .get_position()
+                            .into();
                         if p.euclidean_distance(&s) > 10.0 {
                             self.split_street(pos, &hovered_street, map);
                         }
-
                     }
                     None => {
                         // Reset temp street end to the temp end intersection since it is the only one intersection allowed to follow
@@ -291,20 +295,16 @@ impl<'a> State for CreateStreetState {
             return;
         }
 
-        if self.mouse_pressed {
-
-            //self.enter(map);
-        }
-
         self.mouse_pressed = false;
+
+        // invalidate temp_street to prevent deletion if the user switches to another state
+        // This does not prevent the creation of new streets since temp_street will be set
+        // on the mouse down event
+        self.temp_street = Uuid::default();
     }
 
     fn render(&self, map: &Map, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
-
-        if self.mouse_pressed {
-            //self.temp_street.as_ref().borrow().render(&context)?;
-        }
 
         map.render(&context)?;
 
@@ -323,33 +323,12 @@ impl<'a> State for CreateStreetState {
         Ok(())
     }
 
-    fn enter(&self, _map: &mut Map) {
-        /*
-        let mut start = Intersection::default();
-        start.id = self.temp_start;
-
-        let mut end = Intersection::default();
-        end.id = self.temp_end;
-
-        let mut street = Street::default();
-        street.id = self.temp_street;
-        street.set_start(&start);
-        street.set_end(&end);
-
-        start.add_outgoing_street(&street);
-        end.add_outgoing_street(&street);
-
-        map.insert(start);
-        map.insert(end);
-
-        map.insert(street);
-        */
-    }
+    fn enter(&self, _map: &mut Map) {}
 
     fn exit(&self, map: &mut Map) {
-        let street = map.remove_street(&self.temp_street).unwrap();
-
-        map.remove_intersection(&street.start);
-        map.remove_intersection(&street.end);
+        if let Some(street) = map.remove_street(&self.temp_street) {
+            map.remove_intersection(&street.start);
+            map.remove_intersection(&street.end);
+        }
     }
 }

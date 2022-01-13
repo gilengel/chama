@@ -68,7 +68,19 @@ impl State for DeleteDistrictState {
     fn render(&self, map: &Map, context: &web_sys::CanvasRenderingContext2d) -> Result<(), wasm_bindgen::JsValue> {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
 
-        map.render(context)?;
+        map.render(&context)?;
+
+        context.set_fill_style(&"#FFFFFF".into());
+        context.fill_text(
+            format!(
+                "intersections: {}, strreets: {}",
+                map.intersections().len(),
+                map.streets().len()
+            )
+            .as_str(),
+            100.0,
+            100.0,
+        )?;
 
         Ok(())
     }

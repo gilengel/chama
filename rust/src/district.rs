@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+
 
 use geo::{prelude::Contains, Coordinate, LineString, Polygon};
 use uuid::Uuid;
@@ -8,7 +8,6 @@ use web_sys::CanvasRenderingContext2d;
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     intersection::Side,
-    street::Street,
     style::{InteractiveElementStyle, Style}, map::Map,
 };
 

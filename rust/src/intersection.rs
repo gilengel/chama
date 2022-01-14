@@ -5,7 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{street::Street};
+use crate::{street::Street, log};
 
 #[derive(Clone, PartialEq, Copy, Debug)]
 pub enum Direction {
@@ -36,17 +36,6 @@ pub struct Intersection {
 }
 
 impl Intersection {
-    pub fn new(
-        position: Coordinate<f64>,
-        connected_streets: Vec<(Direction, Uuid)>,
-    ) -> Intersection {
-        Intersection {
-            id: Uuid::new_v4(),
-            position,
-            connected_streets,
-        }
-    }
-
     pub fn set_position(&mut self, position: Coordinate<f64>) {
         self.position = position;
     }
@@ -95,9 +84,12 @@ impl Intersection {
         }
     }
 
+    /*
+    // TODO check if necessary
     pub fn is_connected_to_street(&self, id: &Uuid) -> bool {
         self.connected_streets.iter().any(|x| x.1 == *id)
     }
+    */
 
     pub fn add_incoming_street(&mut self, id: &Uuid) {
         self.connected_streets.push((Direction::In, *id));

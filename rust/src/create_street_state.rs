@@ -1,9 +1,11 @@
 extern crate alloc;
 
+use std::ops::ControlFlow;
+
 use geo::{
     line_intersection::{line_intersection, LineIntersection},
     prelude::EuclideanDistance,
-    Coordinate, Line, Point,
+    CoordFloat, Coordinate, Line, Point,
 };
 
 use rand::{thread_rng, Rng};
@@ -12,7 +14,8 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    intersection::Intersection,
+    intersection::{Direction, Intersection},
+    log,
     map::{Get, GetMut, Insert},
     state::State,
     street::Street,
@@ -53,7 +56,7 @@ impl CreateStreetState {
         point: Coordinate<f64>,
         street_id: &Uuid,
         map: &Map,
-    ) -> Option<Coordinate<f64>> {
+    ) -> Coordinate<f64> {
         let street: &Street = map.get(street_id).unwrap();
 
         let start = street.start();
@@ -70,44 +73,60 @@ impl CreateStreetState {
                     intersection,
                     is_proper: _,
                 } => {
-                    return Some(intersection);
+                    return intersection;
                 }
-                _ => return None,
+                _ => return point,
             }
         }
 
-        None
+        point
     }
 
-    fn create_new_start(&mut self) -> Intersection {
+    fn create_new_start(&mut self, position: &Coordinate<f64>) -> Intersection {
         self.temp_start = Uuid::new_v4();
         let mut start = Intersection::default();
         start.id = self.temp_start;
+        start.set_position(*position);
+        start.add_outgoing_street(&self.temp_street);
 
         start
     }
 
-    fn create_new_end(&mut self) -> Intersection {
+    fn create_new_end(&mut self, position: &Coordinate<f64>) -> Intersection {
         self.temp_end = Uuid::new_v4();
         let mut end = Intersection::default();
         end.id = self.temp_end;
+        end.set_position(*position);
+        end.add_incoming_street(&self.temp_street);
 
         end
     }
 
-    fn split_street(&mut self, pos: Coordinate<f64>, id: &Uuid, map: &mut Map) -> Uuid {
+    fn split_street(
+        &mut self,
+        pos: Coordinate<f64>,
+        street_id: &Uuid,
+        map: &mut Map,
+    ) -> Option<Uuid> {
+        log!("SPLIT STREET");
+        let pos = self.project_point_onto_middle_of_street(pos, &street_id, map);
+
+        if !self.is_splitting_street_allowed(pos, &map) {
+            return None;
+        }
+
         let mut old_end: Option<Uuid> = None;
         let mut new_intersection = Intersection::default();
         let new_intersection_id = new_intersection.id;
         new_intersection.set_position(pos);
 
-        if let Some(street) = map.get_mut(&id) as Option<&mut Street> {
+        log!("{}", street_id);
+        if let Some(street) = map.get_mut(&street_id) as Option<&mut Street> {
             old_end = Some(street.end);
             street.set_end(&new_intersection);
         }
 
-        new_intersection.add_incoming_street(&id);
-        //new_intersection.add_incoming_street(&self.temp_street);
+        new_intersection.add_incoming_street(&street_id);
 
         // The street from new intersection to the old end
         let mut new_street = Street::default();
@@ -117,7 +136,7 @@ impl CreateStreetState {
         new_intersection.add_outgoing_street(&new_street.id);
 
         if let Some(old_end) = map.get_mut(&old_end.unwrap()) as Option<&mut Intersection> {
-            old_end.remove_connected_street(&id);
+            old_end.remove_connected_street(&street_id);
             old_end.add_incoming_street(&new_street.id);
         }
 
@@ -127,19 +146,108 @@ impl CreateStreetState {
         map.update_intersection(&new_intersection_id);
 
         // Prevents visual glitches such as that the new street is not visible until the user moves the cursor
-        map.update_street(&id);
+        map.update_street(&street_id);
         map.update_street(&new_id);
 
-        new_intersection_id
+        Some(new_intersection_id)
     }
 
-    fn reset_temp_end(&mut self, map: &mut Map) {
-        if let Some(intersection) = map.intersection_mut(&self.temp_end) {
-            intersection.set_position(Coordinate {
-                x: -100.0,
-                y: -100.0,
-            });
+    fn is_splitting_street_allowed(&mut self, pos: Coordinate<f64>, map: &&mut Map) -> bool {
+        let p: Point<f64> = pos.into();
+        let s: Point<f64> = map
+            .intersection(&self.temp_start)
+            .unwrap()
+            .get_position()
+            .into();
+
+        p.euclidean_distance(&s) > 10.0
+    }
+
+    fn pair_of_connected_streets_of_intersection(
+        &self,
+        intersection_id: Uuid,
+        map: &Map,
+    ) -> (Uuid, Uuid) {
+        let intersection = map.intersection(&intersection_id).unwrap();
+
+        let x = intersection.get_connected_streets()[0];
+        let y = intersection.get_connected_streets()[1];
+
+        let incoming_street_id = if x.0 == Direction::In { x.1 } else { y.1 };
+        let outgoing_street_id = if x.0 == Direction::In { y.1 } else { x.1 };
+
+        (incoming_street_id, outgoing_street_id)
+    }
+
+    fn is_intersection_deletable(&self, intersection_id: Uuid, map: &Map) -> bool {
+        let intersection = map.intersection(&intersection_id).unwrap();
+
+        let connected_streets = intersection.get_connected_streets();
+        if connected_streets.len() != 2 {
+            return false;
         }
+
+        // We only have a possibly deletable intersaction if both of the connected streets
+        // have different directions. Otherwise the intersection was manually created and therefore
+        // is not deletable.
+        if connected_streets[0].0 == connected_streets[1].0 {
+            return false;
+        }
+
+        let (incoming_street_id, outgoing_street_id) =
+            self.pair_of_connected_streets_of_intersection(intersection_id, map);
+
+        let norm_1 = map.street(&incoming_street_id).unwrap().norm();
+        let norm_2 = map.street(&outgoing_street_id).unwrap().norm();
+        let diff = norm_1 - norm_2;
+
+        return diff.x.abs() < 0.000001 && diff.y.abs() < 0.000001;
+    }
+
+    fn delete_intersection(&self, intersection_id: Uuid, map: &mut Map) {
+        let (incoming_street_id, outgoing_street_id) =
+            self.pair_of_connected_streets_of_intersection(intersection_id, map);
+
+        let old_end = map.street(&outgoing_street_id).unwrap().end;
+
+        map.intersection_mut(&old_end)
+            .unwrap()
+            .add_incoming_street(&incoming_street_id);
+
+        let old_end = map.intersection(&old_end).unwrap().clone();
+        map.street_mut(&incoming_street_id)
+            .unwrap()
+            .set_end(&old_end);
+
+        map.remove_street(&outgoing_street_id);
+        map.remove_intersection(&intersection_id);
+    }
+
+    fn switch_intersections(
+        &self,
+        old_intersection_id: &Uuid,
+        new_intersection_id: &Uuid,
+        map: &mut Map,
+    ) {
+        map.intersection_mut(&old_intersection_id)
+            .unwrap()
+            .remove_connected_street(&self.temp_street);
+        map.update_intersection(old_intersection_id);
+
+        if self.is_intersection_deletable(*old_intersection_id, map) {
+            self.delete_intersection(*old_intersection_id, map);
+        }
+
+        let cloned_end = map.intersection(&new_intersection_id).unwrap().clone();
+        map.street_mut(&self.temp_street)
+            .unwrap()
+            .set_end(&cloned_end);
+
+        map.intersection_mut(&new_intersection_id)
+            .unwrap()
+            .add_incoming_street(&self.temp_street);
+
+        map.update_intersection(new_intersection_id);
     }
 }
 
@@ -162,9 +270,7 @@ impl<'a> State for CreateStreetState {
         street.style.normal.border_color = format!("rgb({},{},{})", r, g, b).to_string();
         street.id = self.temp_street;
 
-        let mut end = self.create_new_end();
-        end.add_incoming_street(&self.temp_street);
-        end.set_position(mouse_pos);
+        let end = self.create_new_end(&mouse_pos);
         street.set_end(&end);
         map.insert(end);
 
@@ -173,8 +279,7 @@ impl<'a> State for CreateStreetState {
         {
             self.temp_start = hovered_intersection;
 
-            let hovered_intersection: &mut Intersection =
-                map.get_mut(&hovered_intersection).unwrap();
+            let hovered_intersection = map.intersection_mut(&hovered_intersection).unwrap();
             hovered_intersection.add_outgoing_street(&self.temp_street);
             street.set_start(&hovered_intersection);
 
@@ -185,19 +290,17 @@ impl<'a> State for CreateStreetState {
 
         match map.get_street_at_position(&mouse_pos, &vec![]) {
             Some(hovered_street) => {
-                let mouse_pos = self
-                    .project_point_onto_middle_of_street(mouse_pos, &hovered_street, map)
-                    .unwrap();
-                self.temp_start = self.split_street(mouse_pos, &hovered_street, map);
+                let mouse_pos =
+                    self.project_point_onto_middle_of_street(mouse_pos, &hovered_street, map);
+
+                self.temp_start = self.split_street(mouse_pos, &hovered_street, map).unwrap();
                 let start: &mut Intersection = map.get_mut(&self.temp_start).unwrap();
 
                 start.add_outgoing_street(&street.id);
                 street.set_start(start);
             }
             None => {
-                let mut start = self.create_new_start();
-                start.set_position(mouse_pos);
-                start.add_outgoing_street(&self.temp_street);
+                let start = self.create_new_start(&mouse_pos);
                 street.set_start(&start);
                 map.insert(start);
             }
@@ -211,81 +314,70 @@ impl<'a> State for CreateStreetState {
             return;
         }
 
-        let street: &Street = map.get(&self.temp_street).unwrap();
-        let start = street.start;
-        let mut end = street.end;
+        let street = map.street_mut(&self.temp_street).unwrap();
+        let current_start = street.start;
+        let current_end = street.end;
 
-        match map.get_intersection_at_position(&mouse_pos, 100.0, &vec![start, self.temp_end]) {
+        let current_start_pos: Point<f64> = map
+            .intersection(&current_end)
+            .unwrap()
+            .get_position()
+            .into();
+        let current_end_pos: Point<f64> = map
+            .intersection(&current_start)
+            .unwrap()
+            .get_position()
+            .into();
+
+        // Only update the position of the temp end if it is to close to the temp start. This prevents
+        // that the routine will set the temp end to the wrong intersection and result in visual issues.
+        if current_start_pos.euclidean_distance(&current_end_pos) < 100.0 {
+            let intersection: &mut Intersection = map.get_mut(&current_end).unwrap();
+            intersection.set_position(mouse_pos);
+
+            let street = map.street(&self.temp_street).unwrap();
+            let start = street.start;
+            let end = street.end;
+            map.update_intersection(&end);
+            map.update_intersection(&start);
+
+            return;
+        }
+
+        match map.get_intersection_at_position(&mouse_pos, 50.0, &vec![self.temp_end]) {
             Some(intersection) => {
-                if intersection != end {
-                    self.reset_temp_end(map);
-
-                    map.intersection_mut(&end)
-                        .unwrap()
-                        .remove_connected_street(&self.temp_street);
-                    map.intersection_mut(&intersection)
-                        .unwrap()
-                        .add_incoming_street(&self.temp_street);
-
-                    let cloned_end = (map.get(&intersection).unwrap() as &Intersection).clone();
-                    let street: &mut Street = map.get_mut(&self.temp_street).unwrap();
-                    street.set_end(&cloned_end);
+                if intersection != current_end {
+                    self.switch_intersections(&current_end, &intersection, map);
                 }
             }
             None => {
                 match map.get_street_at_position(&mouse_pos, &vec![self.temp_street]) {
                     Some(hovered_street) => {
-                        let pos = match self.project_point_onto_middle_of_street(
-                            mouse_pos,
-                            &hovered_street,
-                            map,
-                        ) {
-                            Some(x) => x,
-                            None => mouse_pos,
-                        };
-
-                        let p: Point<f64> = pos.into();
-                        let s: Point<f64> = map
-                            .intersection(&self.temp_start)
-                            .unwrap()
-                            .get_position()
-                            .into();
-                        if p.euclidean_distance(&s) > 10.0 {
-                            self.split_street(pos, &hovered_street, map);
-                        }
+                        let new_intersection =
+                            self.split_street(mouse_pos, &hovered_street, map).unwrap();
+                        self.switch_intersections(&current_end, &new_intersection, map);
                     }
                     None => {
                         // Reset temp street end to the temp end intersection since it is the only one intersection allowed to follow
                         // the mouse cursor. All other intersection are connected to at least one persisted street and moving one would
                         // alter parts of the persisted map which is disallowed
-                        if end != self.temp_end {
-                            map.intersection_mut(&end)
-                                .unwrap()
-                                .remove_connected_street(&self.temp_street);
-                            map.update_intersection(&end);
-
-                            end = self.temp_end;
-
-                            let cloned_end =
-                                (map.get(&self.temp_end).unwrap() as &Intersection).clone();
-                            let street: &mut Street = map.get_mut(&self.temp_street).unwrap();
-                            street.set_end(&cloned_end);
-
-                            map.intersection_mut(&self.temp_end)
-                                .unwrap()
-                                .add_incoming_street(&self.temp_street);
+                        if current_end != self.temp_end {
+                            self.switch_intersections(&current_end, &self.temp_end, map);
+                        } else {
+                            let intersection: &mut Intersection =
+                                map.get_mut(&current_end).unwrap();
+                            intersection.set_position(mouse_pos);
                         }
-
-                        let intersection: &mut Intersection = map.get_mut(&end).unwrap();
-                        intersection.set_position(mouse_pos);
                     }
                 }
             }
         }
 
-        map.update_street(&self.temp_street);
-        map.update_intersection(&start);
+        let street = map.street(&self.temp_street).unwrap();
+        let start = street.start;
+        let end = street.end;
         map.update_intersection(&end);
+        map.update_intersection(&start);
     }
 
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _map: &mut Map) {

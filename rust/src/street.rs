@@ -5,7 +5,6 @@ use geo::{
     line_intersection::LineIntersection,
     prelude::{Centroid, Contains, EuclideanDistance}, Coordinate, Line, LineString, Point, Polygon,
 };
-use rand::{Rng};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -16,8 +15,7 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
-    map::{Get},
-    style::{InteractiveElementStyle, Style},
+    style::{InteractiveElementStyle, Style}, log,
 };
 
 #[derive(Clone)]
@@ -95,16 +93,6 @@ impl Street {
         self.id
     }
 
-    /*
-    pub fn set_start(&mut self, start: Uuid, map: &Map) {
-        self.start = start;
-
-        if let Some(start) = map.get(&start) {
-            self.line.start = (start as &Intersection).get_position();
-        }
-    }
-    */
-
     pub fn set_start(&mut self, start: &Intersection) {
         self.start = start.id;
         self.line.start = start.get_position();
@@ -114,17 +102,6 @@ impl Street {
         self.end = end.id;
         self.line.end = end.get_position();
     }
-    /*
-    pub fn set_start_position(&mut self, pos: &Coordinate<f64>) {
-        self.start
-            .as_ref()
-            .unwrap()
-            .borrow_mut()
-            .set_position(pos.clone());
-
-            self.line.start = pos.clone();
-    }
-    */
 
     pub fn norm(&self) -> Coordinate<f64> {
         self.norm
@@ -138,25 +115,11 @@ impl Street {
         self.line.end
     }
 
-    /*
-    pub fn set_end_position(&mut self, pos: &Coordinate<f64>) {
-        self.end
-            .as_ref()
-            .unwrap()
-            .borrow_mut()
-            .set_position(pos.clone());
-
-        self.line.end = pos.clone();
-    }
-    */
-
     pub fn set_previous(&mut self, side: Side, id: Option<Uuid>) {
         match side {
             Side::Left => self.left_previous = id,
             Side::Right => self.right_previous = id,
         }
-
-        //self.update_geometry();
     }
 
     pub fn get_previous(&self, side: Side) -> Option<Uuid> {
@@ -171,8 +134,6 @@ impl Street {
             Side::Left => self.left_next = id,
             Side::Right => self.right_next = id,
         }
-
-        //self.update_geometry();
     }
 
     pub fn get_next(&self, side: Side) -> Option<Uuid> {
@@ -295,34 +256,24 @@ impl Street {
         }
     }
 
+    pub fn are_norms_equal(&self, another_street: &Street) -> bool {
+        let pt1 = self.norm();
+        let pt2 = another_street.norm();
+        let r = pt1 - pt2;
+        let r2 = pt1 + pt2;
+
+        if (r.x.abs() < 0.001 && r.y.abs() < 0.001) || (r2.x.abs() < 0.001 && r2.y.abs() < 0.001) {
+            return true;
+        }
+
+        false
+    }
+
     fn calc_polygon_points(&self, streets: &HashMap<Uuid, Street>) -> Vec<Coordinate<f64>> {
-        fn are_norms_equal(pt1: &Coordinate<f64>, pt2: &Coordinate<f64>) -> bool {
-            let r = *pt1 - *pt2;
-            let r2 = *pt1 + *pt2;
-
-            if (r.x.abs() < 0.001 && r.y.abs() < 0.001) || (r2.x.abs() < 0.001 && r2.y.abs() < 0.001) {
-                return true;
-            }
-
-            false
-        }
-
-        /*
-        fn equal_ends(street: &Street, other: &Street) -> bool {
-            Rc::ptr_eq(&street.end.as_ref().unwrap(), &other.end.as_ref().unwrap())
-        }
-
-        fn equal_starts(street: &Street, other: &Street) -> bool {
-            Rc::ptr_eq(
-                &street.start.as_ref().unwrap(),
-                &other.start.as_ref().unwrap(),
-            )
-        }
-        */
+        
 
         let half_width = self.width / 2.0;
         let s = self.start();
-        //let e = self.end();
 
         let length = self.line.euclidean_length();
 
@@ -346,7 +297,7 @@ impl Street {
             let offset = next_left.start() + next_left.perp() * half_width * factor;
             let start = points[1];
 
-            if !are_norms_equal(&self.norm, &next_left.norm) {
+            if !self.are_norms_equal(&next_left) {
                 if let Some(intersection) =
                     self.line_intersect_line(start, self.norm, offset, next_left.norm)
                 {
@@ -367,7 +318,7 @@ impl Street {
             let offset = right_next.start() + right_next.perp() * half_width * factor;
             let start = *points.last().unwrap();
 
-            if !are_norms_equal(&self.norm, &right_next.norm) {
+            if !self.are_norms_equal(&right_next) {
                 if let Some(intersection) =
                     self.line_intersect_line(start, self.norm, offset, right_next.norm)
                 {
@@ -390,7 +341,7 @@ impl Street {
             let start = points[1];
             let other_start = previous_left.start() + previous_left.perp() * half_width * factor;
 
-            if !are_norms_equal(&self.norm, &previous_left.norm) {
+            if !self.are_norms_equal(&previous_left) {
                 if let Some(intersection) =
                     self.line_intersect_line(start, self.norm, other_start, previous_left.norm)
                 {
@@ -409,7 +360,7 @@ impl Street {
             };
 
             let offset = right_previous.start() + right_previous.perp() * half_width * factor;
-            if !are_norms_equal(&self.norm, &right_previous.norm) {
+            if !self.are_norms_equal(&right_previous) {
                 if let Some(intersection) = self.line_intersect_line(
                     *points.last().unwrap(),
                     self.norm,

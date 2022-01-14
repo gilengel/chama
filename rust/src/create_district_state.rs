@@ -1,10 +1,10 @@
-use std::{cell::RefCell, rc::Rc};
+
 
 use geo::Coordinate;
 use uuid::Uuid;
-use wasm_bindgen::UnwrapThrowExt;
 
-use crate::{map::{Map, Get}, state::State, street::Street, Renderer, district::create_district_for_street, log};
+
+use crate::{map::{Map, Get}, state::State, street::Street, Renderer, district::create_district_for_street};
 
 pub struct CreateDistrictState {
     hovered_street: Option<Uuid>,

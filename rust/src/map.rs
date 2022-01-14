@@ -1,11 +1,11 @@
 use geo::line_intersection::LineIntersection;
 use geo::prelude::EuclideanDistance;
 use geo::Coordinate;
-use std::cell::RefCell;
+
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-use std::rc::Rc;
+
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;

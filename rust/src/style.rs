@@ -19,7 +19,7 @@ impl Default for InteractiveElementStyle {
     fn default() -> Self {
         InteractiveElementStyle {
             normal: Style {
-                border_width: 1,
+                border_width: 0,
                 border_color: "#FFFFFF".to_string(),
                 background_color: "#2A2A2B".to_string()
             },

@@ -2,7 +2,10 @@ use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{Map, Renderer};
+use crate::{Map, Renderer, map::InformationLayer};
+
+
+
 
 pub trait State {
     /// Is used to implement behaviour of the state if the user clicked inside the specified
@@ -28,10 +31,10 @@ pub trait State {
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
     fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map);
 
-    fn render(&self, map: &Map, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+    fn render(&self, map: &Map, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>) -> Result<(), JsValue> {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
 
-        map.render(context)?;
+        map.render(context, additional_information_layer)?;
 
         Ok(())
     }

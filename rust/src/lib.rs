@@ -1,5 +1,6 @@
 use geo::Coordinate;
 use idle_state::IdleState;
+use map::InformationLayer;
 use map::Map;
 use state::State;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -57,15 +58,18 @@ macro_rules! log {
 }
 
 pub trait Renderer {
-    fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue>;
+    fn render(&self, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>) -> Result<(), JsValue>;
 }
 
 #[wasm_bindgen]
 pub struct Editor {
     context: CanvasRenderingContext2d,
 
+    additional_information_layers: Vec<InformationLayer>,
+
     render_intersections: bool,
     render_streets: bool,
+    
     state: Box<dyn State>,
     map: Map,
 }
@@ -94,11 +98,26 @@ impl Editor {
         let (_, context) = get_canvas_and_context(&id).unwrap();
         Editor {
             context,
+            additional_information_layers: vec![],
+
             render_intersections: true,
             render_streets: true,
             state: Box::new(IdleState::default()),
             map: Map::new(width, height),
         }
+    }
+
+    pub fn set_enable_debug_information(&mut self, enable_debug_information: bool) {
+        if !enable_debug_information {
+            if let Some(index) = self.additional_information_layers.iter().position(|x| *x == InformationLayer::Debug) {
+                self.additional_information_layers.remove(index);
+            }
+            return
+        }
+
+        if self.additional_information_layers.iter().position(|x| *x == InformationLayer::Debug) == None {
+            self.additional_information_layers.push(InformationLayer::Debug);
+        }        
     }
 
     pub fn switch_to_mode(&mut self, mode: u32) {
@@ -139,7 +158,7 @@ impl Editor {
     }
 
     pub fn render(&self) -> Result<(), JsValue> {
-        self.state.render(&self.map, &self.context)
+        self.state.render(&self.map, &self.context, &self.additional_information_layers)
     }
 
     pub fn mouse_down(&mut self, x: u32, y: u32, button: u32) {

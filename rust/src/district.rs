@@ -8,7 +8,7 @@ use web_sys::CanvasRenderingContext2d;
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     intersection::Side,
-    style::{InteractiveElementStyle, Style}, map::Map,
+    style::{InteractiveElementStyle, Style}, map::{Map, InformationLayer},
 };
 
 pub struct District {
@@ -63,7 +63,7 @@ impl District {
         self.polygon.contains(point)
     }
 
-    pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+    pub fn render(&self, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>,) -> Result<(), JsValue> {
         let mut it = self.polygon.exterior().points_iter();
         let start = it.next().unwrap();
         let style = self.style();

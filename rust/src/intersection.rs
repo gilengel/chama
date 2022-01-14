@@ -5,7 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{street::Street, log};
+use crate::{log, map::InformationLayer, street::Street};
 
 #[derive(Clone, PartialEq, Copy, Debug)]
 pub enum Direction {
@@ -44,32 +44,42 @@ impl Intersection {
         self.position
     }
 
-    pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
-        context.begin_path();
-        context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
-        context.set_fill_style(&"#FF8C00".into());
-        context.fill();
+    pub fn render(
+        &self,
+        context: &CanvasRenderingContext2d,
+        additional_information_layer: &Vec<InformationLayer>,
+    ) -> Result<(), JsValue> {
 
-        context.set_fill_style(&"#FFFFFF".into());
-
-        context.fill_text(
-            &format!("c={}, {}", self.connected_streets.len(), &self.id.to_string()[..2]).to_string(),
-            self.position.x,
-            self.position.y - 80.0,
-        )?;
-
-        
-        let mut y = self.position.y - 60.0;
-        for street in &self.connected_streets {
+        if additional_information_layer.contains(&InformationLayer::Debug) {
+            context.begin_path();
+            context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
+            context.set_fill_style(&"#FF8C00".into());
+            context.fill();
+    
+            context.set_fill_style(&"#FFFFFF".into());
+            
             context.fill_text(
-                &format!("{:?} {}", street.0, &street.1.to_string()[..2]).to_string(),
+                &format!(
+                    "c={}, {}",
+                    self.connected_streets.len(),
+                    &self.id.to_string()[..2]
+                )
+                .to_string(),
                 self.position.x,
-                y,
+                self.position.y - 80.0,
             )?;
 
-            y += 16.0;
+            let mut y = self.position.y - 60.0;
+            for street in &self.connected_streets {
+                context.fill_text(
+                    &format!("{:?} {}", street.0, &street.1.to_string()[..2]).to_string(),
+                    self.position.x,
+                    y,
+                )?;
+
+                y += 16.0;
+            }
         }
-        
 
         Ok(())
     }

@@ -11,6 +11,9 @@
   export let selectedAction = 0;
   $: if(editor) editor.switch_to_mode(selectedAction);
 
+  export let showDebugInformation = false;
+  $: if(editor) editor.set_enable_debug_information(showDebugInformation);
+
   let canvas;
   $: {
     loadEditor().then(

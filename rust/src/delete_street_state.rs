@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    map::{GetMut, Map},
+    map::{GetMut, Map, InformationLayer},
     state::State,
     street::Street,
     Renderer,
@@ -65,11 +65,11 @@ impl State for DeleteStreetState {
     fn render(
         &self,
         map: &Map,
-        context: &web_sys::CanvasRenderingContext2d,
+        context: &web_sys::CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>
     ) -> Result<(), wasm_bindgen::JsValue> {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
 
-        map.render(context)?;
+        map.render(context, additional_information_layer)?;
 
         Ok(())
     }

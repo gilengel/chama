@@ -1,11 +1,9 @@
 extern crate alloc;
 
-use std::ops::ControlFlow;
-
 use geo::{
     line_intersection::{line_intersection, LineIntersection},
     prelude::EuclideanDistance,
-    CoordFloat, Coordinate, Line, Point,
+    Coordinate, Line, Point,
 };
 
 use rand::{thread_rng, Rng};
@@ -16,7 +14,7 @@ use web_sys::CanvasRenderingContext2d;
 use crate::{
     intersection::{Direction, Intersection},
     log,
-    map::{Get, GetMut, Insert},
+    map::{Get, GetMut, Insert, InformationLayer},
     state::State,
     street::Street,
     Map, Renderer,
@@ -108,7 +106,6 @@ impl CreateStreetState {
         street_id: &Uuid,
         map: &mut Map,
     ) -> Option<Uuid> {
-        log!("SPLIT STREET");
         let pos = self.project_point_onto_middle_of_street(pos, &street_id, map);
 
         if !self.is_splitting_street_allowed(pos, &map) {
@@ -120,7 +117,6 @@ impl CreateStreetState {
         let new_intersection_id = new_intersection.id;
         new_intersection.set_position(pos);
 
-        log!("{}", street_id);
         if let Some(street) = map.get_mut(&street_id) as Option<&mut Street> {
             old_end = Some(street.end);
             street.set_end(&new_intersection);
@@ -268,6 +264,7 @@ impl<'a> State for CreateStreetState {
         let g = rng.gen_range(0..255);
         let b = rng.gen_range(0..255);
         street.style.normal.border_color = format!("rgb({},{},{})", r, g, b).to_string();
+        street.style.normal.border_width = 0;
         street.id = self.temp_street;
 
         let end = self.create_new_end(&mouse_pos);
@@ -395,10 +392,10 @@ impl<'a> State for CreateStreetState {
         self.temp_street = Uuid::default();
     }
 
-    fn render(&self, map: &Map, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+    fn render(&self, map: &Map, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>) -> Result<(), JsValue> {
         context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
 
-        map.render(&context)?;
+        map.render(&context, additional_information_layer)?;
 
         context.set_fill_style(&"#FFFFFF".into());
         context.fill_text(

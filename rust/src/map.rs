@@ -24,6 +24,11 @@ pub struct Map {
     districts: HashMap<Uuid, District>,
 }
 
+#[derive(PartialEq)]
+pub enum InformationLayer {
+    Debug
+}
+
 impl Default for Map {
     fn default() -> Map {
         Map {
@@ -37,17 +42,17 @@ impl Default for Map {
 }
 
 impl Renderer for Map {
-    fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+    fn render(&self, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>) -> Result<(), JsValue> {
         for (_, district) in &self.districts {
-            district.render(&context)?;
+            district.render(&context, additional_information_layer)?;
         }
 
         for (_, street) in &self.streets {
-            street.render(&context)?;
+            street.render(&context, additional_information_layer)?;
         }
 
         for (_, intersection) in &self.intersections {
-            intersection.render(&context)?;
+            intersection.render(&context, additional_information_layer)?;
         }
 
         Ok(())

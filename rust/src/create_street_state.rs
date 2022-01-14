@@ -415,9 +415,6 @@ impl<'a> State for CreateStreetState {
     fn enter(&self, _map: &mut Map) {}
 
     fn exit(&self, map: &mut Map) {
-        if let Some(street) = map.remove_street(&self.temp_street) {
-            map.remove_intersection(&street.start);
-            map.remove_intersection(&street.end);
-        }
+        map.remove_intersection(&self.temp_end);  
     }
 }

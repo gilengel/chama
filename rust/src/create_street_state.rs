@@ -14,7 +14,7 @@ use web_sys::CanvasRenderingContext2d;
 use crate::{
     intersection::{Direction, Intersection},
     log,
-    map::{Get, GetMut, Insert, InformationLayer},
+    map::{Get, GetMut, InformationLayer},
     state::State,
     street::Street,
     Map, Renderer,
@@ -135,9 +135,10 @@ impl CreateStreetState {
             old_end.remove_connected_street(&street_id);
             old_end.add_incoming_street(&new_street.id);
         }
+        
 
-        map.insert(new_street);
-        map.insert(new_intersection);
+        map.add_street(new_street);
+        map.add_intersection(new_intersection);
 
         map.update_intersection(&new_intersection_id);
 
@@ -145,6 +146,7 @@ impl CreateStreetState {
         map.update_street(&street_id);
         map.update_street(&new_id);
 
+        map.update_intersection(&old_end.unwrap());
         Some(new_intersection_id)
     }
 
@@ -269,7 +271,7 @@ impl<'a> State for CreateStreetState {
 
         let end = self.create_new_end(&mouse_pos);
         street.set_end(&end);
-        map.insert(end);
+        map.add_intersection(end);
 
         if let Some(hovered_intersection) =
             map.get_intersection_at_position(&mouse_pos, 100.0, &vec![self.temp_end])
@@ -280,7 +282,7 @@ impl<'a> State for CreateStreetState {
             hovered_intersection.add_outgoing_street(&self.temp_street);
             street.set_start(&hovered_intersection);
 
-            map.insert(street);
+            map.add_street(street);
 
             return;
         }
@@ -299,11 +301,11 @@ impl<'a> State for CreateStreetState {
             None => {
                 let start = self.create_new_start(&mouse_pos);
                 street.set_start(&start);
-                map.insert(start);
+                map.add_intersection(start);
             }
         }
 
-        map.insert(street);
+        map.add_street(street);
     }
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
@@ -364,6 +366,7 @@ impl<'a> State for CreateStreetState {
                             let intersection: &mut Intersection =
                                 map.get_mut(&current_end).unwrap();
                             intersection.set_position(mouse_pos);
+                            map.update_bounding_box();
                         }
                     }
                 }

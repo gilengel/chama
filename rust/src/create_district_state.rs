@@ -47,6 +47,8 @@ impl State for CreateDistrictState {
             if let Some(district) = create_district_for_street(side, hovered_street_id, map) {
                 map.add_district(district);
             }
+
+            
         }
     }
 

@@ -1,19 +1,20 @@
-use geo::line_intersection::LineIntersection;
-use geo::prelude::EuclideanDistance;
-use geo::Coordinate;
+use geo::line_intersection::{LineIntersection, line_intersection};
+use geo::prelude::{BoundingRect, EuclideanDistance};
+use geo::{Coordinate, LineString, Polygon, Rect, Line};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
-
 
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::district::District;
-use crate::intersection::{Intersection};
+use crate::intersection::Intersection;
+use crate::renderer::PrimitiveRenderer;
 use crate::street::Street;
-use crate::{Renderer};
+use crate::style::Style;
+use crate::{Renderer, log};
 
 pub struct Map {
     width: u32,
@@ -22,11 +23,13 @@ pub struct Map {
     streets: HashMap<Uuid, Street>,
     intersections: HashMap<Uuid, Intersection>,
     districts: HashMap<Uuid, District>,
+
+    bounding_box: Rect<f64>,
 }
 
 #[derive(PartialEq)]
 pub enum InformationLayer {
-    Debug
+    Debug,
 }
 
 impl Default for Map {
@@ -37,12 +40,18 @@ impl Default for Map {
             streets: HashMap::new(),
             intersections: HashMap::new(),
             districts: HashMap::new(),
+
+            bounding_box: Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. }),
         }
     }
 }
 
 impl Renderer for Map {
-    fn render(&self, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>) -> Result<(), JsValue> {
+    fn render(
+        &self,
+        context: &CanvasRenderingContext2d,
+        additional_information_layer: &Vec<InformationLayer>,
+    ) -> Result<(), JsValue> {
         for (_, district) in &self.districts {
             district.render(&context, additional_information_layer)?;
         }
@@ -122,23 +131,6 @@ pub trait Update<T> {
 }
 
 /*
-impl<T> Update<Street> for T
-    where
-    T: GetMut<Street> + Get<Intersection>
-{
-    fn update<Street>(&mut self, id: &Uuid) {
-        let street = self.get_mut(id).unwrap();
-        let a = self.get(&street.start).unwrap();
-        let b = self.get(&street.end).unwrap();
-
-        street.line.start = a.get_position();
-        street.line.end = b.get_position();
-
-        street.update_geometry();
-    }
-}
-*/
-
 pub trait Insert<T> {
     fn insert(&mut self, x: T);
 }
@@ -154,25 +146,36 @@ impl Insert<Intersection> for Map {
         self.intersections.insert(x.id, x);
     }
 }
-
-/*
-
-pub trait Remove<T> {
-    fn remove<S>(&mut self, id: &Uuid) -> Option<S>
-}
-
-impl Remove<Street> for Map {
-    fn remove<Street>(&mut self, id: &Uuid) -> Option<Street> {
-        self.streets.remove(id)
-    }
-}
-
-impl Remove<Intersection> for Map {
-    fn remove<Intersection>(&mut self, id: &Uuid) -> Option<Intersection> {
-        self.streets.remove(&x.id)
-    }
-}
 */
+
+impl From<&mut Map> for Polygon<f64> {
+    fn from(map: &mut Map) -> Polygon<f64> {
+        let v: Vec<Coordinate<f64>> = map
+            .intersections()
+            .into_iter()
+            .map(|x| x.1.get_position())
+            .collect();
+
+        Polygon::new(LineString::from(v), vec![])
+    }
+}
+
+impl geo::algorithm::concave_hull::ConcaveHull for Map {
+    type Scalar = f64;
+
+    fn concave_hull(&self, concavity: Self::Scalar) -> geo::Polygon<Self::Scalar> {
+        let v: Vec<Coordinate<Self::Scalar>> = self
+            .intersections()
+            .into_iter()
+            .map(|x| x.1.get_position())
+            .collect();
+
+        let polygon: Polygon<Self::Scalar> = Polygon::new(LineString::from(v), vec![]);
+
+        polygon.concave_hull(concavity)
+    }
+}
+
 impl Map {
     pub fn new(width: u32, height: u32) -> Self {
         Map {
@@ -198,16 +201,6 @@ impl Map {
         &self.streets
     }
 
-    /*
-    pub fn get_street(&self, id: Uuid) {
-        if self.streets.contains_key(id) {
-            return self.streets.get(id);
-        }
-
-        None
-    }
-    */
-
     pub fn add_street(&mut self, street: Street) {
         self.streets.insert(street.id, street);
     }
@@ -218,6 +211,8 @@ impl Map {
 
     pub fn add_intersection(&mut self, intersection: Intersection) {
         self.intersections.insert(intersection.id, intersection);
+
+        self.update_bounding_box();
     }
 
     pub fn update_street(&mut self, id: &Uuid) {
@@ -236,44 +231,6 @@ impl Map {
             self.update_street(&id);
         }
     }
-
-    /*
-    pub fn remove_street(&mut self, street: &Street) -> Option<bool> {
-        if let Some((_key, _x)) = self.streets.remove_entry(&street.id) {
-            todo!();
-        }
-
-        None
-
-        match self.streets.iter().position(|(key, x)| key == street.id) {
-            Some(index) => {
-                let street_borrow = street.borrow();
-                let start = street_borrow.start.as_ref().unwrap();
-                let mut start_borrow = start.borrow_mut();
-                start_borrow.remove_connected_street(Rc::clone(&street));
-                start_borrow.reorder();
-                if start_borrow.get_connected_streets().is_empty() {
-                    self.remove_intersection(Rc::clone(&start));
-                }
-
-                let street_borrow = street.borrow();
-                let end = street_borrow.end.as_ref().unwrap();
-                let mut end_borrow = end.borrow_mut();
-                end_borrow.remove_connected_street(Rc::clone(&street));
-                end_borrow.reorder();
-                if end_borrow.get_connected_streets().is_empty() {
-                    self.remove_intersection(Rc::clone(&end));
-                }
-
-                self.streets.remove(index);
-
-                Some(true)
-            }
-            None => None,
-        }
-
-    }
-    */
 
     pub fn get_intersection_at_position(
         &self,
@@ -335,9 +292,15 @@ impl Map {
         Some(intersections.first().unwrap().clone())
     }
 
-    pub fn get_street_at_position(&self, position: &Coordinate<f64>, ignored_streets: &Vec<Uuid>) -> Option<Uuid> {
+    pub fn get_street_at_position(
+        &self,
+        position: &Coordinate<f64>,
+        ignored_streets: &Vec<Uuid>,
+    ) -> Option<Uuid> {
         for (id, street) in &self.streets {
-            if ignored_streets.contains(id) { continue; }
+            if ignored_streets.contains(id) {
+                continue;
+            }
 
             if street.is_point_on_street(position) {
                 return Some(*id);
@@ -370,11 +333,15 @@ impl Map {
         None
     }
 
-    pub fn foo(&mut self, street_id: &Uuid, _start_id: &Uuid) {
-        let a = self.streets.get_mut(street_id).unwrap();
-        let b = self.intersections.get_mut(&a.start).unwrap();
+    pub fn update_bounding_box(&mut self) {
+        let polygon: Polygon<f64> = self.into();
+        if let Some(bb) = polygon.bounding_rect() {
+            self.bounding_box = bb;
 
-        a.set_start(b);
+            let offset = 20.0;
+            self.bounding_box.set_min(self.bounding_box.min() - Coordinate { x: offset, y: offset});
+            self.bounding_box.set_max(self.bounding_box.max() + Coordinate { x: offset, y: offset})
+        }
     }
 
     pub fn street(&self, id: &Uuid) -> Option<&Street> {
@@ -433,7 +400,7 @@ impl Map {
             if is_start_empty {
                 self.remove_intersection(&start_id);
             } else {
-                self.update_intersection(&start_id);
+                //self.update_intersection(&start_id);
             }
 
             let mut is_end_empty = false;
@@ -448,9 +415,8 @@ impl Map {
             if is_end_empty {
                 self.remove_intersection(&end_id);
             } else {
-                self.update_intersection(&end_id);
+                //self.update_intersection(&end_id);
             }
-
 
             return Some(street);
         }
@@ -459,10 +425,37 @@ impl Map {
     }
 
     pub fn remove_intersection(&mut self, id: &Uuid) -> Option<Intersection> {
-        self.intersections.remove(id)
+        if let Some(removed) = self.intersections.remove(id) {
+            self.update_bounding_box();
+
+            return Some(removed);
+        }
+
+        None
     }
 
     pub fn remove_district(&mut self, id: &Uuid) {
         self.districts.remove(id);
+    }
+
+    pub fn streets_intersecting_ray(&self, ray_start_pos: &Coordinate<f64>, ray_direction: &Coordinate<f64>, ray_length: f64) -> Vec<Uuid> {
+        let line = Line::new(*ray_start_pos, *ray_direction * ray_length);
+        let mut intersected_streets = vec![];
+        for (_, street) in &self.streets {
+            let s : &Line<f64> = street.into();
+            if let Some(intersection) = line_intersection(*s, line) {
+                match intersection {
+                    LineIntersection::SinglePoint {
+                        intersection: _,
+                        is_proper: _,
+                    } => {
+                        intersected_streets.push(street.id);
+                    }
+                    _ => {}
+                }
+            }       
+        }
+
+        intersected_streets
     }
 }

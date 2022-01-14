@@ -1,9 +1,10 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
-    prelude::{Centroid, Contains, EuclideanDistance}, Coordinate, Line, LineString, Point, Polygon,
+    prelude::{Centroid, Contains, EuclideanDistance},
+    CoordFloat, Coordinate, Line, LineString, Point, Polygon,
 };
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -15,7 +16,10 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
-    style::{InteractiveElementStyle, Style}, log, map::InformationLayer,
+    log,
+    map::InformationLayer,
+    renderer::PrimitiveRenderer,
+    style::{InteractiveElementStyle, Style},
 };
 
 #[derive(Clone)]
@@ -40,6 +44,12 @@ pub struct Street {
 
     pub style: InteractiveElementStyle,
     state: InteractiveElementState,
+}
+
+impl<'a> From<&'a Street> for &'a Line<f64> {
+    fn from(street: &'a Street) -> &'a Line<f64> {
+        &street.line
+    }
 }
 
 impl Default for Street {
@@ -183,37 +193,33 @@ impl Street {
         self.polygon = Polygon::new(LineString::from(pts), vec![]);
     }
 
-    pub fn render(&self, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>) -> Result<(), JsValue> {
-        let mut it = self.polygon.exterior().points_iter();
-        let start: Coordinate<f64> = it.next().unwrap().into();
+    pub fn render(
+        &self,
+        context: &CanvasRenderingContext2d,
+        additional_information_layer: &Vec<InformationLayer>,
+    ) -> Result<(), JsValue> {
+        self.polygon.render(self.style(), &context);
 
-        let style = self.style();
 
+        /*
+        let mut start: Coordinate<f64> = self.line.centroid().into();
+        start = start + self.perp() * -10.0;
+        let end = start + self.perp() * -100.0;
+        
         context.save();
-
         context.begin_path();
         context.move_to(start.x, start.y);
-        for point in it {
-            context.line_to(point.x(), point.y());
-        }
-
+        context.line_to(end.x, end.y);
+        context.set_line_width(4.0);
+        context.set_stroke_style(&"#0000FF".into());
+        context.stroke();
         context.close_path();
-        context.set_fill_style(&style.background_color.clone().into());
-        context.fill();
-
-        if style.border_width > 0 {
-            context.set_line_width(style.border_width.into());
-            context.set_stroke_style(&style.border_color.clone().into());
-            context.stroke();
-        }
-
-
 
         context.restore();
+        */
+        
 
         if additional_information_layer.contains(&InformationLayer::Debug) {
-            
-
             let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
 
             match &self.left_previous {
@@ -232,13 +238,15 @@ impl Street {
                 Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
                 None => owned_string.push_str("#"),
             }
-    
+
             if let Some(position) = self.polygon.exterior().centroid() {
                 context.set_fill_style(&"#FFFFFF".into());
                 context.fill_text(&owned_string, position.x(), position.y())?;
             }
 
             context.begin_path();
+            let mut it = self.polygon.exterior().points_iter();
+            let start: Coordinate<f64> = it.next().unwrap().into();
             let p1 = start + self.norm * (self.line.euclidean_length() - 5.0);
             let _p = start + self.norm * (self.line.euclidean_length() - self.width + 5.0);
             let p2 = _p + self.perp() * (-self.width / 2.0 + 5.0);
@@ -246,15 +254,14 @@ impl Street {
             context.move_to(p1.x, p1.y);
             context.line_to(p2.x, p2.y);
             context.line_to(p3.x, p3.y);
-    
+
             context.close_path();
-            
+
             context.save();
             context.set_stroke_style(&"#FFFFFF".into());
             context.stroke();
             context.restore();
         }
-
 
         Ok(())
     }
@@ -280,8 +287,6 @@ impl Street {
     }
 
     fn calc_polygon_points(&self, streets: &HashMap<Uuid, Street>) -> Vec<Coordinate<f64>> {
-        
-
         let half_width = self.width / 2.0;
         let s = self.start();
 

@@ -24,6 +24,7 @@ mod delete_district_state;
 mod delete_street_state;
 mod idle_state;
 mod state;
+mod renderer;
 
 use crate::create_district_state::CreateDistrictState;
 use crate::create_street_state::CreateStreetState;

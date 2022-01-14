@@ -1,6 +1,7 @@
-
-
-use geo::{prelude::Contains, Coordinate, LineString, Polygon};
+use geo::{
+    prelude::{Centroid, Contains},
+    CoordFloat, Coordinate, LineString, Polygon,
+};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -8,7 +9,9 @@ use web_sys::CanvasRenderingContext2d;
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     intersection::Side,
-    style::{InteractiveElementStyle, Style}, map::{Map, InformationLayer},
+    log,
+    map::{InformationLayer, Map},
+    style::{InteractiveElementStyle, Style},
 };
 
 pub struct District {
@@ -63,7 +66,11 @@ impl District {
         self.polygon.contains(point)
     }
 
-    pub fn render(&self, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>,) -> Result<(), JsValue> {
+    pub fn render(
+        &self,
+        context: &CanvasRenderingContext2d,
+        additional_information_layer: &Vec<InformationLayer>,
+    ) -> Result<(), JsValue> {
         let mut it = self.polygon.exterior().points_iter();
         let start = it.next().unwrap();
         let style = self.style();
@@ -101,7 +108,20 @@ struct Enclosed {
 pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map) -> Option<District> {
     let district = enclosed(side, street, map);
 
-    if !district.enclosed {
+    let factor = match side {
+        Side::Left => -1.0,
+        Side::Right => 1.0
+    };
+    let street_perp = map.street(&street).unwrap().perp();
+    let street_start: Coordinate<f64> = map.street(&street).unwrap().line.centroid().into();
+    let intersected_streets = map.streets_intersecting_ray(
+        &(street_start + street_perp * 10.0 * factor),
+        &street_perp,
+        10000.0 * factor,
+    );
+
+    log!("{} {}", district.enclosed, intersected_streets.len());
+    if !district.enclosed || intersected_streets.is_empty() {
         return None;
     }
 
@@ -146,10 +166,9 @@ fn enclosed(side: Side, street: Uuid, map: &mut Map) -> Enclosed {
                 points.push(street.end());
             }
 
-            
             if next.is_some()
-                && ((street.start == map.street(&next.unwrap()).unwrap().start) ||
-                    (street.end == map.street(&next.unwrap()).unwrap().end))
+                && ((street.start == map.street(&next.unwrap()).unwrap().start)
+                    || (street.end == map.street(&next.unwrap()).unwrap().end))
             {
                 forward = !forward;
 

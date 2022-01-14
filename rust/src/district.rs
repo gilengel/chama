@@ -120,7 +120,6 @@ pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map) -> Op
         10000.0 * factor,
     );
 
-    log!("{} {}", district.enclosed, intersected_streets.len());
     if !district.enclosed || intersected_streets.is_empty() {
         return None;
     }

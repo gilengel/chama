@@ -200,25 +200,6 @@ impl Street {
     ) -> Result<(), JsValue> {
         self.polygon.render(self.style(), &context);
 
-
-        /*
-        let mut start: Coordinate<f64> = self.line.centroid().into();
-        start = start + self.perp() * -10.0;
-        let end = start + self.perp() * -100.0;
-        
-        context.save();
-        context.begin_path();
-        context.move_to(start.x, start.y);
-        context.line_to(end.x, end.y);
-        context.set_line_width(4.0);
-        context.set_stroke_style(&"#0000FF".into());
-        context.stroke();
-        context.close_path();
-
-        context.restore();
-        */
-        
-
         if additional_information_layer.contains(&InformationLayer::Debug) {
             let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
 

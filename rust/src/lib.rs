@@ -74,6 +74,94 @@ pub struct Editor {
     
     state: Box<dyn State>,
     map: Map,
+    grid: Grid,
+}
+
+struct Grid {
+    offset: u32,
+    subdivisions: u8,
+    enabled: bool,
+}
+
+impl Grid {
+    pub fn render(
+        &self,
+        context: &CanvasRenderingContext2d,
+        width: u32,
+        height: u32,
+    ) -> Result<(), JsValue> {
+        if self.offset == 0 {
+            return Ok(());
+        }
+
+        context.save();
+        context.set_line_width(2.0);
+        context.set_stroke_style(&"rgb(40, 40, 40)".into());
+
+        let steps_x = (width as f64 / self.offset as f64).ceil() as u32;
+        let steps_y = (height as f64 / self.offset as f64).ceil() as u32;
+
+        let sub_offset = (self.offset as f64 / self.subdivisions as f64).ceil() as u32;
+
+        for i in 0..steps_x {
+            let i = (i * self.offset).into();
+            
+            context.save();
+            context.set_line_width(1.0);
+            for k in 0..self.subdivisions as u32 {
+                context.begin_path();
+                context.move_to(i + (k * sub_offset) as f64, 0.0);
+                context.line_to(i + (k * sub_offset) as f64, height.into());
+                context.close_path();
+                context.stroke();
+            }
+            context.restore();  
+
+            context.set_line_width(4.0);
+            context.begin_path();
+            context.move_to(i, 0.0);
+            context.line_to(i, height.into());
+            context.close_path();
+            context.stroke();
+        }
+
+        
+        for i in 0..steps_y {
+            let i = (i * self.offset).into();            
+
+            context.save();
+            context.set_line_width(1.0);
+            for k in 0..self.subdivisions as u32 {
+                context.begin_path();
+                context.move_to(0., i + (k * sub_offset) as f64);
+                context.line_to(width.into(), i + (k * sub_offset) as f64);
+                context.close_path();
+                context.stroke();
+            }
+            context.restore();  
+
+            context.set_line_width(2.0);
+            context.begin_path();
+            context.move_to( 0.0, i);
+            context.line_to( width.into(), i);
+            context.close_path();
+            context.stroke();
+        }
+        
+        context.restore();
+
+        Ok(())
+    }
+}
+
+impl Default for Grid {
+    fn default() -> Self {
+        Self {
+            offset: 200,
+            subdivisions: 4,
+            enabled: true,
+        }
+    }
 }
 
 fn get_canvas_and_context(
@@ -106,6 +194,7 @@ impl Editor {
             render_streets: true,
             state: Box::new(IdleState::default()),
             map: Map::new(width, height),
+            grid: Grid::default()
         }
     }
 
@@ -135,6 +224,24 @@ impl Editor {
         self.state.enter(&mut self.map);
     }
 
+    pub fn set_grid_enabled(&mut self, enabled: bool) {
+        self.grid.enabled = enabled
+    }
+
+    pub fn set_grid_offset(&mut self, offset: f64) {
+        self.grid.offset = offset as u32;
+    }
+
+    pub fn set_grid_subdivisions(&mut self, subdivisions: f64) {
+        let mut subdivisions = subdivisions as u8;
+        
+        if subdivisions == 0 {
+            subdivisions = 1;
+        }
+
+        self.grid.subdivisions = subdivisions;
+    }
+
     pub fn width(&self) -> u32 {
         self.map.width()
     }
@@ -160,15 +267,38 @@ impl Editor {
     }
 
     pub fn render(&self) -> Result<(), JsValue> {
+        self.context.clear_rect(0.0, 0.0, self.map.width().into(), self.map.height().into());
+
+        if self.grid.enabled {
+            self.grid.render(&self.context, self.map.width(), self.map.height())?
+        }
+
         self.state.render(&self.map, &self.context, &self.additional_information_layers)
+    }
+
+    fn transform_cursor_pos_to_grid(&self, x: u32, y: u32) -> Coordinate<f64> {
+        if !self.grid.enabled  {
+            return Coordinate {
+                x: x.into(),
+                y: y.into(),
+            };
+        }
+
+        let factor = self.grid.offset as f32 / self.grid.subdivisions as f32;
+        let x = (x as f32 / factor).round();
+        let y = (y as f32 / factor).round();
+
+       
+
+        Coordinate {
+            x: (x * factor).into(),
+            y: (y * factor).into(),
+        }
     }
 
     pub fn mouse_down(&mut self, x: u32, y: u32, button: u32) {
         self.state.mouse_down(
-            Coordinate {
-                x: x.into(),
-                y: y.into(),
-            },
+            self.transform_cursor_pos_to_grid(x, y),
             button,
             &mut self.map,
         );
@@ -176,10 +306,8 @@ impl Editor {
 
     pub fn mouse_up(&mut self, x: u32, y: u32, button: u32) {
         self.state.mouse_up(
-            Coordinate {
-                x: x.into(),
-                y: y.into(),
-            },
+            self.transform_cursor_pos_to_grid(x, y),
+
             button,
             &mut self.map,
         );
@@ -187,10 +315,8 @@ impl Editor {
 
     pub fn mouse_move(&mut self, x: u32, y: u32) {
         self.state.mouse_move(
-            Coordinate {
-                x: x.into(),
-                y: y.into(),
-            },
+            self.transform_cursor_pos_to_grid(x, y),
+
             &mut self.map,
         );
     }

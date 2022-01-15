@@ -14,6 +14,15 @@
   export let showDebugInformation = false;
   $: if(editor) editor.set_enable_debug_information(showDebugInformation);
 
+  export let enableGrid = true;
+  $: if(editor) editor.set_grid_enabled(enableGrid);
+
+  export let gridOffset = 200;
+  $: if(editor) editor.set_grid_offset(gridOffset);
+
+  export let gridSubdivisions = 8;
+  $: if(editor) editor.set_grid_subdivisions(gridSubdivisions);
+
   let canvas;
   $: {
     loadEditor().then(

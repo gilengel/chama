@@ -1,10 +1,9 @@
-use geo::line_intersection::{LineIntersection, line_intersection};
+use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, EuclideanDistance};
-use geo::{Coordinate, LineString, Polygon, Rect, Line};
+use geo::{Coordinate, Line, LineString, Polygon, Rect};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
-
 
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -51,7 +50,7 @@ impl Renderer for Map {
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
-        
+
         for (_, district) in &self.districts {
             district.render(&context, additional_information_layer)?;
         }
@@ -130,24 +129,6 @@ pub trait Update<T> {
     fn update<S>(&mut self, id: &Uuid);
 }
 
-/*
-pub trait Insert<T> {
-    fn insert(&mut self, x: T);
-}
-
-impl Insert<Street> for Map {
-    fn insert(&mut self, x: Street) {
-        self.streets.insert(x.id, x);
-    }
-}
-
-impl Insert<Intersection> for Map {
-    fn insert(&mut self, x: Intersection) {
-        self.intersections.insert(x.id, x);
-    }
-}
-*/
-
 impl From<&mut Map> for Polygon<f64> {
     fn from(map: &mut Map) -> Polygon<f64> {
         let v: Vec<Coordinate<f64>> = map
@@ -175,6 +156,8 @@ impl geo::algorithm::concave_hull::ConcaveHull for Map {
         polygon.concave_hull(concavity)
     }
 }
+
+
 
 impl Map {
     pub fn new(width: u32, height: u32) -> Self {
@@ -339,8 +322,20 @@ impl Map {
             self.bounding_box = bb;
 
             let offset = 20.0;
-            self.bounding_box.set_min(self.bounding_box.min() - Coordinate { x: offset, y: offset});
-            self.bounding_box.set_max(self.bounding_box.max() + Coordinate { x: offset, y: offset})
+            self.bounding_box.set_min(
+                self.bounding_box.min()
+                    - Coordinate {
+                        x: offset,
+                        y: offset,
+                    },
+            );
+            self.bounding_box.set_max(
+                self.bounding_box.max()
+                    + Coordinate {
+                        x: offset,
+                        y: offset,
+                    },
+            )
         }
     }
 
@@ -438,11 +433,16 @@ impl Map {
         self.districts.remove(id);
     }
 
-    pub fn streets_intersecting_ray(&self, ray_start_pos: &Coordinate<f64>, ray_direction: &Coordinate<f64>, ray_length: f64) -> Vec<Uuid> {
+    pub fn streets_intersecting_ray(
+        &self,
+        ray_start_pos: &Coordinate<f64>,
+        ray_direction: &Coordinate<f64>,
+        ray_length: f64,
+    ) -> Vec<Uuid> {
         let line = Line::new(*ray_start_pos, *ray_direction * ray_length);
         let mut intersected_streets = vec![];
         for (_, street) in &self.streets {
-            let s : &Line<f64> = street.into();
+            let s: &Line<f64> = street.into();
             if let Some(intersection) = line_intersection(*s, line) {
                 match intersection {
                     LineIntersection::SinglePoint {
@@ -453,7 +453,7 @@ impl Map {
                     }
                     _ => {}
                 }
-            }       
+            }
         }
 
         intersected_streets

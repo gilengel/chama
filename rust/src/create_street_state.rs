@@ -396,8 +396,6 @@ impl<'a> State for CreateStreetState {
     }
 
     fn render(&self, map: &Map, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>) -> Result<(), JsValue> {
-        context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
-
         map.render(&context, additional_information_layer)?;
 
         context.set_fill_style(&"#FFFFFF".into());

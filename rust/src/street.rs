@@ -238,6 +238,7 @@ impl Street {
             context.close_path();
 
             context.save();
+            
             context.set_stroke_style(&"#FFFFFF".into());
             context.stroke();
             context.restore();

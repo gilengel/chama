@@ -2,6 +2,8 @@
   import Checkbox from "@smui/checkbox";
   import FormField from "@smui/form-field";
   import MapEditor from "./MapEditor.svelte";
+  import Textfield from "@smui/textfield";
+  import HelperText from "@smui/textfield/helper-text";
 
   // components
   import Toolbar from "./Toolbar.svelte";
@@ -56,12 +58,22 @@
         break;
     }
   }
+
+  let enableGrid = false;
+  let gridOffset = 200;
+  let gridSubdivisions = 4;
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
 <main>
-  <MapEditor bind:selectedAction bind:showDebugInformation />
+  <MapEditor
+    bind:selectedAction
+    bind:showDebugInformation
+    bind:enableGrid
+    bind:gridOffset
+    bind:gridSubdivisions
+  />
   <div class="main-toolbar">
     <Toolbar options={streetToolbarOptions} bind:group={selectedAction} />
     <Toolbar options={districtToolbarOptions} bind:group={selectedAction} />
@@ -72,6 +84,16 @@
       <Checkbox bind:checked={showDebugInformation} />
       <span slot="label">Show Debug Information</span>
     </FormField>
+    <FormField>
+      <Checkbox bind:checked={enableGrid} />
+      <span slot="label">Enable Grid</span>
+    </FormField>
+    <Textfield bind:value={gridOffset} label="Label">
+      <HelperText slot="helper">Helper Text</HelperText>
+    </Textfield>
+    <Textfield bind:value={gridSubdivisions} label="Label">
+      <HelperText slot="helper">Helper Text</HelperText>
+    </Textfield>
   </div>
 </main>
 

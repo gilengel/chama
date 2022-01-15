@@ -67,8 +67,6 @@ impl State for DeleteStreetState {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>
     ) -> Result<(), wasm_bindgen::JsValue> {
-        context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
-
         map.render(context, additional_information_layer)?;
 
         Ok(())

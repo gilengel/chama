@@ -73,7 +73,7 @@ impl District {
     pub fn render(
         &self,
         context: &CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
+        _additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
         let mut it = self.polygon.exterior().points_iter();
         let start = it.next().unwrap();

@@ -1,6 +1,6 @@
 use geo::{
     dimensions::HasDimensions,
-    line_intersection::{line_intersection, LineIntersection, self},
+    line_intersection::{line_intersection, LineIntersection},
     prelude::EuclideanDistance,
     winding_order::Winding,
     Coordinate, Line, LineString, Point, Polygon,
@@ -55,13 +55,13 @@ impl PartialEq for LineSegment {
 impl House {
     fn calculate_intersections(
         &mut self,
-        longest_index: u32,
-        midpoint: &Coordinate<f64>,
-        values: Vec<Coordinate<f64>>,
+        _longest_index: u32,
+        _midpoint: &Coordinate<f64>,
+        _values: Vec<Coordinate<f64>>,
     ) -> Vec<Coordinate<f64>> {
         todo!()
     }
-    pub fn generate(&mut self, district: &District) {}
+    pub fn generate(&mut self, _district: &District) {}
 }
 
 fn longest_segment(segments: &Vec<LineSegment>) -> &LineSegment {

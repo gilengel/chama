@@ -4,7 +4,7 @@ use geo::{Coordinate, LineString, Polygon, Rect, Line};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::ops::Deref;
+
 
 use uuid::Uuid;
 use wasm_bindgen::JsValue;

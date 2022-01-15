@@ -1,6 +1,6 @@
 use geo::{
     prelude::{Centroid, Contains},
-    CoordFloat, Coordinate, LineString, Polygon,
+    Coordinate, LineString, Polygon, 
 };
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -9,9 +9,9 @@ use web_sys::CanvasRenderingContext2d;
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     intersection::Side,
-    log,
+    
     map::{InformationLayer, Map},
-    style::{InteractiveElementStyle, Style},
+    style::{InteractiveElementStyle, Style}, house::generate_houses, renderer::PrimitiveRenderer,
 };
 
 pub struct District {
@@ -66,6 +66,10 @@ impl District {
         self.polygon.contains(point)
     }
 
+    pub fn polygon(&self) -> &Polygon<f64> {
+        &self.polygon
+    }
+
     pub fn render(
         &self,
         context: &CanvasRenderingContext2d,
@@ -92,6 +96,17 @@ impl District {
             context.set_stroke_style(&style.border_color.clone().into());
             context.stroke();
         }
+
+        let polygons = generate_houses(self);
+        for p in polygons {
+            let style = Style {
+                border_width: 4,
+                border_color: "#FF0000".to_string(),
+                background_color: "rgba(30, 136, 229, 0.4)".to_string(),
+            };
+            p.render(&style, context);
+        }
+        
 
         context.restore();
 

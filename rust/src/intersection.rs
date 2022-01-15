@@ -5,7 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{log, map::InformationLayer, street::Street};
+use crate::{map::InformationLayer, street::Street};
 
 #[derive(Clone, PartialEq, Copy, Debug)]
 pub enum Direction {

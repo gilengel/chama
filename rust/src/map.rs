@@ -4,6 +4,7 @@ use geo::{Coordinate, LineString, Polygon, Rect, Line};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -11,10 +12,8 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::district::District;
 use crate::intersection::Intersection;
-use crate::renderer::PrimitiveRenderer;
 use crate::street::Street;
-use crate::style::Style;
-use crate::{Renderer, log};
+use crate::Renderer;
 
 pub struct Map {
     width: u32,
@@ -52,6 +51,7 @@ impl Renderer for Map {
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
+        
         for (_, district) in &self.districts {
             district.render(&context, additional_information_layer)?;
         }

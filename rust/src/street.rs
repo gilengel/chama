@@ -4,7 +4,7 @@ use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
     prelude::{Centroid, Contains, EuclideanDistance},
-    CoordFloat, Coordinate, Line, LineString, Point, Polygon,
+    Coordinate, Line, LineString, Point, Polygon,
 };
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -16,7 +16,6 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
-    log,
     map::InformationLayer,
     renderer::PrimitiveRenderer,
     style::{InteractiveElementStyle, Style},

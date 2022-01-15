@@ -13,7 +13,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     intersection::{Direction, Intersection},
-    log,
+    
     map::{Get, GetMut, InformationLayer},
     state::State,
     street::Street,

@@ -38,7 +38,27 @@
   ];
 
   let showDebugInformation = false;
+
+  // for handling shortcuts
+  function handleKeydown(event) {
+    switch (event.keyCode) {
+      case 49: // 1
+        selectedAction = 1;
+        break;
+      case 50: // 2
+        selectedAction = 2;
+        break;
+      case 51: // 3
+        selectedAction = 3;
+        break;
+      case 52:
+        selectedAction = 4;
+        break;
+    }
+  }
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 <main>
   <MapEditor bind:selectedAction bind:showDebugInformation />

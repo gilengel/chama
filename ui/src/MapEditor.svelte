@@ -1,5 +1,9 @@
-<script>
+<script lang="ts">
   import wasm from "../../rust/Cargo.toml";
+
+  import Dialog, { Title, Content, Actions } from "@smui/dialog";
+  import Button, { Label } from "@smui/button";
+  import Snackbar, { SnackbarComponentDev } from "@smui/snackbar";
 
   let editor;
   async function loadEditor() {
@@ -9,19 +13,19 @@
   }
 
   export let selectedAction = 0;
-  $: if(editor) editor.switch_to_mode(selectedAction);
+  $: if (editor) editor.switch_to_mode(selectedAction);
 
   export let showDebugInformation = false;
-  $: if(editor) editor.set_enable_debug_information(showDebugInformation);
+  $: if (editor) editor.set_enable_debug_information(showDebugInformation);
 
   export let enableGrid = true;
-  $: if(editor) editor.set_grid_enabled(enableGrid);
+  $: if (editor) editor.set_grid_enabled(enableGrid);
 
   export let gridOffset = 200;
-  $: if(editor) editor.set_grid_offset(gridOffset);
+  $: if (editor) editor.set_grid_offset(gridOffset);
 
   export let gridSubdivisions = 8;
-  $: if(editor) editor.set_grid_subdivisions(gridSubdivisions);
+  $: if (editor) editor.set_grid_subdivisions(gridSubdivisions);
 
   let canvas;
   $: {
@@ -75,15 +79,85 @@
     switch (event.keyCode) {
       case 112: // F1
         editor.save();
+        showInfo("Map successfully saved");
         break;
       case 113: // F2
-        editor.load();
+        if (!editor.is_empty()) {
+          unsavedChanges = true;
+        } else {
+          editor.load();
+          showInfo("Map successfully loaded");
+        }
+
         break;
+      case 114:
+        if (editor) editor.download();
     }
   }
 
+  function showInfo(message) {
+    infoMessage = message;
+
+    info.open();
+  }
+
+  function download() {
+    var element = document.createElement("a");
+    element.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent('text/plain')
+    );
+    element.setAttribute("download", 'myfilename.txt');
+
+    element.style.display = "none";
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+  }
+  let infoMessage = "";
+
+  let unsavedChanges = false;
+  let confirmOverwrite = false;
+  $: if (confirmOverwrite && editor) {
+    editor.load();
+    showInfo("Map successfully loaded");
+  }
+
+  let info: SnackbarComponentDev;
 </script>
 
+<button on:click={download}
+  >Create file</button
+>
+
+<Dialog
+  bind:open={unsavedChanges}
+  aria-labelledby="unsaved-changes-title"
+  aria-describedby="unsaved-changes-content"
+>
+  <Title id="unsaved-changes-title">Unsaved Changes</Title>
+  <Content id="unsaved-changes-content"
+    >All made changes will be discarded which cannot be undone. Do you want to
+    continue?</Content
+  >
+  <Actions>
+    <Button on:click={() => (confirmOverwrite = false)}>
+      <Label>Cancel</Label>
+    </Button>
+    <Button on:click={() => (confirmOverwrite = true)}>
+      <Label>Load and discard changes</Label>
+    </Button>
+  </Actions>
+</Dialog>
+
+<Snackbar bind:this={info}>
+  <Label>{infoMessage}</Label>
+  <Actions />
+</Snackbar>
+
+<span style="color: white">{unsavedChanges}</span>
 
 <canvas
   bind:this={canvas}

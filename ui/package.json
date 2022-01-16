@@ -16,6 +16,7 @@
     "@smui/checkbox": "^6.0.0-beta.13",
     "@smui/dialog": "^6.0.0-beta.13",
     "@smui/form-field": "^6.0.0-beta.13",
+    "@smui/snackbar": "^6.0.0-beta.13",
     "@smui/textfield": "^6.0.0-beta.13",
     "@wasm-tool/rollup-plugin-rust": "^1.0.7",
     "node-sass": "^7.0.1",

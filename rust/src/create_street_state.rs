@@ -13,7 +13,6 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     intersection::{Direction, Intersection},
-    
     map::{Get, GetMut, InformationLayer},
     state::State,
     street::Street,
@@ -135,7 +134,6 @@ impl CreateStreetState {
             old_end.remove_connected_street(&street_id);
             old_end.add_incoming_street(&new_street.id);
         }
-        
 
         map.add_street(new_street);
         map.add_intersection(new_intersection);
@@ -395,7 +393,12 @@ impl<'a> State for CreateStreetState {
         self.temp_street = Uuid::default();
     }
 
-    fn render(&self, map: &Map, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>) -> Result<(), JsValue> {
+    fn render(
+        &self,
+        map: &Map,
+        context: &CanvasRenderingContext2d,
+        additional_information_layer: &Vec<InformationLayer>,
+    ) -> Result<(), JsValue> {
         map.render(&context, additional_information_layer)?;
 
         context.set_fill_style(&"#FFFFFF".into());
@@ -416,6 +419,13 @@ impl<'a> State for CreateStreetState {
     fn enter(&self, _map: &mut Map) {}
 
     fn exit(&self, map: &mut Map) {
-        map.remove_intersection(&self.temp_end);  
+        if map
+            .intersection(&self.temp_end)
+            .unwrap()
+            .get_connected_streets()
+            .is_empty()
+        {
+            map.remove_intersection(&self.temp_end);
+        }
     }
 }

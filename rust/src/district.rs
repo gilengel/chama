@@ -2,6 +2,7 @@ use geo::{
     prelude::{Centroid, Contains},
     Coordinate, LineString, Polygon, 
 };
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -14,12 +15,14 @@ use crate::{
     style::{InteractiveElementStyle, Style}, house::generate_houses, renderer::PrimitiveRenderer,
 };
 
+#[derive(Serialize, Deserialize)]
 pub struct District {
     pub id: Uuid,
     polygon: Polygon<f64>,
     style: InteractiveElementStyle,
     state: InteractiveElementState,
 }
+
 impl Default for District {
     fn default() -> Self {
         District {

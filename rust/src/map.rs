@@ -1,6 +1,7 @@
 use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
+use serde::{Serialize, Deserialize};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -14,6 +15,7 @@ use crate::intersection::Intersection;
 use crate::street::Street;
 use crate::Renderer;
 
+#[derive(Serialize, Deserialize)]
 pub struct Map {
     width: u32,
     height: u32,
@@ -174,6 +176,11 @@ impl Map {
 
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    /// Returns `true` if `self` has no streets, no intersections and no districts
+    pub fn is_empty(&self) -> bool {
+        self.streets.is_empty() && self.intersections.is_empty() && self.districts.is_empty()
     }
 
     pub fn intersections(&self) -> &HashMap<Uuid, Intersection> {
@@ -395,7 +402,7 @@ impl Map {
             if is_start_empty {
                 self.remove_intersection(&start_id);
             } else {
-                //self.update_intersection(&start_id);
+                self.update_intersection(&start_id);
             }
 
             let mut is_end_empty = false;
@@ -410,7 +417,7 @@ impl Map {
             if is_end_empty {
                 self.remove_intersection(&end_id);
             } else {
-                //self.update_intersection(&end_id);
+                self.update_intersection(&end_id);
             }
 
             return Some(street);

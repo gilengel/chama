@@ -21,6 +21,15 @@ impl DeleteStreetState {
             hovered_street: None,
         }
     }
+
+    fn clean_hovered_street_state(&self, map: &mut Map) {
+        if self.hovered_street.is_some() {
+            if let Some(street) = map.get_mut(&self.hovered_street.unwrap()) as Option<&mut Street>
+            {
+                street.set_state(InteractiveElementState::Normal)
+            }
+        }
+    }
 }
 
 impl Default for DeleteStreetState {
@@ -35,12 +44,7 @@ impl State for DeleteStreetState {
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
-        if self.hovered_street.is_some() {
-            if let Some(street) = map.get_mut(&self.hovered_street.unwrap()) as Option<&mut Street>
-            {
-                street.set_state(InteractiveElementState::Normal)
-            }
-        }
+        self.clean_hovered_street_state(map);
 
         if let Some(hovered_street) = map.get_street_at_position(&mouse_pos, &vec![]) {
             self.hovered_street = Some(hovered_street);
@@ -60,7 +64,9 @@ impl State for DeleteStreetState {
 
     fn enter(&self, _map: &mut Map) {}
 
-    fn exit(&self, _map: &mut Map) {}
+    fn exit(&self, map: &mut Map) {
+        self.clean_hovered_street_state(map);
+    }
 
     fn render(
         &self,

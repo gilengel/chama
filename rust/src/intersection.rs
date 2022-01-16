@@ -6,8 +6,9 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{map::InformationLayer, street::Street};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Copy, Debug)]
+#[derive(Clone, PartialEq, Copy, Debug, Serialize, Deserialize)]
 pub enum Direction {
     In,
     Out,
@@ -19,15 +20,7 @@ pub enum Side {
     Right,
 }
 
-/*
-#[derive(PartialEq)]
-enum Adjacency {
-    Previous,
-    Next,
-}
-*/
-
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Intersection {
     pub id: Uuid,
     position: Coordinate<f64>,
@@ -49,15 +42,14 @@ impl Intersection {
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
-
         if additional_information_layer.contains(&InformationLayer::Debug) {
             context.begin_path();
             context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
             context.set_fill_style(&"#FF8C00".into());
             context.fill();
-    
+
             context.set_fill_style(&"#FFFFFF".into());
-            
+
             context.fill_text(
                 &format!(
                     "c={}, {}",
@@ -93,13 +85,6 @@ impl Intersection {
             self.connected_streets.remove(index);
         }
     }
-
-    /*
-    // TODO check if necessary
-    pub fn is_connected_to_street(&self, id: &Uuid) -> bool {
-        self.connected_streets.iter().any(|x| x.1 == *id)
-    }
-    */
 
     pub fn add_incoming_street(&mut self, id: &Uuid) {
         self.connected_streets.push((Direction::In, *id));

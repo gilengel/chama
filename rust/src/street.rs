@@ -18,7 +18,7 @@ use crate::{
     intersection::{Intersection, Side},
     map::InformationLayer,
     renderer::PrimitiveRenderer,
-    style::{InteractiveElementStyle, Style},
+    style::{InteractiveElementStyle, Style}, log,
 };
 
 #[derive(Clone)]
@@ -166,7 +166,7 @@ impl Street {
         &mut self,
         intersections: &HashMap<Uuid, Intersection>,
         streets: &HashMap<Uuid, Street>,
-    ) {
+    ) {        
         let start = intersections.get(&self.start).unwrap();
         let end = intersections.get(&self.end).unwrap();
         self.line.start = start.get_position();

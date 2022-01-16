@@ -395,7 +395,7 @@ impl Map {
             if is_start_empty {
                 self.remove_intersection(&start_id);
             } else {
-                //self.update_intersection(&start_id);
+                self.update_intersection(&start_id);
             }
 
             let mut is_end_empty = false;
@@ -410,7 +410,7 @@ impl Map {
             if is_end_empty {
                 self.remove_intersection(&end_id);
             } else {
-                //self.update_intersection(&end_id);
+                self.update_intersection(&end_id);
             }
 
             return Some(street);

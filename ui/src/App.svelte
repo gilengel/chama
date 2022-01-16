@@ -55,19 +55,24 @@
         break;
       case 52:
         selectedAction = 4;
-        break;
+        break;  
+
+      default:
+        editor.handleKeydown(event);
     }
   }
 
   let enableGrid = false;
   let gridOffset = 200;
   let gridSubdivisions = 4;
+
+  let editor;
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
 <main>
-  <MapEditor
+  <MapEditor bind:this={editor}
     bind:selectedAction
     bind:showDebugInformation
     bind:enableGrid

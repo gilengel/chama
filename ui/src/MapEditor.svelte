@@ -70,7 +70,20 @@
     const pos = getMousePos(e);
     editor.mouse_up(pos.x, pos.y, e.button);
   }
+
+  export function handleKeydown(event) {
+    switch (event.keyCode) {
+      case 112: // F1
+        editor.save();
+        break;
+      case 113: // F2
+        editor.load();
+        break;
+    }
+  }
+
 </script>
+
 
 <canvas
   bind:this={canvas}

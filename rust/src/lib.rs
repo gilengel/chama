@@ -3,6 +3,7 @@ use idle_state::IdleState;
 use map::InformationLayer;
 use map::Map;
 use state::State;
+use store::Store;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
@@ -15,9 +16,7 @@ mod interactive_element;
 mod intersection;
 mod map;
 mod street;
-
 mod style;
-
 mod create_district_state;
 mod create_street_state;
 mod delete_district_state;
@@ -26,6 +25,7 @@ mod idle_state;
 mod state;
 mod renderer;
 mod house;
+mod store;
 
 use crate::create_district_state::CreateDistrictState;
 use crate::create_street_state::CreateStreetState;
@@ -75,6 +75,7 @@ pub struct Editor {
     state: Box<dyn State>,
     map: Map,
     grid: Grid,
+    store: Option<Store>,
 }
 
 struct Grid {
@@ -194,8 +195,17 @@ impl Editor {
             render_streets: true,
             state: Box::new(IdleState::default()),
             map: Map::new(width, height),
-            grid: Grid::default()
+            grid: Grid::default(),
+            store: Store::new("fantasy_city_map")
         }
+    }
+
+    pub fn save(&self) {
+        self.store.as_ref().unwrap().sync_local_storage(&self.map);
+    }
+
+    pub fn load(&mut self) {
+        self.map = self.store.as_ref().unwrap().fetch_local_storage().unwrap();
     }
 
     pub fn set_enable_debug_information(&mut self, enable_debug_information: bool) {

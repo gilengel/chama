@@ -6,6 +6,7 @@ use geo::{
     prelude::{Centroid, Contains, EuclideanDistance},
     Coordinate, Line, LineString, Point, Polygon,
 };
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -16,15 +17,18 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
+    log,
     map::InformationLayer,
     renderer::PrimitiveRenderer,
-    style::{InteractiveElementStyle, Style}, log,
+    style::{InteractiveElementStyle, Style},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Street {
     pub id: Uuid,
+
     pub line: Line<f64>,
+
     polygon: Polygon<f64>,
 
     width: f64,
@@ -39,9 +43,11 @@ pub struct Street {
     right_previous: Option<Uuid>,
 
     norm: Coordinate<f64>,
+
     inverse_norm: Coordinate<f64>,
 
     pub style: InteractiveElementStyle,
+
     state: InteractiveElementState,
 }
 
@@ -166,7 +172,7 @@ impl Street {
         &mut self,
         intersections: &HashMap<Uuid, Intersection>,
         streets: &HashMap<Uuid, Street>,
-    ) {        
+    ) {
         let start = intersections.get(&self.start).unwrap();
         let end = intersections.get(&self.end).unwrap();
         self.line.start = start.get_position();
@@ -238,7 +244,7 @@ impl Street {
             context.close_path();
 
             context.save();
-            
+
             context.set_stroke_style(&"#FFFFFF".into());
             context.stroke();
             context.restore();

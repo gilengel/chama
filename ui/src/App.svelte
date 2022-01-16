@@ -8,10 +8,6 @@
   // components
   import Toolbar from "./Toolbar.svelte";
 
-  export let Editor;
-
-  export let name;
-
   let selectedAction = 1;
   const streetToolbarOptions = [
     {

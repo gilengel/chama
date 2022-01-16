@@ -17,7 +17,6 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     intersection::{Intersection, Side},
-    log,
     map::InformationLayer,
     renderer::PrimitiveRenderer,
     style::{InteractiveElementStyle, Style},

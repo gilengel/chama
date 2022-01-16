@@ -1,7 +1,7 @@
 use geo::Coordinate;
 use idle_state::IdleState;
 use js_sys::encode_uri_component;
-use js_sys::JsString;
+
 use map::InformationLayer;
 use map::Map;
 use state::State;
@@ -39,7 +39,7 @@ extern crate alloc;
 #[macro_export]
 macro_rules! log {
     ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
+        web_sys::console::log_1(&format!( $( $t )* ).into())
     }
 }
 
@@ -235,8 +235,8 @@ impl Editor {
         self.map.is_empty()
     }
 
-    pub fn save(&self) {
-        self.store.as_ref().unwrap().sync_local_storage(&self.map);
+    pub fn save(&self) -> Result<(), JsValue> {
+        self.store.as_ref().unwrap().sync_local_storage(&self.map)
     }
 
     pub fn load(&mut self) {

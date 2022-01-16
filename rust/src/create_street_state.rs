@@ -13,7 +13,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     intersection::{Direction, Intersection},
-    map::{Get, GetMut, InformationLayer},
+    map::InformationLayer,
     state::State,
     street::Street,
     Map, Renderer,
@@ -54,7 +54,7 @@ impl CreateStreetState {
         street_id: &Uuid,
         map: &Map,
     ) -> Coordinate<f64> {
-        let street: &Street = map.get(street_id).unwrap();
+        let street: &Street = map.street(street_id).unwrap();
 
         let start = street.start();
         let end = street.end();
@@ -116,7 +116,7 @@ impl CreateStreetState {
         let new_intersection_id = new_intersection.id;
         new_intersection.set_position(pos);
 
-        if let Some(street) = map.get_mut(&street_id) as Option<&mut Street> {
+        if let Some(street) = map.street_mut(&street_id) as Option<&mut Street> {
             old_end = Some(street.end);
             street.set_end(&new_intersection);
         }
@@ -127,10 +127,11 @@ impl CreateStreetState {
         let mut new_street = Street::default();
         let new_id = new_street.id;
         new_street.set_start(&new_intersection);
-        new_street.set_end(&map.get(&old_end.unwrap()).unwrap());
+        new_street.set_end(&map.intersection(&old_end.unwrap()).unwrap());
         new_intersection.add_outgoing_street(&new_street.id);
 
-        if let Some(old_end) = map.get_mut(&old_end.unwrap()) as Option<&mut Intersection> {
+        if let Some(old_end) = map.intersection_mut(&old_end.unwrap()) as Option<&mut Intersection>
+        {
             old_end.remove_connected_street(&street_id);
             old_end.add_incoming_street(&new_street.id);
         }
@@ -291,7 +292,7 @@ impl<'a> State for CreateStreetState {
                     self.project_point_onto_middle_of_street(mouse_pos, &hovered_street, map);
 
                 self.temp_start = self.split_street(mouse_pos, &hovered_street, map).unwrap();
-                let start: &mut Intersection = map.get_mut(&self.temp_start).unwrap();
+                let start: &mut Intersection = map.intersection_mut(&self.temp_start).unwrap();
 
                 start.add_outgoing_street(&street.id);
                 street.set_start(start);
@@ -329,7 +330,7 @@ impl<'a> State for CreateStreetState {
         // Only update the position of the temp end if it is to close to the temp start. This prevents
         // that the routine will set the temp end to the wrong intersection and result in visual issues.
         if current_start_pos.euclidean_distance(&current_end_pos) < 100.0 {
-            let intersection: &mut Intersection = map.get_mut(&current_end).unwrap();
+            let intersection: &mut Intersection = map.intersection_mut(&current_end).unwrap();
             intersection.set_position(mouse_pos);
 
             let street = map.street(&self.temp_street).unwrap();
@@ -362,7 +363,7 @@ impl<'a> State for CreateStreetState {
                             self.switch_intersections(&current_end, &self.temp_end, map);
                         } else {
                             let intersection: &mut Intersection =
-                                map.get_mut(&current_end).unwrap();
+                                map.intersection_mut(&current_end).unwrap();
                             intersection.set_position(mouse_pos);
                             map.update_bounding_box();
                         }
@@ -419,13 +420,10 @@ impl<'a> State for CreateStreetState {
     fn enter(&self, _map: &mut Map) {}
 
     fn exit(&self, map: &mut Map) {
-        if map
-            .intersection(&self.temp_end)
-            .unwrap()
-            .get_connected_streets()
-            .is_empty()
-        {
-            map.remove_intersection(&self.temp_end);
+        if let Some(intersection) = map.intersection(&self.temp_end) {
+            if intersection.get_connected_streets().is_empty() {
+                map.remove_intersection(&self.temp_end);
+            }
         }
     }
 }

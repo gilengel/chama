@@ -69,68 +69,6 @@ impl Renderer for Map {
     }
 }
 
-pub trait Get<T> {
-    fn get(&self, id: &Uuid) -> Option<&'_ T>;
-}
-
-pub trait GetMut<T> {
-    fn get_mut(&mut self, id: &Uuid) -> Option<&'_ mut T>;
-}
-
-impl Get<Street> for Map {
-    fn get(&self, id: &Uuid) -> Option<&'_ Street> {
-        if self.streets.contains_key(id) {
-            return self.streets.get(id);
-        }
-
-        None
-    }
-}
-
-impl Get<Intersection> for Map {
-    fn get(&self, id: &Uuid) -> Option<&'_ Intersection> {
-        if self.intersections.contains_key(id) {
-            return self.intersections.get(id);
-        }
-
-        None
-    }
-}
-
-impl GetMut<Street> for Map {
-    fn get_mut(&mut self, id: &Uuid) -> Option<&'_ mut Street> {
-        if self.streets.contains_key(id) {
-            return self.streets.get_mut(id);
-        }
-
-        None
-    }
-}
-
-impl GetMut<Intersection> for Map {
-    fn get_mut(&mut self, id: &Uuid) -> Option<&'_ mut Intersection> {
-        if self.intersections.contains_key(id) {
-            return self.intersections.get_mut(id);
-        }
-
-        None
-    }
-}
-
-impl GetMut<District> for Map {
-    fn get_mut(&mut self, id: &Uuid) -> Option<&'_ mut District> {
-        if self.districts.contains_key(id) {
-            return self.districts.get_mut(id);
-        }
-
-        None
-    }
-}
-
-pub trait Update<T> {
-    fn update<S>(&mut self, id: &Uuid);
-}
-
 impl From<&mut Map> for Polygon<f64> {
     fn from(map: &mut Map) -> Polygon<f64> {
         let v: Vec<Coordinate<f64>> = map
@@ -373,6 +311,22 @@ impl Map {
     pub fn intersection_mut(&mut self, id: &Uuid) -> Option<&mut Intersection> {
         if self.intersections.contains_key(id) {
             return Some(self.intersections.get_mut(id).unwrap());
+        }
+
+        None
+    }
+
+    pub fn district(&self, id: &Uuid) -> Option<&District> {
+        if self.districts.contains_key(id) {
+            return Some(self.districts.get(id).unwrap())
+        }
+
+        None
+    }
+
+    pub fn district_mut(&mut self, id: &Uuid) -> Option<&mut District> {
+        if self.districts.contains_key(id) {
+            return Some(self.districts.get_mut(id).unwrap())
         }
 
         None

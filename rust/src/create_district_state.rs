@@ -3,9 +3,8 @@ use uuid::Uuid;
 
 use crate::{
     district::create_district_for_street,
-    map::{Get, InformationLayer, Map},
+    map::{InformationLayer, Map},
     state::State,
-    street::Street,
     Renderer,
 };
 
@@ -41,7 +40,7 @@ impl State for CreateDistrictState {
 
     fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
         if let Some(hovered_street_id) = self.hovered_street {
-            let hovered_street = map.get(&hovered_street_id).unwrap() as &Street;
+            let hovered_street = map.street(&hovered_street_id).unwrap();
             let side = hovered_street.get_side_of_position(&mouse_pos);
 
             if let Some(district) = create_district_for_street(side, hovered_street_id, map) {

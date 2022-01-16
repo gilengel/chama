@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    map::{GetMut, Map, InformationLayer},
+    map::{Map, InformationLayer},
     state::State,
     street::Street,
     Renderer,
@@ -24,7 +24,7 @@ impl DeleteStreetState {
 
     fn clean_hovered_street_state(&self, map: &mut Map) {
         if self.hovered_street.is_some() {
-            if let Some(street) = map.get_mut(&self.hovered_street.unwrap()) as Option<&mut Street>
+            if let Some(street) = map.street_mut(&self.hovered_street.unwrap()) as Option<&mut Street>
             {
                 street.set_state(InteractiveElementState::Normal)
             }
@@ -49,7 +49,7 @@ impl State for DeleteStreetState {
         if let Some(hovered_street) = map.get_street_at_position(&mouse_pos, &vec![]) {
             self.hovered_street = Some(hovered_street);
 
-            if let Some(street) = map.get_mut(&self.hovered_street.unwrap()) as Option<&mut Street>
+            if let Some(street) = map.street_mut(&self.hovered_street.unwrap()) as Option<&mut Street>
             {
                 street.set_state(InteractiveElementState::Hover)
             }

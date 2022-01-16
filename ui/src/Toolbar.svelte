@@ -2,8 +2,6 @@
   export let group;
   export let options;
 
-  export let selected = options[0].value;
-
   const uniqueID = Math.floor(Math.random() * 100);
   const slugify = (str = "") =>
     str.toLowerCase().replace(/ /g, "-").replace(/\./g, "");

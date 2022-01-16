@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{
     district::District,
     interactive_element::{InteractiveElementState, InteractiveElement},
-    map::{GetMut, Map, InformationLayer},
+    map::{Map, InformationLayer},
     state::State,
     Renderer,
 };
@@ -36,12 +36,12 @@ impl State for DeleteDistrictState {
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
         if let Some(old_hovered_district) = self.hovered_district {
-            let old_hovered_district: &mut District = map.get_mut(&old_hovered_district).unwrap();
+            let old_hovered_district: &mut District = map.district_mut(&old_hovered_district).unwrap();
             old_hovered_district.set_state(InteractiveElementState::Normal);
         }
 
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
-            let hovered_district: &mut District = map.get_mut(&hovered_district).unwrap();
+            let hovered_district: &mut District = map.district_mut(&hovered_district).unwrap();
             hovered_district.set_state(InteractiveElementState::Hover);
             self.hovered_district = Some(hovered_district.id);
         }

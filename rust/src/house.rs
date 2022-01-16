@@ -8,7 +8,6 @@ use geo::{
 
 use crate::district::District;
 
-pub struct House;
 
 #[derive(Clone, Copy)]
 pub struct LineSegment {
@@ -50,18 +49,6 @@ impl PartialEq for LineSegment {
     fn eq(&self, other: &LineSegment) -> bool {
         self.start == other.start && self.end == other.end
     }
-}
-
-impl House {
-    fn calculate_intersections(
-        &mut self,
-        _longest_index: u32,
-        _midpoint: &Coordinate<f64>,
-        _values: Vec<Coordinate<f64>>,
-    ) -> Vec<Coordinate<f64>> {
-        todo!()
-    }
-    pub fn generate(&mut self, _district: &District) {}
 }
 
 fn longest_segment(segments: &Vec<LineSegment>) -> &LineSegment {

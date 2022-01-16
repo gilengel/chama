@@ -23,3 +23,7 @@ a {
 a:visited {
   color: color.scale(#40b3ff, $lightness: -35%);
 }
+
+canvas {
+  //background-color: theme.$secondary;
+}

@@ -108,5 +108,8 @@
     position: absolute;
     right: 20px;
     top: 10px;
+
+    display: flex;
+    flex-direction: column;
   }
 </style>

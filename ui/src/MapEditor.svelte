@@ -83,5 +83,7 @@
 />
 
 <style lang="scss">
-  /* your styles go here */
+  canvas {
+    border: solid 1px rgb(40, 40, 40);
+  }
 </style>

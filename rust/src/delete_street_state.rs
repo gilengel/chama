@@ -8,7 +8,7 @@ use crate::{
     map::{Map, InformationLayer},
     state::State,
     street::Street,
-    Renderer,
+    Renderer, Camera,
 };
 
 pub struct DeleteStreetState {
@@ -71,9 +71,9 @@ impl State for DeleteStreetState {
     fn render(
         &self,
         map: &Map,
-        context: &web_sys::CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>
+        context: &web_sys::CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>, camera: &Camera
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(context, additional_information_layer)?;
+        map.render(context, additional_information_layer, camera)?;
 
         Ok(())
     }

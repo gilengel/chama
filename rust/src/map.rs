@@ -13,7 +13,7 @@ use web_sys::CanvasRenderingContext2d;
 use crate::district::District;
 use crate::intersection::Intersection;
 use crate::street::Street;
-use crate::Renderer;
+use crate::{Renderer, Camera};
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {
@@ -51,7 +51,10 @@ impl Renderer for Map {
         &self,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
+        camera: &Camera
     ) -> Result<(), JsValue> {
+
+        context.translate(camera.x as f64, camera.y as f64)?;
 
         for (_, district) in &self.districts {
             district.render(&context, additional_information_layer)?;
@@ -64,6 +67,8 @@ impl Renderer for Map {
         for (_, intersection) in &self.intersections {
             intersection.render(&context, additional_information_layer)?;
         }
+
+        context.set_transform(1., 0., 0., 1., 0., 0.)?;
 
         Ok(())
     }

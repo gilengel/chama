@@ -16,7 +16,7 @@ use crate::{
     map::InformationLayer,
     state::State,
     street::Street,
-    Map, Renderer,
+    Map, Renderer, Camera,
 };
 
 #[allow(unused_macros)]
@@ -398,21 +398,9 @@ impl<'a> State for CreateStreetState {
         &self,
         map: &Map,
         context: &CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
+        additional_information_layer: &Vec<InformationLayer>, camera: &Camera
     ) -> Result<(), JsValue> {
-        map.render(&context, additional_information_layer)?;
-
-        context.set_fill_style(&"#FFFFFF".into());
-        context.fill_text(
-            format!(
-                "intersections: {}, strreets: {}",
-                map.intersections().len(),
-                map.streets().len()
-            )
-            .as_str(),
-            100.0,
-            100.0,
-        )?;
+        map.render(&context, additional_information_layer, camera)?;
 
         Ok(())
     }

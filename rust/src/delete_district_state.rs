@@ -8,7 +8,7 @@ use crate::{
     interactive_element::{InteractiveElementState, InteractiveElement},
     map::{Map, InformationLayer},
     state::State,
-    Renderer,
+    Renderer, Camera,
 };
 
 pub struct DeleteDistrictState {
@@ -61,9 +61,9 @@ impl State for DeleteDistrictState {
     fn render(
         &self,
         map: &Map,
-        context: &web_sys::CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>
+        context: &web_sys::CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>, camera: &Camera
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(&context, additional_information_layer)?;
+        map.render(&context, additional_information_layer, camera)?;
 
         context.set_fill_style(&"#FFFFFF".into());
         context.fill_text(

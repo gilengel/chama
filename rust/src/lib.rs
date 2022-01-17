@@ -66,6 +66,7 @@ pub trait Renderer {
         &self,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
+        camera: &Camera
     ) -> Result<(), JsValue>;
 }
 
@@ -81,6 +82,7 @@ pub struct Editor {
     state: Box<dyn State>,
     map: Map,
     grid: Grid,
+    camera: Camera,
     store: Option<Store>,
 }
 
@@ -188,6 +190,23 @@ fn get_canvas_and_context(
     Ok((canvas, context))
 }
 
+pub struct Camera {
+    pub x: i32,
+    pub y: i32,
+
+    active: bool,
+}
+
+impl Default for Camera {
+    fn default() -> Camera {
+        Camera {
+            x: 0,
+            y: 0,
+            active: false,
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl Editor {
     pub fn new(id: String, width: u32, height: u32) -> Editor {
@@ -202,6 +221,8 @@ impl Editor {
             map: Map::new(width, height),
             grid: Grid::default(),
             store: Store::new("fantasy_city_map"),
+            camera: Camera::default(),
+
         }
     }
 
@@ -334,14 +355,15 @@ impl Editor {
             &self.map,
             &self.context,
             &self.additional_information_layers,
+            &self.camera
         )
     }
 
-    fn transform_cursor_pos_to_grid(&self, x: u32, y: u32) -> Coordinate<f64> {
+    fn transform_cursor_pos_to_grid(&self, x: u32, y: u32, camera: &Camera) -> Coordinate<f64> {
         if !self.grid.enabled {
             return Coordinate {
-                x: x.into(),
-                y: y.into(),
+                x: (x as i32 - camera.x).into(),
+                y: (y as i32 - camera.y).into(),
             };
         }
 
@@ -356,23 +378,44 @@ impl Editor {
     }
 
     pub fn mouse_down(&mut self, x: u32, y: u32, button: u32) {
+        // Camera control via the middle mouse button
+        if button == 1 {
+            self.camera.active = true;
+
+            return;
+        }
+
         self.state.mouse_down(
-            self.transform_cursor_pos_to_grid(x, y),
+            self.transform_cursor_pos_to_grid(x, y, &self.camera),
             button,
             &mut self.map,
         );
     }
 
     pub fn mouse_up(&mut self, x: u32, y: u32, button: u32) {
+        // Camera control via the middle mouse button
+        if button == 1 {
+            self.camera.active = false;
+
+            return;
+        }
+
         self.state.mouse_up(
-            self.transform_cursor_pos_to_grid(x, y),
+            self.transform_cursor_pos_to_grid(x, y, &self.camera),
             button,
             &mut self.map,
         );
     }
 
-    pub fn mouse_move(&mut self, x: u32, y: u32) {
+    pub fn mouse_move(&mut self, x: u32, y: u32, dx: i32, dy: i32) {
+        if self.camera.active {
+            self.camera.x +=  dx;
+            self.camera.y +=  dy;
+
+            return;
+        }
+
         self.state
-            .mouse_move(self.transform_cursor_pos_to_grid(x, y), &mut self.map);
+            .mouse_move(self.transform_cursor_pos_to_grid(x, y, &self.camera), &mut self.map);
     }
 }

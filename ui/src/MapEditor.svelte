@@ -61,11 +61,19 @@
     editor.mouse_down(pos.x, pos.y, e.button);
   }
 
-  function mouseMove(e) {
+  var timeout;
+  function mouseMove(e: MouseEvent) {
     if (!editor) return;
 
     const pos = getMousePos(e);
-    editor.mouse_move(pos.x, pos.y);
+
+    clearTimeout(timeout);
+    timeout = setTimeout(function () {
+      editor.mouse_move(pos.x, pos.y, 0, 0);
+    }, 50);
+
+    
+    editor.mouse_move(pos.x, pos.y, e.movementX, e.movementY);
   }
 
   function mouseUp(e) {
@@ -105,9 +113,9 @@
     var element = document.createElement("a");
     element.setAttribute(
       "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent('text/plain')
+      "data:text/plain;charset=utf-8," + encodeURIComponent("text/plain")
     );
-    element.setAttribute("download", 'myfilename.txt');
+    element.setAttribute("download", "myfilename.txt");
 
     element.style.display = "none";
     document.body.appendChild(element);
@@ -128,9 +136,7 @@
   let info: SnackbarComponentDev;
 </script>
 
-<button on:click={download}
-  >Create file</button
->
+<button on:click={download}>Create file</button>
 
 <Dialog
   bind:open={unsavedChanges}

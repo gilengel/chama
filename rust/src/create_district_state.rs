@@ -5,7 +5,7 @@ use crate::{
     district::create_district_for_street,
     map::{InformationLayer, Map},
     state::State,
-    Renderer,
+    Renderer, Camera,
 };
 
 pub struct CreateDistrictState {
@@ -59,10 +59,10 @@ impl State for CreateDistrictState {
         &self,
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
+        additional_information_layer: &Vec<InformationLayer>, camera: &Camera
     ) -> Result<(), wasm_bindgen::JsValue> {
 
-        map.render(context, additional_information_layer)?;
+        map.render(context, additional_information_layer, camera)?;
 
         Ok(())
     }

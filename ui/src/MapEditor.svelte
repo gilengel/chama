@@ -203,7 +203,6 @@
 <style lang="scss">
   canvas {
     border-bottom: solid 1px rgb(40, 40, 40);
-    width: 100%;
-    height: 100%;
+
   }
 </style>

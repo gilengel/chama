@@ -6,7 +6,12 @@ use crate::{Map, Renderer, map::InformationLayer, Camera};
 
 
 
-
+/// Editing functionality is encapsuled into different states. Each state is responsible to render the map and all additional information needed. 
+/// A state receives all input events that happen on the canvas element which are cursor down, up and move, key down and up.
+/// 
+/// Sometimes it is needed to create temporarily data to fullfill certain functionality while the state is active. Use the enter function to
+/// prepare your state and the exit function to clean temporarily created data. Always ensure that the map is clean at the end of the exit function
+/// and not necessary data is removed from the map. 
 pub trait State {
     /// Is used to implement behaviour of the state if the user clicked inside the specified
     /// html element by the statemachine.
@@ -32,8 +37,6 @@ pub trait State {
     fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map);
 
     fn render(&self, map: &Map, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>, camera: &Camera) -> Result<(), JsValue> {
-        context.clear_rect(0.0, 0.0, map.width().into(), map.height().into());
-
         map.render(context, additional_information_layer, camera)?;
 
         Ok(())

@@ -1,7 +1,7 @@
 use serde::{de::DeserializeOwned, Serialize};
 use wasm_bindgen::JsValue;
 
-use crate::{log};
+use crate::log;
 
 pub struct Store {
     local_storage: web_sys::Storage,

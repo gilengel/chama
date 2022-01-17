@@ -1,4 +1,6 @@
 <script>
+  import TopAppBar, { Row, Section, Title } from "@smui/top-app-bar";
+  import IconButton from "@smui/icon-button";
   import Checkbox from "@smui/checkbox";
   import FormField from "@smui/form-field";
   import MapEditor from "./MapEditor.svelte";
@@ -51,7 +53,7 @@
         break;
       case 52:
         selectedAction = 4;
-        break;  
+        break;
 
       default:
         editor.handleKeydown(event);
@@ -67,8 +69,14 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
+<header>
+
+</header>
 <main>
-  <MapEditor bind:this={editor}
+
+
+  <MapEditor
+    bind:this={editor}
     bind:selectedAction
     bind:showDebugInformation
     bind:enableGrid
@@ -99,8 +107,10 @@
 </main>
 
 <style lang="scss">
-
-  .main-toolbar {
+  main {
+    position: relative;
+    
+    .main-toolbar {
     position: absolute;
     left: 10px;
     top: 10px;
@@ -113,5 +123,7 @@
 
     display: flex;
     flex-direction: column;
+  }    
   }
+
 </style>

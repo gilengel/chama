@@ -12,8 +12,6 @@ impl Default for IdleState {
 
 
 impl State for IdleState {
-
-
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
     fn mouse_move(&mut self, _mouse_pos: Coordinate<f64>, _: &mut Map) {}

@@ -22,13 +22,14 @@ body {
   color: theme.$on-surface;
 }
 
+body {
+  display: flex;
+  flex-direction: column;
+}
+
 a {
   color: #40b3ff;
 }
 a:visited {
   color: color.scale(#40b3ff, $lightness: -35%);
-}
-
-canvas {
-  //background-color: theme.$secondary;
 }

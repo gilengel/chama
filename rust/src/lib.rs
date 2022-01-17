@@ -8,12 +8,11 @@ use map::InformationLayer;
 use map::Map;
 use state::State;
 use store::Store;
+
 use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 
-use web_sys::Blob;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlCanvasElement;
 

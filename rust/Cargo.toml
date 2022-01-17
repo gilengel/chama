@@ -34,7 +34,11 @@ features = [
   'Node',
   'Window',
   'console',
-  'Storage'
+  'Storage',
+  'DragEvent',
+  'DataTransfer',
+  'FileList',
+  'File'
 ]
 
 [profile.release]

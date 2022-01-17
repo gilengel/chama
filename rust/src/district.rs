@@ -31,7 +31,7 @@ impl Default for District {
             style: InteractiveElementStyle {
                 normal: Style {
                     border_width: 0,
-                    border_color: "#FF0000".to_string(),
+                    border_color: "#000000".to_string(),
                     background_color: "rgba(30, 136, 229, 0.4)".to_string(),
                 },
                 hover: Style {
@@ -104,7 +104,7 @@ impl District {
         for p in polygons {
             let style = Style {
                 border_width: 4,
-                border_color: "#FF0000".to_string(),
+                border_color: "#FFFFFF".to_string(),
                 background_color: "rgba(30, 136, 229, 0.4)".to_string(),
             };
             p.render(&style, context);

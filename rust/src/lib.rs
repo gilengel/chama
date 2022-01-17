@@ -1,3 +1,5 @@
+use std::panic;
+
 use geo::Coordinate;
 use idle_state::IdleState;
 use js_sys::encode_uri_component;
@@ -7,9 +9,11 @@ use map::Map;
 use state::State;
 use store::Store;
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 
+use web_sys::Blob;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlCanvasElement;
 
@@ -43,21 +47,10 @@ macro_rules! log {
     }
 }
 
-//#[cfg(feature = "wee_alloc")]
-//#[global_allocator]
-//static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-#[wasm_bindgen(start)]
-pub fn main_js() -> Result<(), JsValue> {
-    console_error_panic_hook::set_once();
-
-    Ok(())
-}
-
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
-macro_rules! log {
+#[macro_export]
+macro_rules! err {
     ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into())
+        web_sys::console::error_1(&format!( $( $t )* ).into())
     }
 }
 
@@ -66,12 +59,13 @@ pub trait Renderer {
         &self,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        camera: &Camera
+        camera: &Camera,
     ) -> Result<(), JsValue>;
 }
 
 #[wasm_bindgen]
 pub struct Editor {
+    canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
 
     additional_information_layers: Vec<InformationLayer>,
@@ -210,8 +204,11 @@ impl Default for Camera {
 #[wasm_bindgen]
 impl Editor {
     pub fn new(id: String, width: u32, height: u32) -> Editor {
-        let (_, context) = get_canvas_and_context(&id).unwrap();
+        panic::set_hook(Box::new(console_error_panic_hook::hook));
+
+        let (canvas, context) = get_canvas_and_context(&id).unwrap();
         Editor {
+            canvas,
             context,
             additional_information_layers: vec![],
 
@@ -222,7 +219,13 @@ impl Editor {
             grid: Grid::default(),
             store: Store::new("fantasy_city_map"),
             camera: Camera::default(),
+        }
+    }
 
+    pub fn import(&mut self, content: String) {
+        match serde_json::from_str::<Map>(&content) {
+            Ok(m) => self.map = m,
+            Err(e) => err!("{:?}", e),
         }
     }
 
@@ -347,15 +350,26 @@ impl Editor {
             .clear_rect(0.0, 0.0, self.map.width().into(), self.map.height().into());
 
         if self.grid.enabled {
-            self.grid
-                .render(&self.context, self.map.width(), self.map.height())?
+            let offset = self.grid.offset as i32;
+            let x: i32 = self.camera.x % offset - offset;
+            let y: i32 = self.camera.y % offset - offset;
+
+            self.context.translate(x as f64, y as f64)?;
+
+            self.grid.render(
+                &self.context,
+                self.map.width() + (offset as f64 * 2.) as u32,
+                self.map.height() + (offset as f64 * 2.) as u32,
+            )?;
+
+            self.context.set_transform(1., 0., 0., 1., 0., 0.)?;
         }
 
         self.state.render(
             &self.map,
             &self.context,
             &self.additional_information_layers,
-            &self.camera
+            &self.camera,
         )
     }
 
@@ -368,12 +382,12 @@ impl Editor {
         }
 
         let factor = self.grid.offset as f32 / self.grid.subdivisions as f32;
-        let x = (x as f32 / factor).round();
-        let y = (y as f32 / factor).round();
+        let x = ((x as i32 - camera.x) as f32 / factor).round();
+        let y = ((y as i32 - camera.y) as f32 / factor).round();
 
         Coordinate {
-            x: (x * factor).into(),
-            y: (y * factor).into(),
+            x: (x * factor as f32).into(),
+            y: (y * factor as f32).into(),
         }
     }
 
@@ -409,13 +423,15 @@ impl Editor {
 
     pub fn mouse_move(&mut self, x: u32, y: u32, dx: i32, dy: i32) {
         if self.camera.active {
-            self.camera.x +=  dx;
-            self.camera.y +=  dy;
+            self.camera.x += dx;
+            self.camera.y += dy;
 
             return;
         }
 
-        self.state
-            .mouse_move(self.transform_cursor_pos_to_grid(x, y, &self.camera), &mut self.map);
+        self.state.mouse_move(
+            self.transform_cursor_pos_to_grid(x, y, &self.camera),
+            &mut self.map,
+        );
     }
 }

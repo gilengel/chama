@@ -16,7 +16,7 @@ use crate::{
     map::InformationLayer,
     state::State,
     street::Street,
-    Map, Renderer, Camera,
+    Camera, Map, Renderer,
 };
 
 #[allow(unused_macros)]
@@ -105,12 +105,6 @@ impl CreateStreetState {
         street_id: &Uuid,
         map: &mut Map,
     ) -> Option<Uuid> {
-        let pos = self.project_point_onto_middle_of_street(pos, &street_id, map);
-
-        if !self.is_splitting_street_allowed(pos, &map) {
-            return None;
-        }
-
         let mut old_end: Option<Uuid> = None;
         let mut new_intersection = Intersection::default();
         let new_intersection_id = new_intersection.id;
@@ -292,6 +286,7 @@ impl<'a> State for CreateStreetState {
                     self.project_point_onto_middle_of_street(mouse_pos, &hovered_street, map);
 
                 self.temp_start = self.split_street(mouse_pos, &hovered_street, map).unwrap();
+
                 let start: &mut Intersection = map.intersection_mut(&self.temp_start).unwrap();
 
                 start.add_outgoing_street(&street.id);
@@ -351,9 +346,13 @@ impl<'a> State for CreateStreetState {
             None => {
                 match map.get_street_at_position(&mouse_pos, &vec![self.temp_street]) {
                     Some(hovered_street) => {
-                        let new_intersection =
-                            self.split_street(mouse_pos, &hovered_street, map).unwrap();
-                        self.switch_intersections(&current_end, &new_intersection, map);
+                        let pos = self.project_point_onto_middle_of_street(mouse_pos, &hovered_street, map);
+
+                        if self.is_splitting_street_allowed(pos, &map) {
+                            let new_intersection =
+                                self.split_street(mouse_pos, &hovered_street, map).unwrap();
+                            self.switch_intersections(&current_end, &new_intersection, map);
+                        }
                     }
                     None => {
                         // Reset temp street end to the temp end intersection since it is the only one intersection allowed to follow
@@ -398,7 +397,8 @@ impl<'a> State for CreateStreetState {
         &self,
         map: &Map,
         context: &CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>, camera: &Camera
+        additional_information_layer: &Vec<InformationLayer>,
+        camera: &Camera,
     ) -> Result<(), JsValue> {
         map.render(&context, additional_information_layer, camera)?;
 

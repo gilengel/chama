@@ -99,6 +99,7 @@
 </main>
 
 <style lang="scss">
+
   .main-toolbar {
     position: absolute;
     left: 10px;

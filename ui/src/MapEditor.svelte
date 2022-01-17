@@ -5,6 +5,9 @@
   import Button, { Label } from "@smui/button";
   import Snackbar, { SnackbarComponentDev } from "@smui/snackbar";
 
+  let width;
+  let height;
+
   let editor;
   async function loadEditor() {
     const { Editor } = await wasm();
@@ -72,7 +75,6 @@
       editor.mouse_move(pos.x, pos.y, 0, 0);
     }, 50);
 
-    
     editor.mouse_move(pos.x, pos.y, e.movementX, e.movementY);
   }
 
@@ -98,9 +100,47 @@
         }
 
         break;
-      case 114:
+      case 114: // F3
         if (editor) editor.download();
     }
+  }
+
+  function dragOver(evt: DragEvent) {
+    evt.preventDefault();
+  }
+
+  function drop(evt: DragEvent) {
+    // Prevent default behavior (Prevent file from being opened)
+    evt.preventDefault();
+
+    const items = evt.dataTransfer.items;
+    if (!items) {
+      return;
+    }
+
+    if (items.length !== 1) {
+      console.error(
+        "You provided multiple files for import which is not supported. Please select a single map file instead."
+      );
+      return;
+    }
+
+    if (evt.dataTransfer.items[0].kind !== "file") {
+      console.log("You didn't provide a valid file for import. Abort.");
+      return;
+    }
+
+    const file = evt.dataTransfer.items[0].getAsFile();
+    const type = file.type;
+
+    if (type !== "application/json") {
+      console.error(`The provided file has the invalid type "${type}" and was rejected.`);
+
+      return;
+    }
+
+    
+    file.text().then((text) => editor.import(text));
   }
 
   function showInfo(message) {
@@ -109,21 +149,6 @@
     info.open();
   }
 
-  function download() {
-    var element = document.createElement("a");
-    element.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent("text/plain")
-    );
-    element.setAttribute("download", "myfilename.txt");
-
-    element.style.display = "none";
-    document.body.appendChild(element);
-
-    element.click();
-
-    document.body.removeChild(element);
-  }
   let infoMessage = "";
 
   let unsavedChanges = false;
@@ -135,8 +160,6 @@
 
   let info: SnackbarComponentDev;
 </script>
-
-<button on:click={download}>Create file</button>
 
 <Dialog
   bind:open={unsavedChanges}
@@ -163,20 +186,24 @@
   <Actions />
 </Snackbar>
 
-<span style="color: white">{unsavedChanges}</span>
-
 <canvas
   bind:this={canvas}
   on:mousemove={mouseMove}
   on:mousedown={mouseDown}
   on:mouseup={mouseUp}
+  on:drop={drop}
+  on:dragover={dragOver}
   id="map_canvas"
-  width="1920"
-  height="1080"
+  {width}
+  {height}
 />
+
+<svelte:window bind:innerWidth={width} bind:innerHeight={height} />
 
 <style lang="scss">
   canvas {
-    border: solid 1px rgb(40, 40, 40);
+    border-bottom: solid 1px rgb(40, 40, 40);
+    width: 100%;
+    height: 100%;
   }
 </style>

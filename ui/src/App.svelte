@@ -20,7 +20,7 @@
     {
       value: 2,
       icon: "brush",
-      tooltip: "Freeform District",
+      tooltip: "Freeform Street",
     },
     {
       value: 3,
@@ -37,6 +37,11 @@
     },
     {
       value: 5,
+      icon: "brush",
+      tooltip: "Freeform Street",
+    },
+    {
+      value: 6,
       icon: "delete",
       tooltip: "Delete District",
     },

@@ -7,7 +7,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::style::Style;
 
-fn apply_style(style: &Style, context: &CanvasRenderingContext2d) {
+pub fn apply_style(style: &Style, context: &CanvasRenderingContext2d) {
     context.set_fill_style(&style.background_color.clone().into());
     context.fill();
 

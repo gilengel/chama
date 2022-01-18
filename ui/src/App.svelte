@@ -10,7 +10,7 @@
   // components
   import Toolbar from "./Toolbar.svelte";
 
-  let selectedAction = 1;
+  let selectedAction = 2;
   const streetToolbarOptions = [
     {
       value: 1,
@@ -19,6 +19,11 @@
     },
     {
       value: 2,
+      icon: "brush",
+      tooltip: "Freeform District",
+    },
+    {
+      value: 3,
       icon: "delete",
       tooltip: "Delete Street",
     },
@@ -26,12 +31,12 @@
 
   const districtToolbarOptions = [
     {
-      value: 3,
+      value: 4,
       icon: "add",
       tooltip: "Create District",
     },
     {
-      value: 4,
+      value: 5,
       icon: "delete",
       tooltip: "Delete District",
     },
@@ -51,8 +56,10 @@
       case 51: // 3
         selectedAction = 3;
         break;
-      case 52:
+      case 52: // 4
         selectedAction = 4;
+      case 53: // 5
+        selectedAction = 5;
         break;
 
       default:
@@ -69,12 +76,8 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<header>
-
-</header>
+<header />
 <main>
-
-
   <MapEditor
     bind:this={editor}
     bind:selectedAction
@@ -109,21 +112,20 @@
 <style lang="scss">
   main {
     position: relative;
-    
+
     .main-toolbar {
-    position: absolute;
-    left: 10px;
-    top: 10px;
+      position: absolute;
+      left: 10px;
+      top: 10px;
+    }
+
+    .debug-panel {
+      position: absolute;
+      right: 20px;
+      top: 10px;
+
+      display: flex;
+      flex-direction: column;
+    }
   }
-
-  .debug-panel {
-    position: absolute;
-    right: 20px;
-    top: 10px;
-
-    display: flex;
-    flex-direction: column;
-  }    
-  }
-
 </style>

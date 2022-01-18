@@ -1,5 +1,6 @@
 use std::panic;
 
+use freeform_state::FreeFormState;
 use geo::Coordinate;
 use idle_state::IdleState;
 use js_sys::encode_uri_component;
@@ -20,6 +21,7 @@ mod create_district_state;
 mod create_street_state;
 mod delete_district_state;
 mod delete_street_state;
+mod freeform_state;
 mod district;
 mod house;
 mod idle_state;
@@ -294,9 +296,11 @@ impl Editor {
         match mode {
             0 => log!("idle command, nothing to do"),
             1 => self.state = Box::new(CreateStreetState::new()),
-            2 => self.state = Box::new(DeleteStreetState::new()),
-            3 => self.state = Box::new(CreateDistrictState::new()),
-            4 => self.state = Box::new(DeleteDistrictState::new()),
+            2 => self.state = Box::new(FreeFormState::new()),
+            3 => self.state = Box::new(DeleteStreetState::new()),
+            4 => self.state = Box::new(CreateDistrictState::new()),
+            5 => self.state = Box::new(DeleteDistrictState::new()),
+            
             _ => log!("unknown command, nothing to do"),
         }
         self.state.enter(&mut self.map);

@@ -134,18 +134,27 @@ impl Map {
         &self.streets
     }
 
-    pub fn add_street(&mut self, street: Street) {
-        self.streets.insert(street.id, street);
+    pub fn add_street(&mut self, street: Street) -> Uuid {
+        let id = street.id;
+        self.streets.insert(id, street);
+
+        id
     }
 
-    pub fn add_district(&mut self, district: District) {
-        self.districts.insert(district.id, district);
+    pub fn add_district(&mut self, district: District) -> Uuid {
+        let id = district.id;
+        self.districts.insert(id, district);
+
+        id
     }
 
-    pub fn add_intersection(&mut self, intersection: Intersection) {
-        self.intersections.insert(intersection.id, intersection);
+    pub fn add_intersection(&mut self, intersection: Intersection) -> Uuid {
+        let id = intersection.id;
+        self.intersections.insert(id, intersection);
 
         self.update_bounding_box();
+
+        id
     }
 
     pub fn update_street(&mut self, id: &Uuid) {

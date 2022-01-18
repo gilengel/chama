@@ -1,9 +1,9 @@
-use geo::{Coordinate, Polygon, LineString, simplify::Simplify, coords_iter::CoordsIter, winding_order::Winding, Point};
+use geo::{Coordinate, Polygon, LineString, simplify::Simplify, coords_iter::CoordsIter, winding_order::Winding, Point, prelude::Centroid};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{state::{State}, Map, log, map::InformationLayer, Camera, Renderer, renderer::PrimitiveRenderer, style::Style, intersection::Intersection, street::Street};
+use crate::{state::{State}, Map, log, map::InformationLayer, Camera, Renderer, renderer::PrimitiveRenderer, style::Style, intersection::Intersection, street::Street, district::create_district_for_street};
 
 
 pub struct FreeFormState {
@@ -58,7 +58,7 @@ impl FreeFormState {
         }
         intersections[0] = *intersections.last().unwrap();
 
-        
+        let mut street_id = Uuid::default();
         let mut it = intersections.iter().peekable();
         while let Some(current_id) = it.next() {
             if let Some(next_id) = it.peek() {
@@ -66,7 +66,7 @@ impl FreeFormState {
                 let next_intersection = map.intersection(next_id).unwrap();
 
                 let mut street = Street::default();
-                let street_id = street.id;
+                street_id = street.id;
                 street.set_start(&current_intersection);
                 street.set_end(&next_intersection);
 
@@ -85,6 +85,14 @@ impl FreeFormState {
         for intersection in intersections {
             map.update_intersection(&intersection);
         }
+
+        let street = map.street(&street_id).unwrap();
+        let side = street.get_side_of_position(&self.raw_polygon.centroid().unwrap().into());
+
+        
+        if let Some(district) = create_district_for_street(side, street_id, map) {
+            map.add_district(district);
+        }        
     }
 }
 

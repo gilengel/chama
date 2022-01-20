@@ -46,7 +46,7 @@
     display: flex;
     flex-direction: column;
 
-    width: $padding * 4 + $icon-size; //calc($padding * 4 + $icon-size);
+    width: $padding * 4 + $icon-size;
     padding: 0;
     margin: 0;
 

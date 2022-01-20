@@ -9,6 +9,7 @@
 
   // components
   import Toolbar from "./Toolbar.svelte";
+import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
 
   let selectedAction = 2;
   const streetToolbarOptions = [
@@ -81,7 +82,23 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<header />
+<header>
+  <div class="toolbar">
+    
+      <span class="material-icons">undo</span>
+      <span class="material-icons">redo</span>
+
+      <ToggleToolbarButton bind:value={enableGrid}>
+        <Textfield bind:value={gridOffset} label="Grid Size">
+          <HelperText slot="helper"></HelperText>
+        </Textfield>
+        <Textfield bind:value={gridSubdivisions} label="Grid Subdivisions">
+        </Textfield>
+      </ToggleToolbarButton>
+    
+  </div>
+</header>
+
 <main>
   <MapEditor
     bind:this={editor}
@@ -101,20 +118,40 @@
       <Checkbox bind:checked={showDebugInformation} />
       <span slot="label">Show Debug Information</span>
     </FormField>
-    <FormField>
-      <Checkbox bind:checked={enableGrid} />
-      <span slot="label">Enable Grid</span>
-    </FormField>
-    <Textfield bind:value={gridOffset} label="Label">
-      <HelperText slot="helper">Helper Text</HelperText>
-    </Textfield>
-    <Textfield bind:value={gridSubdivisions} label="Label">
-      <HelperText slot="helper">Helper Text</HelperText>
-    </Textfield>
+
   </div>
 </main>
 
 <style lang="scss">
+  // app colors
+  $primary: #1e88e5;
+  $text: #ffffff;
+  $background: #211f20;
+  $border-radius: 4px;
+
+  $icon-size: 24px;
+  $padding: 4px;
+
+  .toolbar {
+    position: relative;
+    z-index: 999;
+    background: darken($background, 5);
+    height: $padding * 4 + $icon-size;
+    padding-left: $padding;
+    padding-right: $padding;
+
+    display: flex;
+    align-items: center;
+
+    border-radius: $border-radius;
+
+      .material-icons {
+      padding: $padding;
+
+        color: $text;
+        font-size: $icon-size;
+      }    
+  }
   main {
     position: relative;
 

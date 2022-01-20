@@ -29,6 +29,10 @@ pub struct Intersection {
 }
 
 impl Intersection {
+    pub fn new(position: Coordinate<f64>) -> Intersection {
+        Intersection { position, ..Default::default() }
+    }
+    
     pub fn set_position(&mut self, position: Coordinate<f64>) {
         self.position = position;
     }

@@ -405,6 +405,10 @@ impl Street {
         line_intersection(self.line, another.line)
     }
 
+    pub fn intersect_with_line(&self, another: &Line<f64>) -> Option<LineIntersection<f64>> {
+        line_intersection(self.line, *another)
+    }
+
     pub fn is_point_on_street(&self, point: &Coordinate<f64>) -> bool {
         self.polygon.contains(point)
     }

@@ -5,7 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{map::InformationLayer, street::Street};
+use crate::{map::InformationLayer, street::Street, log};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Copy, Debug, Serialize, Deserialize)]
@@ -87,6 +87,8 @@ impl Intersection {
             .position(|x| x.1 == id.clone())
         {
             self.connected_streets.remove(index);
+        }else {
+            log!(":(");
         }
     }
 

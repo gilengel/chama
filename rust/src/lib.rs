@@ -40,7 +40,7 @@ use crate::create_street_state::CreateStreetState;
 use crate::create_freeform_street_state::CreateFreeFormStreetState;
 use crate::delete_district_state::DeleteDistrictState;
 use crate::delete_street_state::DeleteStreetState;
-use crate::create_freeform_district_state::CreateFreeFormDistrictState;
+
 
 extern crate alloc;
 
@@ -69,7 +69,6 @@ pub trait Renderer {
 
 #[wasm_bindgen]
 pub struct Editor {
-    canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
 
     additional_information_layers: Vec<InformationLayer>,
@@ -210,9 +209,8 @@ impl Editor {
     pub fn new(id: String, width: u32, height: u32) -> Editor {
         panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-        let (canvas, context) = get_canvas_and_context(&id).unwrap();
+        let (_, context) = get_canvas_and_context(&id).unwrap();
         Editor {
-            canvas,
             context,
             additional_information_layers: vec![],
 

@@ -11,6 +11,12 @@
   }
 
   function mouseOut(e: MouseEvent) {
+    if (!expanded) {
+      console.log("HOSUE")
+      clearTimeout(timeout);
+      return;
+    }
+
     setTimeout(function () {
       expanded = !expanded;
       clearTimeout(timeout);
@@ -18,7 +24,7 @@
   }
 </script>
 
-<div on:mouseenter={mouseOver}>
+<div on:mouseenter={mouseOver}  on:mouseleave={mouseOut}>
   <span
     class="material-icons"
     class:selected={value}

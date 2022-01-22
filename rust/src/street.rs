@@ -167,6 +167,10 @@ impl Street {
         Side::Right
     }
 
+    pub fn length(&self) -> f64 {
+        self.line.euclidean_length()
+    }
+
     pub fn update_geometry(
         &mut self,
         intersections: &HashMap<Uuid, Intersection>,

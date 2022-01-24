@@ -5,7 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{map::InformationLayer, street::Street, log};
+use crate::{log, map::InformationLayer, street::Street};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Copy, Debug, Serialize, Deserialize)]
@@ -30,9 +30,12 @@ pub struct Intersection {
 
 impl Intersection {
     pub fn new(position: Coordinate<f64>) -> Intersection {
-        Intersection { position, ..Default::default() }
+        Intersection {
+            position,
+            ..Default::default()
+        }
     }
-    
+
     pub fn set_position(&mut self, position: Coordinate<f64>) {
         self.position = position;
     }
@@ -46,12 +49,19 @@ impl Intersection {
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
-        if additional_information_layer.contains(&InformationLayer::Debug) {
-            context.begin_path();
-            context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
-            context.set_fill_style(&"#FF8C00".into());
-            context.fill();
+        context.begin_path();
+        context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
 
+        let num = self.connected_streets.len();
+        match num {
+            0 => context.set_fill_style(&"#FF0000".into()),
+            2 => context.set_fill_style(&"#0000FF".into()),
+            3 => context.set_fill_style(&"#FFFFFF".into()),
+            _ => context.set_fill_style(&"#00FF00".into()),
+        }
+        context.fill();
+
+        if additional_information_layer.contains(&InformationLayer::Debug) && num != 2 {
             context.set_fill_style(&"#FFFFFF".into());
 
             context.fill_text(
@@ -87,7 +97,7 @@ impl Intersection {
             .position(|x| x.1 == id.clone())
         {
             self.connected_streets.remove(index);
-        }else {
+        } else {
             log!(":(");
         }
     }

@@ -105,6 +105,10 @@
     }
   }
 
+  function contextMenu(e) {
+    e.preventDefault();
+  }
+
   function dragOver(evt: DragEvent) {
     evt.preventDefault();
   }
@@ -193,6 +197,7 @@
   on:mouseup={mouseUp}
   on:drop={drop}
   on:dragover={dragOver}
+  on:contextmenu={contextMenu}
   id="map_canvas"
   {width}
   {height}

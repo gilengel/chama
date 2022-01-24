@@ -208,6 +208,8 @@ impl Street {
     ) -> Result<(), JsValue> {
         self.polygon.render(self.style(), &context);
 
+        //self.line.render(self.style(), &context);
+
         if additional_information_layer.contains(&InformationLayer::Debug) {
             let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
 

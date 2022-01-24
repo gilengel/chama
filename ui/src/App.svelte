@@ -48,6 +48,14 @@ import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
     },
   ];
 
+  const controlPointOptions = [
+    {
+      value: 7,
+      icon: "control_camera",
+      tooltip: "Move Control Point"
+    }
+  ]
+
   let showDebugInformation = false;
 
   // for handling shortcuts
@@ -111,6 +119,7 @@ import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
   <div class="main-toolbar">
     <Toolbar options={streetToolbarOptions} bind:group={selectedAction} />
     <Toolbar options={districtToolbarOptions} bind:group={selectedAction} />
+    <Toolbar options={controlPointOptions} bind:group={selectedAction} />
   </div>
 
   <div class="debug-panel">

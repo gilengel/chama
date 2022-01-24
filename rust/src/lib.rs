@@ -23,6 +23,7 @@ mod delete_district_state;
 mod delete_street_state;
 mod create_freeform_district_state;
 mod create_freeform_street_state;
+mod move_control_state;
 mod district;
 mod house;
 mod idle_state;
@@ -34,12 +35,14 @@ mod state;
 mod store;
 mod street;
 mod style;
+mod gizmo;
 
 use crate::create_district_state::CreateDistrictState;
 use crate::create_street_state::CreateStreetState;
 use crate::create_freeform_street_state::CreateFreeFormStreetState;
 use crate::delete_district_state::DeleteDistrictState;
 use crate::delete_street_state::DeleteStreetState;
+use crate::move_control_state::MoveControlState;
 
 
 extern crate alloc;
@@ -302,6 +305,7 @@ impl Editor {
             4 => self.state = Box::new(CreateDistrictState::new()),
             5 => self.state = Box::new(CreateFreeFormStreetState::new()),
             6 => self.state = Box::new(DeleteDistrictState::new()),
+            7 => self.state = Box::new(MoveControlState::new()),
             
             _ => log!("unknown command, nothing to do"),
         }

@@ -19,7 +19,7 @@ use crate::{
     intersection::{Intersection, Side},
     map::InformationLayer,
     renderer::PrimitiveRenderer,
-    style::{InteractiveElementStyle, Style},
+    style::{InteractiveElementStyle, Style}, gizmo::GetPosition,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -109,12 +109,12 @@ impl Street {
 
     pub fn set_start(&mut self, start: &Intersection) {
         self.start = start.id;
-        self.line.start = start.get_position();
+        self.line.start = start.position();
     }
 
     pub fn set_end(&mut self, end: &Intersection) {
         self.end = end.id;
-        self.line.end = end.get_position();
+        self.line.end = end.position();
     }
 
     pub fn norm(&self) -> Coordinate<f64> {
@@ -178,8 +178,8 @@ impl Street {
     ) {
         let start = intersections.get(&self.start).unwrap();
         let end = intersections.get(&self.end).unwrap();
-        self.line.start = start.get_position();
-        self.line.end = end.get_position();
+        self.line.start = start.position();
+        self.line.end = end.position();
 
         let start = self.line.start;
         let end = self.line.end;

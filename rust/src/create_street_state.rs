@@ -16,7 +16,7 @@ use crate::{
     map::InformationLayer,
     state::State,
     street::Street,
-    Camera, Map, Renderer,
+    Camera, Map, Renderer, gizmo::{SetPosition, GetPosition},
 };
 
 #[allow(unused_macros)]
@@ -150,7 +150,7 @@ impl CreateStreetState {
         let s: Point<f64> = map
             .intersection(&self.temp_start)
             .unwrap()
-            .get_position()
+            .position()
             .into();
 
         p.euclidean_distance(&s) > 10.0
@@ -316,12 +316,12 @@ impl<'a> State for CreateStreetState {
         let current_start_pos: Point<f64> = map
             .intersection(&current_end)
             .unwrap()
-            .get_position()
+            .position()
             .into();
         let current_end_pos: Point<f64> = map
             .intersection(&current_start)
             .unwrap()
-            .get_position()
+            .position()
             .into();
 
         // Only update the position of the temp end if it is to close to the temp start. This prevents

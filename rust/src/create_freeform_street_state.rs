@@ -10,7 +10,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     intersection::Intersection, log, map::InformationLayer, renderer::apply_style, state::State,
-    street::Street, style::Style, Camera, Map, Renderer,
+    street::Street, style::Style, Camera, Map, Renderer, gizmo::SetPosition,
 };
 
 pub struct CreateFreeFormStreetState {

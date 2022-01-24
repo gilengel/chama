@@ -11,6 +11,7 @@ use wasm_bindgen::{JsValue, UnwrapThrowExt};
 use web_sys::CanvasRenderingContext2d;
 
 use crate::district::District;
+use crate::gizmo::{GetPosition, SetPosition};
 use crate::intersection::{Intersection, Side};
 use crate::street::Street;
 use crate::{log, Camera, Renderer};
@@ -78,7 +79,7 @@ impl From<&mut Map> for Polygon<f64> {
         let v: Vec<Coordinate<f64>> = map
             .intersections()
             .into_iter()
-            .map(|x| x.1.get_position())
+            .map(|x| x.1.position())
             .collect();
 
         Polygon::new(LineString::from(v), vec![])
@@ -92,7 +93,7 @@ impl geo::algorithm::concave_hull::ConcaveHull for Map {
         let v: Vec<Coordinate<Self::Scalar>> = self
             .intersections()
             .into_iter()
-            .map(|x| x.1.get_position())
+            .map(|x| x.1.position())
             .collect();
 
         let polygon: Polygon<Self::Scalar> = Polygon::new(LineString::from(v), vec![]);
@@ -428,7 +429,7 @@ impl Map {
                 continue;
             }
 
-            if intersection.get_position().euclidean_distance(position) < offset {
+            if intersection.position().euclidean_distance(position) < offset {
                 return Some(*id);
             }
         }
@@ -522,7 +523,7 @@ impl Map {
 
     pub fn get_intersection_contained_in_polygon(&self, polygon: &Polygon<f64>) -> Option<Uuid> {
         for (id, intersection) in &self.intersections {
-            if polygon.contains(&intersection.get_position()) {
+            if polygon.contains(&intersection.position()) {
                 return Some(*id);
             }
         }

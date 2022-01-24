@@ -4,12 +4,10 @@ use wasm_bindgen::JsValue;
 pub enum Axis {
     X,
     Y,
-    X_Y,
+    XY,
 }
 
 use crate::{
-    intersection::{self, Intersection},
-    log,
     map::Map,
     renderer::PrimitiveRenderer,
     style::Style,
@@ -49,15 +47,15 @@ impl Gizmo for MoveGizmo {
         true
     }
 
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _map: &mut Map) {
         
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+    fn mouse_move(&mut self, _mouse_pos: Coordinate<f64>, _map: &mut Map) {
         todo!()
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _map: &mut Map) {
         todo!()
     }
 
@@ -66,6 +64,8 @@ impl Gizmo for MoveGizmo {
         context: &web_sys::CanvasRenderingContext2d,
         camera: &Camera,
     ) -> Result<(), JsValue> {
+        context.translate(camera.x.into(), camera.y.into());
+
         self.x_axis.render(&self.x_style, &context)?;
         self.x_arrow.render(&self.x_style, &context)?;
         self.y_axis.render(&self.y_style, &context)?;
@@ -173,7 +173,7 @@ impl MoveGizmo {
         }
 
         if diff.x.abs() < 30. && diff.y.abs() < 30. {
-            self.affected_axis = Some(Axis::X_Y);
+            self.affected_axis = Some(Axis::XY);
         }
     }
 }

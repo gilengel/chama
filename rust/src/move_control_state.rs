@@ -4,10 +4,9 @@ use uuid::Uuid;
 use crate::{
     gizmo::{Gizmo, MoveGizmo, GetPosition, SetPosition},
     interactive_element::{InteractiveElement, InteractiveElementState},
-    intersection::Intersection,
     map::{InformationLayer, Map},
     state::State,
-    Camera, Renderer, log,
+    Camera, Renderer,
 };
 
 pub struct MoveControlState {
@@ -67,7 +66,7 @@ impl State for MoveControlState {
             let new_position = match self.gizmo.affected_axis.as_ref().unwrap() {
                 crate::gizmo::Axis::X => Coordinate { x: mouse_pos.x, y: old_position.y },
                 crate::gizmo::Axis::Y => Coordinate { x: old_position.x, y: mouse_pos.y },
-                crate::gizmo::Axis::X_Y => mouse_pos,
+                crate::gizmo::Axis::XY => mouse_pos,
             };
             map.intersection_mut(&self.selected_control.unwrap()).unwrap().set_position(new_position);
 

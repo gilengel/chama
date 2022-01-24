@@ -1,20 +1,20 @@
 use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
-use geo::{Coordinate, Line, LineString, Point, Polygon, Rect};
+use geo::{Coordinate, Line, LineString, Polygon, Rect};
 use serde::{Deserialize, Serialize};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use uuid::Uuid;
-use wasm_bindgen::{JsValue, UnwrapThrowExt};
+use wasm_bindgen::{JsValue};
 use web_sys::CanvasRenderingContext2d;
 
 use crate::district::District;
 use crate::gizmo::{GetPosition, SetPosition};
-use crate::intersection::{Intersection, Side};
+use crate::intersection::{Intersection};
 use crate::street::Street;
-use crate::{log, Camera, Renderer};
+use crate::{Camera, Renderer};
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {
@@ -314,7 +314,7 @@ impl Map {
     pub fn split_street(&mut self, split_position: Coordinate<f64>, street_id: &Uuid) -> Uuid {
         let split_position = self.project_point_onto_middle_of_street(split_position, &street_id);
 
-        let mut street_id = *street_id;
+        let street_id = *street_id;
 
         let mut new_intersection = Intersection::default();
         let new_intersection_id = new_intersection.id;

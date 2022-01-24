@@ -206,7 +206,7 @@ impl Street {
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
-        self.polygon.render(self.style(), &context);
+        self.polygon.render(self.style(), &context)?;
 
         //self.line.render(self.style(), &context);
 

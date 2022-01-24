@@ -44,7 +44,7 @@ impl PrimitiveRenderer for Polygon<f64> {
 impl PrimitiveRenderer for MultiPolygon<f64> {
     fn render(&self, style: &Style, context: &CanvasRenderingContext2d)  -> Result<(), JsValue>{
         for polygon in self {
-            polygon.render(style, context);
+            polygon.render(style, context)?;
         }
 
         Ok(())
@@ -102,7 +102,7 @@ impl PrimitiveRenderer for Point<f64> {
 impl PrimitiveRenderer for MultiPoint<f64> {
     fn render(&self, style: &Style, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         for point in self {
-            point.render(style, context);
+            point.render(style, context)?;
         }
 
         Ok(())
@@ -131,7 +131,7 @@ impl PrimitiveRenderer for LineString<f64> {
 impl PrimitiveRenderer for MultiLineString<f64> {
     fn render(&self, style: &Style, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         for line_string in self {
-            line_string.render(style, context);
+            line_string.render(style, context)?;
         }
 
         Ok(())

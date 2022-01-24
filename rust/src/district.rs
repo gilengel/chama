@@ -107,7 +107,7 @@ impl District {
                 border_color: "#FFFFFF".to_string(),
                 background_color: "rgba(30, 136, 229, 0.4)".to_string(),
             };
-            p.render(&style, context);
+            p.render(&style, context)?;
         }
         
 

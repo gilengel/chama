@@ -1,7 +1,4 @@
-use std::{
-    cmp::Ordering,
-    time::{SystemTime, UNIX_EPOCH},
-};
+
 
 use geo::{prelude::EuclideanDistance, simplify::Simplify, Coordinate, LineString};
 use uuid::Uuid;
@@ -9,8 +6,7 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    intersection::Intersection, log, map::InformationLayer, renderer::apply_style, state::State,
-    street::Street, style::Style, Camera, Map, Renderer, gizmo::SetPosition,
+    intersection::Intersection, log, map::InformationLayer, renderer::apply_style, state::State, style::Style, Camera, Map, Renderer, gizmo::SetPosition,
 };
 
 pub struct CreateFreeFormStreetState {
@@ -37,13 +33,6 @@ impl Default for CreateFreeFormStreetState {
 impl CreateFreeFormStreetState {
     pub fn new() -> CreateFreeFormStreetState {
         CreateFreeFormStreetState::default()
-    }
-
-    fn create_intersection(&self, pos: &Coordinate<f64>) -> Intersection {
-        let mut intersection = Intersection::default();
-        intersection.set_position(*pos);
-
-        intersection
     }
 
     pub fn transform_polygon_into_streets(&self, map: &mut Map) {

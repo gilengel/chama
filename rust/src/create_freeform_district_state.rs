@@ -36,10 +36,6 @@ impl Default for CreateFreeFormDistrictState {
 }
 
 impl CreateFreeFormDistrictState {
-    pub fn new() -> CreateFreeFormDistrictState {
-        CreateFreeFormDistrictState::default()
-    }
-
     fn create_intersection(&self, pos: &Point<f64>) -> Intersection {
         let mut intersection = Intersection::default();
         intersection.set_position(Coordinate { x: pos.x(), y: pos.y() });
@@ -129,10 +125,10 @@ impl State for CreateFreeFormDistrictState {
         map.render(context, additional_information_layer, camera)?;
 
         if self.brush_active {
-            self.raw_polygon.render(&self.raw_polygon_style, &context);
+            self.raw_polygon.render(&self.raw_polygon_style, &context)?;
 
             for point in self.raw_polygon.exterior_coords_iter() {
-                point.render(&self.raw_point_style, &context);
+                point.render(&self.raw_point_style, &context)?;
             }
         }
 

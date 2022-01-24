@@ -226,7 +226,23 @@ impl Default for Intersection {
             id: Uuid::new_v4(),
             position: Coordinate { x: 0., y: 0. },
             connected_streets: vec![],
-            style: InteractiveElementStyle::default(),
+            style: InteractiveElementStyle {
+                normal: Style {
+                    border_width: 1,
+                    border_color: "#1e88e5".to_string(),
+                    background_color: "#2A2A2B".to_string()
+                },
+                hover: Style {
+                    border_width: 0,
+                    border_color: "".to_string(),
+                    background_color: "#1e88e5".to_string()
+                },
+                selected: Style {
+                    border_width: 0,
+                    border_color: "".to_string(),
+                    background_color: "hsl(0, 100%, 50%)".to_string()
+                },
+            },
             state: InteractiveElementState::Normal,
         }
     }

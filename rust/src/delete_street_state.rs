@@ -4,7 +4,6 @@ use uuid::Uuid;
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     intersection::Side,
-    log,
     map::{InformationLayer, Map},
     state::State,
     street::Street,

@@ -12,6 +12,14 @@
 import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
 
   let selectedAction = 2;
+
+  const generalToolbarOptions = [
+    {
+      value: 8,
+      icon: "highlight_alt",
+      tooltip: "Box Select"
+    }
+  ]
   const streetToolbarOptions = [
     {
       value: 1,
@@ -117,6 +125,7 @@ import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
     bind:gridSubdivisions
   />
   <div class="main-toolbar">
+    <Toolbar options={generalToolbarOptions} bind:group={selectedAction} />
     <Toolbar options={streetToolbarOptions} bind:group={selectedAction} />
     <Toolbar options={districtToolbarOptions} bind:group={selectedAction} />
     <Toolbar options={controlPointOptions} bind:group={selectedAction} />

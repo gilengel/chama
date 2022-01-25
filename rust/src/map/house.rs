@@ -6,7 +6,7 @@ use geo::{
     Coordinate, Line, LineString, Point, Polygon,
 };
 
-use crate::district::District;
+use super::district::District;
 
 
 #[derive(Clone, Copy)]

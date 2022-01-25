@@ -2,10 +2,8 @@ use geo::Coordinate;
 use uuid::Uuid;
 
 use crate::{
-    district::create_district_for_street,
-    map::{InformationLayer, Map},
     state::State,
-    Renderer, Camera,
+    Renderer, Camera, map::{map::{Map, InformationLayer}, district::create_district_for_street},
 };
 
 pub struct CreateDistrictState {

@@ -10,11 +10,13 @@ use uuid::Uuid;
 use wasm_bindgen::{JsValue};
 use web_sys::CanvasRenderingContext2d;
 
-use crate::district::District;
 use crate::gizmo::{GetPosition, SetPosition};
-use crate::intersection::{Intersection};
-use crate::street::Street;
 use crate::{Camera, Renderer};
+
+use super::district::District;
+use super::intersection::Intersection;
+use super::street::Street;
+
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {

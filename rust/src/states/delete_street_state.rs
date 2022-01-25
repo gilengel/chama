@@ -3,11 +3,8 @@ use uuid::Uuid;
 
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    intersection::Side,
-    map::{InformationLayer, Map},
     state::State,
-    street::Street,
-    Camera, Renderer,
+    Camera, Renderer, map::{map::{Map, InformationLayer}, intersection::Side, street::Street},
 };
 
 pub struct DeleteStreetState {

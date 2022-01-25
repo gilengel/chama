@@ -3,7 +3,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{state::{State}, Map, map::InformationLayer, Camera, Renderer, style::Style, intersection::Intersection, street::Street, district::create_district_for_street, renderer::PrimitiveRenderer, gizmo::SetPosition};
+use crate::{state::{State}, Map, Camera, Renderer, style::Style, renderer::PrimitiveRenderer, gizmo::SetPosition, map::{intersection::Intersection, street::Street, district::create_district_for_street, map::InformationLayer}};
 
 
 pub struct CreateFreeFormDistrictState {

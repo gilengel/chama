@@ -6,7 +6,7 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    intersection::Intersection, log, map::InformationLayer, renderer::apply_style, state::State, style::Style, Camera, Map, Renderer, gizmo::SetPosition,
+    log, renderer::apply_style, state::State, style::Style, Camera, Map, Renderer, gizmo::SetPosition, map::map::InformationLayer,
 };
 
 pub struct CreateFreeFormStreetState {

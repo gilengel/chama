@@ -2,12 +2,19 @@ use std::panic;
 
 
 use geo::Coordinate;
-use idle_state::IdleState;
 use js_sys::encode_uri_component;
 
-use map::InformationLayer;
-use map::Map;
+
+use map::map::InformationLayer;
+use map::map::Map;
 use state::State;
+use states::create_district_state::CreateDistrictState;
+use states::create_freeform_street_state::CreateFreeFormStreetState;
+use states::create_street_state::CreateStreetState;
+use states::delete_district_state::DeleteDistrictState;
+use states::delete_street_state::DeleteStreetState;
+use states::idle_state::IdleState;
+use states::move_control_state::MoveControlState;
 use store::Store;
 
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -17,32 +24,19 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlCanvasElement;
 
-mod create_district_state;
-mod create_street_state;
-mod delete_district_state;
-mod delete_street_state;
-mod create_freeform_district_state;
-mod create_freeform_street_state;
-mod move_control_state;
-mod district;
-mod house;
-mod idle_state;
+mod states;
 mod interactive_element;
-mod intersection;
-mod map;
+
 mod renderer;
 mod state;
 mod store;
-mod street;
 mod style;
 mod gizmo;
+mod grid;
 
-use crate::create_district_state::CreateDistrictState;
-use crate::create_street_state::CreateStreetState;
-use crate::create_freeform_street_state::CreateFreeFormStreetState;
-use crate::delete_district_state::DeleteDistrictState;
-use crate::delete_street_state::DeleteStreetState;
-use crate::move_control_state::MoveControlState;
+mod map;
+
+use crate::grid::Grid;
 
 
 extern crate alloc;
@@ -86,91 +80,7 @@ pub struct Editor {
     store: Option<Store>,
 }
 
-struct Grid {
-    offset: u32,
-    subdivisions: u8,
-    enabled: bool,
-}
 
-impl Grid {
-    pub fn render(
-        &self,
-        context: &CanvasRenderingContext2d,
-        width: u32,
-        height: u32,
-    ) -> Result<(), JsValue> {
-        if self.offset == 0 {
-            return Ok(());
-        }
-
-        context.save();
-        context.set_line_width(2.0);
-        context.set_stroke_style(&"rgb(40, 40, 40)".into());
-
-        let steps_x = (width as f64 / self.offset as f64).ceil() as u32;
-        let steps_y = (height as f64 / self.offset as f64).ceil() as u32;
-
-        let sub_offset = (self.offset as f64 / self.subdivisions as f64).ceil() as u32;
-
-        for i in 0..steps_x {
-            let i = (i * self.offset).into();
-
-            context.save();
-            context.set_line_width(1.0);
-            for k in 0..self.subdivisions as u32 {
-                context.begin_path();
-                context.move_to(i + (k * sub_offset) as f64, 0.0);
-                context.line_to(i + (k * sub_offset) as f64, height.into());
-                context.close_path();
-                context.stroke();
-            }
-            context.restore();
-
-            context.set_line_width(4.0);
-            context.begin_path();
-            context.move_to(i, 0.0);
-            context.line_to(i, height.into());
-            context.close_path();
-            context.stroke();
-        }
-
-        for i in 0..steps_y {
-            let i = (i * self.offset).into();
-
-            context.save();
-            context.set_line_width(1.0);
-            for k in 0..self.subdivisions as u32 {
-                context.begin_path();
-                context.move_to(0., i + (k * sub_offset) as f64);
-                context.line_to(width.into(), i + (k * sub_offset) as f64);
-                context.close_path();
-                context.stroke();
-            }
-            context.restore();
-
-            context.set_line_width(2.0);
-            context.begin_path();
-            context.move_to(0.0, i);
-            context.line_to(width.into(), i);
-            context.close_path();
-            context.stroke();
-        }
-
-        context.restore();
-
-        Ok(())
-    }
-}
-
-impl Default for Grid {
-    fn default() -> Self {
-        Self {
-            offset: 200,
-            subdivisions: 4,
-            enabled: true,
-        }
-    }
-}
 
 fn get_canvas_and_context(
     id: &String,
@@ -313,11 +223,11 @@ impl Editor {
     }
 
     pub fn set_grid_enabled(&mut self, enabled: bool) {
-        self.grid.enabled = enabled
+        self.grid.set_enabled(enabled);
     }
 
     pub fn set_grid_offset(&mut self, offset: f64) {
-        self.grid.offset = offset as u32;
+        self.grid.set_offset(offset as u32);
     }
 
     pub fn set_grid_subdivisions(&mut self, subdivisions: f64) {
@@ -327,7 +237,7 @@ impl Editor {
             subdivisions = 1;
         }
 
-        self.grid.subdivisions = subdivisions;
+        self.grid.set_subdivisions(subdivisions);
     }
 
     pub fn width(&self) -> u32 {
@@ -358,8 +268,8 @@ impl Editor {
         self.context
             .clear_rect(0.0, 0.0, self.map.width().into(), self.map.height().into());
 
-        if self.grid.enabled {
-            let offset = self.grid.offset as i32;
+        if self.grid.is_enabled() {
+            let offset = self.grid.offset() as i32;
             let x: i32 = self.camera.x % offset - offset;
             let y: i32 = self.camera.y % offset - offset;
 
@@ -383,14 +293,14 @@ impl Editor {
     }
 
     fn transform_cursor_pos_to_grid(&self, x: u32, y: u32, camera: &Camera) -> Coordinate<f64> {
-        if !self.grid.enabled {
+        if !self.grid.is_enabled() {
             return Coordinate {
                 x: (x as i32 - camera.x).into(),
                 y: (y as i32 - camera.y).into(),
             };
         }
 
-        let factor = self.grid.offset as f32 / self.grid.subdivisions as f32;
+        let factor = self.grid.offset() as f32 / self.grid.subdivisions() as f32;
         let x = ((x as i32 - camera.x) as f32 / factor).round();
         let y = ((y as i32 - camera.y) as f32 / factor).round();
 

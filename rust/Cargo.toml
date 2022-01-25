@@ -38,7 +38,8 @@ features = [
   'DragEvent',
   'DataTransfer',
   'FileList',
-  'File'
+  'File',
+  'DomRect'
 ]
 
 [profile.release]

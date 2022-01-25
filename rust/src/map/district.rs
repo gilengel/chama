@@ -9,11 +9,13 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    intersection::Side,
-    
-    map::{InformationLayer, Map},
-    style::{InteractiveElementStyle, Style}, house::generate_houses, renderer::PrimitiveRenderer,
+    map::intersection::Side,
+    style::{InteractiveElementStyle, Style}, renderer::PrimitiveRenderer,
 };
+
+use crate::map::house::generate_houses;
+
+use super::map::{InformationLayer, Map};
 
 #[derive(Serialize, Deserialize)]
 pub struct District {

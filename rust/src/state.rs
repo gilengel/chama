@@ -2,7 +2,7 @@ use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{Map, Renderer, map::InformationLayer, Camera};
+use crate::{Map, Renderer, Camera, map::map::InformationLayer};
 
 
 

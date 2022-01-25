@@ -4,10 +4,8 @@ use uuid::Uuid;
 use crate::{
     gizmo::{GetPosition, Gizmo, MoveGizmo, SetPosition},
     interactive_element::{InteractiveElement, InteractiveElementState},
-    intersection::Intersection,
-    map::{InformationLayer, Map},
     state::State,
-    Camera, Renderer,
+    Camera, Renderer, map::{intersection::Intersection, map::{InformationLayer, Map}},
 };
 
 pub struct MoveControlState {

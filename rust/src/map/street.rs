@@ -16,11 +16,11 @@ use geo::line_intersection::line_intersection;
 use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
-    intersection::{Intersection, Side},
-    map::InformationLayer,
     renderer::PrimitiveRenderer,
     style::{InteractiveElementStyle, Style}, gizmo::GetPosition,
 };
+
+use super::{intersection::{Intersection, Side}, map::InformationLayer};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Street {

@@ -4,11 +4,10 @@ use geo::Coordinate;
 use uuid::Uuid;
 
 use crate::{
-    district::District,
     interactive_element::{InteractiveElementState, InteractiveElement},
-    map::{Map, InformationLayer},
+
     state::State,
-    Renderer, Camera,
+    Renderer, Camera, map::{district::District, map::{Map, InformationLayer}},
 };
 
 pub struct DeleteDistrictState {

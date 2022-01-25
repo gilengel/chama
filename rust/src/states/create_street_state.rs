@@ -12,11 +12,8 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    intersection::{Direction, Intersection},
-    map::InformationLayer,
     state::State,
-    street::Street,
-    Camera, Map, Renderer, gizmo::{SetPosition, GetPosition},
+    Camera, Map, Renderer, gizmo::{SetPosition, GetPosition}, map::{street::Street, intersection::{Intersection, Direction}, map::InformationLayer},
 };
 
 #[allow(unused_macros)]

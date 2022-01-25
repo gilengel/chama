@@ -11,7 +11,7 @@ pub enum Axis {
 }
 
 use crate::{
-    intersection::Intersection, log, map::Map, renderer::PrimitiveRenderer, style::Style, Camera,
+    renderer::PrimitiveRenderer, style::Style, Camera, map::map::Map,
 };
 
 pub trait GetPosition {
@@ -253,6 +253,11 @@ impl<T> MoveGizmo<T> {
     fn affected_axis(&mut self, mouse_pos: Coordinate<f64>, origin: Coordinate<f64>) {
         let diff = mouse_pos - origin;
 
+        if diff.x.abs() < 30. && diff.y.abs() < 30. {
+            self.affected_axis = Some(Axis::XY);
+            return;
+        }
+
         if diff.x.abs() < 30. && diff.y < 0. && diff.y >= -LINE_LENGTH {
             self.affected_axis = Some(Axis::Y);
             return;
@@ -263,9 +268,6 @@ impl<T> MoveGizmo<T> {
             return;
         }
 
-        if diff.x.abs() < 30. && diff.y.abs() < 30. {
-            self.affected_axis = Some(Axis::XY);
-            return;
-        }
+        
     }
 }

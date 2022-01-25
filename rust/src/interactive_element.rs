@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::{style::Style};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub enum InteractiveElementState {
     Normal,
     Hover,

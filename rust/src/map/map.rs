@@ -11,6 +11,7 @@ use wasm_bindgen::{JsValue};
 use web_sys::CanvasRenderingContext2d;
 
 use crate::gizmo::{GetPosition, SetPosition};
+use crate::interactive_element::{InteractiveElementState, InteractiveElement};
 use crate::{Camera, Renderer};
 
 use super::district::District;
@@ -136,6 +137,24 @@ impl Map {
 
     pub fn streets_mut(&mut self) -> &mut HashMap<Uuid, Street> {
         &mut self.streets
+    }
+
+    pub fn intersections_within_rectangle<'a>(&'a self, rect: &'a Rect<f64>) -> impl Iterator<Item = &'a Intersection> {
+        self.intersections.values().filter(|intersection| {
+            rect.contains(&intersection.position())
+        })
+    }
+
+    pub fn intersections_within_rectangle_mut<'a>(&'a mut self, rect: &'a Rect<f64>) -> impl Iterator<Item = &'a mut Intersection> {
+        self.intersections.values_mut().filter(|intersection| {
+            rect.contains(&intersection.position())
+        })
+    }
+
+    pub fn intersections_with_state<'a>(&'a self, state: InteractiveElementState) -> impl Iterator<Item = &'a Intersection> {
+        self.intersections.values().filter(move |intersection| {
+            intersection.state() == state
+        })
     }
 
     pub fn add_street(&mut self, street: Street) -> Uuid {

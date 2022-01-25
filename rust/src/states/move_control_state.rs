@@ -15,6 +15,7 @@ pub struct MoveControlState {
     edit_active: bool,
 }
 
+
 impl MoveControlState {
     pub fn new() -> Self {
         MoveControlState {

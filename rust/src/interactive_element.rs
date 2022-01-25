@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::style::Style;
+use crate::{style::Style};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum InteractiveElementState {

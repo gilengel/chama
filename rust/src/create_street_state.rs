@@ -113,8 +113,6 @@ impl CreateStreetState {
         if let Some(street) = map.street_mut(&street_id) as Option<&mut Street> {
             old_end = Some(street.end);
             street.set_end(&new_intersection);
-
-            log!("{}", street.length());
         }
 
         new_intersection.add_incoming_street(&street_id);

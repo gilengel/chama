@@ -5,7 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{log, map::InformationLayer, street::Street, interactive_element::{InteractiveElement, InteractiveElementState}, style::{Style, InteractiveElementStyle}, renderer::apply_style, gizmo::{SetPosition, GetPosition}};
+use crate::{log, map::InformationLayer, street::Street, interactive_element::{InteractiveElement, InteractiveElementState}, style::{Style, InteractiveElementStyle}, renderer::apply_style, gizmo::{SetPosition, GetPosition, Gizmo}};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Copy, Debug, Serialize, Deserialize)]

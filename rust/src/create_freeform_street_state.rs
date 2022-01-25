@@ -46,15 +46,6 @@ impl CreateFreeFormStreetState {
             }
         }
 
-        for (i, _) in self.raw_points.iter().enumerate().skip(1) {
-            log!(
-                "{}->{} = {}",
-                i - 1,
-                i,
-                self.raw_points[i - 1].euclidean_distance(&self.raw_points[i])
-            );
-        }
-
         let mut previous = &self.raw_points[index_to_be_skipped];
         for point in self.raw_points.iter().skip(index_to_be_skipped + 1) {
             map.create_street(&previous, point, 10.0);

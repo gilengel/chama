@@ -2,8 +2,9 @@ use geo::Coordinate;
 use uuid::Uuid;
 
 use crate::{
-    gizmo::{Gizmo, MoveGizmo, GetPosition, SetPosition},
+    gizmo::{GetPosition, Gizmo, MoveGizmo, SetPosition},
     interactive_element::{InteractiveElement, InteractiveElementState},
+    intersection::Intersection,
     map::{InformationLayer, Map},
     state::State,
     Camera, Renderer,
@@ -11,20 +12,21 @@ use crate::{
 
 pub struct MoveControlState {
     hovered_control: Option<Uuid>,
-    selected_control: Option<Uuid>,
-    gizmo: MoveGizmo,
+    gizmo: MoveGizmo<Intersection>,
 
-    edit_active: bool
+    edit_active: bool,
 }
 
 impl MoveControlState {
     pub fn new() -> Self {
         MoveControlState {
             hovered_control: None,
-            selected_control: None,
 
-            gizmo: MoveGizmo::new(),
-            edit_active: false
+            gizmo: MoveGizmo::new(
+                |id, map| map.intersection(&id).unwrap(),
+                |id, map| map.intersection_mut(&id).unwrap(),
+            ),
+            edit_active: false,
         }
     }
 
@@ -37,48 +39,28 @@ impl MoveControlState {
     }
 
     fn over_gizmo(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) -> bool {
-        if let Some(selected) = self.selected_control {
+        if let Some(selected) = self.gizmo.element_id {
             let origin = map.intersection(&selected).unwrap().position();
 
             return self.gizmo.mouse_over(mouse_pos, origin);
         }
 
-        return false
+        return false;
     }
 }
 
 impl State for MoveControlState {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
-        if self.over_gizmo(mouse_pos, map) {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+        if let Some(hovered_control) = self.hovered_control {
+            self.gizmo.element_id = Some(hovered_control);
             self.edit_active = true;
-            return;
         }
 
-        if let Some(hovered_control) = self.hovered_control {
-            self.selected_control = Some(hovered_control);
-            self.edit_active = true;
-        }
+        self.gizmo.mouse_down(mouse_pos, button, map);
     }
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
-        if self.edit_active && self.gizmo.affected_axis.is_some() {
-            let old_position = map.intersection(&self.selected_control.unwrap()).unwrap().position();
-            let new_position = match self.gizmo.affected_axis.as_ref().unwrap() {
-                crate::gizmo::Axis::X => Coordinate { x: mouse_pos.x, y: old_position.y },
-                crate::gizmo::Axis::Y => Coordinate { x: old_position.x, y: mouse_pos.y },
-                crate::gizmo::Axis::XY => mouse_pos,
-            };
-            map.intersection_mut(&self.selected_control.unwrap()).unwrap().set_position(new_position);
-
-            let a = map.intersections().clone();
-            let keys = a.keys();
-            for k in keys {
-                map.update_intersection(&k);
-            }
-
-
-        }
-        
+        self.gizmo.mouse_move(mouse_pos, map);
 
         self.clean_hovered_control_state(map);
 
@@ -91,16 +73,15 @@ impl State for MoveControlState {
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
-        if self.edit_active {
-            self.edit_active = false;
-            return; 
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+        self.gizmo.mouse_up(mouse_pos, button, map);
 
-        }
+        /*
         if map.get_intersection_at_position(&mouse_pos, 5.0, &vec![]) == None {
             self.hovered_control = None;
-            self.selected_control = None;
+            self.gizmo.element_id = None;
         }
+        */
     }
 
     fn enter(&self, _map: &mut Map) {}
@@ -118,14 +99,8 @@ impl State for MoveControlState {
     ) -> Result<(), wasm_bindgen::JsValue> {
         map.render(context, additional_information_layer, camera)?;
 
-        if let Some(selected) = self.selected_control {
-            let position = map.intersection(&selected).unwrap().position();
-            context.translate(position.x, position.y)?;
+        self.gizmo.render(context, camera, map)?;
 
-            self.gizmo.render(context, camera)?;
-
-            context.set_transform(1., 0., 0., 1., 0., 0.)?;
-        }
         Ok(())
     }
 }

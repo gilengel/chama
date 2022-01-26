@@ -1,8 +1,8 @@
-use std::fmt::Debug;
+use std::{collections::HashMap};
 
 use geo::{Coordinate, Line, Triangle};
 use uuid::Uuid;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsValue, UnwrapThrowExt};
 
 pub enum Axis {
     X,
@@ -10,9 +10,7 @@ pub enum Axis {
     XY,
 }
 
-use crate::{
-    renderer::PrimitiveRenderer, style::Style, Camera, map::map::Map,
-};
+use crate::{renderer::PrimitiveRenderer, style::Style, Camera};
 
 pub trait GetPosition {
     fn position(&self) -> Coordinate<f64>;
@@ -22,90 +20,117 @@ pub trait SetPosition {
     fn set_position(&mut self, position: Coordinate<f64>);
 }
 
-pub trait Gizmo<'a, T>
+pub trait Id {
+    fn id(&self) -> Uuid;
+}
+
+pub trait SetId {
+    fn set_id(&mut self, id: Uuid);
+}
+
+pub trait Gizmo<'a, T: 'a>: GetPosition + SetPosition
 where
     T: GetPosition + SetPosition,
 {
-    fn mouse_over(&mut self, mouse_pos: Coordinate<f64>, origin: Coordinate<f64>) -> bool;
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map);
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map);
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map);
+    fn mouse_down(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: u32,
+        elements: impl Iterator<Item = &'a mut T>,
+    );
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, elements: impl Iterator<Item = &'a mut T>);
+    fn mouse_up(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: u32,
+        elements: impl Iterator<Item = &'a mut T>,
+    );
     fn render(
         &self,
         context: &web_sys::CanvasRenderingContext2d,
         camera: &Camera,
-        map: &Map,
+        elements: impl Iterator<Item = &'a T>,
     ) -> Result<(), JsValue>;
-
-    fn element<F>(&'a self, id: Uuid, map: &'a Map, callback: F) -> &T
-    where
-        F: Fn(Uuid, &'a Map) -> &'a T;
-
-    fn element_mut<F>(&'a self, id: Uuid, map: &'a mut Map, callback: F) -> &mut T
-    where
-        F: Fn(Uuid, &'a mut Map) -> &'a mut T;
 }
 
-impl<'a, T: GetPosition + SetPosition> Gizmo<'a, T> for MoveGizmo<T> {
-    fn mouse_over(&mut self, mouse_pos: Coordinate<f64>, origin: Coordinate<f64>) -> bool {
-        let diff = mouse_pos - origin;
+impl GetPosition for MoveGizmo {
+    fn position(&self) -> Coordinate<f64> {
+        self.position
+    }
+}
 
-        if !(diff.x >= 0. && diff.x <= LINE_LENGTH && diff.y <= 0. && diff.y >= -LINE_LENGTH) {
-            return false;
-        }
+impl SetPosition for MoveGizmo {
+    fn set_position(&mut self, position: Coordinate<f64>) {
+        self.position = position;
+    }
+}
 
-        true
+pub fn mouse_over(mouse_pos: Coordinate<f64>, origin: Coordinate<f64>) -> bool {
+    let diff = mouse_pos - origin;
+
+    if !(diff.x >= 0. && diff.x <= LINE_LENGTH && diff.y <= 0. && diff.y >= -LINE_LENGTH) {
+        return false;
     }
 
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
-        if self.element_id.is_none() {
-            return;
+    true
+}
+
+impl<'a, T: GetPosition + SetPosition + Id + 'a> Gizmo<'a, T> for MoveGizmo {
+    fn mouse_down(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: u32,
+        elements: impl Iterator<Item = &'a mut T>,
+    ) {
+        self.cursor_to_element_offset = mouse_pos - self.position();
+        for x in elements {
+            self.offsets.insert(x.id(), self.position() - x.position());
         }
-
-        let element_id = self.element_id.unwrap();
-        let origin = self.element(element_id, map, self.callback).position();
-
-        if !self.mouse_over(mouse_pos, origin) {
-            return;
-        }
-
-        self.cursor_to_element_offset = mouse_pos - origin;
 
         self.active = true;
-        self.affected_axis(mouse_pos, origin);
+        self.affected_axis(mouse_pos, self.position());
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+    fn mouse_move(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        elements: impl Iterator<Item = &'a mut T>,
+    ) {
         if !self.active {
             return;
         }
 
-        let element_id = self.element_id.unwrap();
+        for x in elements {
+            let offset = self.offsets.get(&x.id()).unwrap_throw();
 
-        let old_position = self.element(element_id, map, self.callback).position();
-        let new_position = match self.affected_axis.as_ref().unwrap() {
-            crate::gizmo::Axis::X => Coordinate {
-                x: mouse_pos.x - self.cursor_to_element_offset.x,
-                y: old_position.y,
-            },
-            crate::gizmo::Axis::Y => Coordinate {
-                x: old_position.x,
-                y: mouse_pos.y - self.cursor_to_element_offset.y,
-            },
-            crate::gizmo::Axis::XY => mouse_pos,
-        };
+            let old_position = x.position();
+            let new_position = match self.affected_axis.as_ref().unwrap() {
+                crate::gizmo::Axis::X => Coordinate {
+                    x: mouse_pos.x - offset.x - self.cursor_to_element_offset.x,
+                    y: old_position.y,
+                },
+                crate::gizmo::Axis::Y => Coordinate {
+                    x: old_position.x,
+                    y: mouse_pos.y - offset.y - self.cursor_to_element_offset.y,
+                },
+                crate::gizmo::Axis::XY => mouse_pos - *offset - self.cursor_to_element_offset,
+            };
 
-        self.element_mut(element_id, map, self.callback_mut)
-            .set_position(new_position);
-
-        let a = map.intersections().clone();
-        let keys = a.keys();
-        for k in keys {
-            map.update_intersection(&k);
+            x.set_position(new_position);
         }
+
+        self.set_position(Coordinate {
+            x: mouse_pos.x - self.cursor_to_element_offset.x,
+            y: mouse_pos.y - self.cursor_to_element_offset.y,
+        });
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _map: &mut Map) {
+    fn mouse_up(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: u32,
+        elements: impl Iterator<Item = &'a mut T>,
+    ) {
         if self.active {
             self.active = false;
         }
@@ -115,10 +140,10 @@ impl<'a, T: GetPosition + SetPosition> Gizmo<'a, T> for MoveGizmo<T> {
         &self,
         context: &web_sys::CanvasRenderingContext2d,
         camera: &Camera,
-        map: &Map,
+        elements: impl Iterator<Item = &'a T>,
     ) -> Result<(), JsValue> {
-        if let Some(selected_id) = self.element_id {
-            let position = self.element(selected_id, map, self.callback).position();
+        if elements.peekable().peek().is_some() {
+            let position = self.position();
             context.translate(position.x + camera.x as f64, position.y + camera.y as f64)?;
 
             self.x_axis.render(&self.x_style, &context)?;
@@ -131,35 +156,15 @@ impl<'a, T: GetPosition + SetPosition> Gizmo<'a, T> for MoveGizmo<T> {
 
         Ok(())
     }
-
-    fn element<F>(&'a self, id: Uuid, map: &'a Map, callback: F) -> &T
-    where
-        F: Fn(Uuid, &'a Map) -> &'a T,
-    {
-        callback(id, map)
-    }
-
-    fn element_mut<F>(&'a self, id: Uuid, map: &'a mut Map, callback: F) -> &mut T
-    where
-        F: Fn(Uuid, &'a mut Map) -> &'a mut T,
-    {
-        callback(id, map)
-    }
 }
-
-/*
-impl<Intersection> Gizmo<Intersection> for MoveGizmo {
-    fn element(&self, id: Uuid, map: &mut Map) -> &Intersection {
-        map.intersection(&id).unwrap()
-    }
-}
-*/
 
 static ARROW_WIDTH: f64 = 6.0;
 static ARROW_HEIGHT: f64 = 10.0;
 static LINE_LENGTH: f64 = 100.0;
 
-pub struct MoveGizmo<T> {
+pub struct MoveGizmo {
+    position: Coordinate<f64>,
+
     x_style: Style,
     x_axis: Line<f64>,
     x_arrow: Triangle<f64>,
@@ -170,29 +175,23 @@ pub struct MoveGizmo<T> {
 
     cursor_to_element_offset: Coordinate<f64>,
 
-    pub element_id: Option<Uuid>,
-
-    callback: fn(id: Uuid, map: &Map) -> &T,
-    callback_mut: fn(id: Uuid, map: &mut Map) -> &mut T,
+    offsets: HashMap<Uuid, Coordinate<f64>>,
 
     active: bool,
 
     pub affected_axis: Option<Axis>,
 }
 
-impl<T> MoveGizmo<T> {
-    pub fn new(
-        callback: fn(id: Uuid, map: &Map) -> &T,
-        callback_mut: fn(id: Uuid, map: &mut Map) -> &mut T,
-    ) -> Self {
+impl MoveGizmo {
+    pub fn new() -> Self {
         MoveGizmo {
-            callback,
-            callback_mut,
-            element_id: None,
+            position: Coordinate { x: 0., y: 0. },
             affected_axis: None,
             active: false,
 
             cursor_to_element_offset: Coordinate { x: 0., y: 0. },
+
+            offsets: HashMap::new(),
 
             x_axis: Line::new(
                 Coordinate { x: 0., y: 0. },
@@ -261,13 +260,11 @@ impl<T> MoveGizmo<T> {
         if diff.x.abs() < 30. && diff.y < 0. && diff.y >= -LINE_LENGTH {
             self.affected_axis = Some(Axis::Y);
             return;
-        } 
-        
+        }
+
         if diff.y.abs() < 30. && diff.x > 0. && diff.x <= LINE_LENGTH {
             self.affected_axis = Some(Axis::X);
             return;
         }
-
-        
     }
 }

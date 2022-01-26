@@ -17,14 +17,14 @@ use crate::{
     interactive_element::InteractiveElement,
     interactive_element::InteractiveElementState,
     renderer::PrimitiveRenderer,
-    style::{InteractiveElementStyle, Style}, gizmo::GetPosition,
+    style::{InteractiveElementStyle, Style}, gizmo::{GetPosition, Id, SetId},
 };
 
 use super::{intersection::{Intersection, Side}, map::InformationLayer};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Street {
-    pub id: Uuid,
+    id: Uuid,
 
     pub line: Line<f64>,
 
@@ -48,6 +48,18 @@ pub struct Street {
     pub style: InteractiveElementStyle,
 
     state: InteractiveElementState,
+}
+
+impl Id for Street {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
+impl SetId for Street {
+    fn set_id(&mut self, id: Uuid) {
+        self.id = id;
+    }
 }
 
 impl<'a> From<&'a Street> for &'a Line<f64> {
@@ -103,17 +115,13 @@ impl Street {
         self.line.start
     }
 
-    pub fn id(&self) -> Uuid {
-        self.id
-    }
-
     pub fn set_start(&mut self, start: &Intersection) {
-        self.start = start.id;
+        self.start = start.id();
         self.line.start = start.position();
     }
 
     pub fn set_end(&mut self, end: &Intersection) {
-        self.end = end.id;
+        self.end = end.id();
         self.line.end = end.position();
     }
 

@@ -44,7 +44,7 @@ pub trait State {
 
     /// Called every time the state is activated by the state maschine. Use it to 
     /// initialize values for the state.
-    fn enter(&self, map: &mut Map);
+    fn enter(&mut self, map: &mut Map);
 
     /// Called every time the state is deactivated by the state maschine. Use it to
     /// clean up values in the state.

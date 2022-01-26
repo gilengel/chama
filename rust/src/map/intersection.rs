@@ -5,7 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{log,interactive_element::{InteractiveElement, InteractiveElementState}, style::{Style, InteractiveElementStyle}, renderer::apply_style, gizmo::{SetPosition, GetPosition, Gizmo}};
+use crate::{log,interactive_element::{InteractiveElement, InteractiveElementState}, style::{Style, InteractiveElementStyle}, renderer::apply_style, gizmo::{SetPosition, GetPosition, Gizmo, Id, SetId}};
 use serde::{Deserialize, Serialize};
 
 use super::{map::InformationLayer, street::Street};
@@ -24,13 +24,25 @@ pub enum Side {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Intersection {
-    pub id: Uuid,
+    id: Uuid,
     position: Coordinate<f64>,
 
     connected_streets: Vec<(Direction, Uuid)>,
 
     style: InteractiveElementStyle, 
     state: InteractiveElementState,
+}
+
+impl Id for Intersection {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
+impl SetId for Intersection {
+    fn set_id(&mut self, id: Uuid) {
+        self.id = id;
+    }
 }
 
 impl InteractiveElement for Intersection {
@@ -47,7 +59,7 @@ impl InteractiveElement for Intersection {
     }
 
     fn state(&self) -> InteractiveElementState {
-        InteractiveElementState::Normal
+        self.state.clone()
     }
 }
 
@@ -77,13 +89,16 @@ impl Intersection {
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
+        
+
         context.begin_path();
         context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
 
-        let num = self.connected_streets.len();
+        
         apply_style(self.style(), context);
         context.fill();
-
+        
+        let num = self.connected_streets.len();
         if additional_information_layer.contains(&InformationLayer::Debug) && num != 2 {
             context.set_fill_style(&"#FFFFFF".into());
 
@@ -195,11 +210,11 @@ impl Intersection {
                     street_borrowed.set_next(Side::Right, None);
                     street_borrowed.set_next(Side::Left, None);
 
-                    if street_borrowed.id != *previous_street {
+                    if street_borrowed.id() != *previous_street {
                         street_borrowed.set_next(Side::Right, Some(*previous_street));
                     }
 
-                    if street_borrowed.id != *next_street {
+                    if street_borrowed.id() != *next_street {
                         street_borrowed.set_next(Side::Left, Some(*next_street));
                     }
                 }
@@ -209,11 +224,11 @@ impl Intersection {
                     street_borrowed.set_previous(Side::Right, None);
                     street_borrowed.set_previous(Side::Left, None);
 
-                    if street_borrowed.id != *next_street {
+                    if street_borrowed.id() != *next_street {
                         street_borrowed.set_previous(Side::Right, Some(*next_street));
                     }
 
-                    if street_borrowed.id != *previous_street {
+                    if street_borrowed.id() != *previous_street {
                         street_borrowed.set_previous(Side::Left, Some(*previous_street));
                     }
                 }
@@ -242,7 +257,7 @@ impl Default for Intersection {
                 selected: Style {
                     border_width: 0,
                     border_color: "".to_string(),
-                    background_color: "hsl(0, 100%, 50%)".to_string()
+                    background_color: "#00FFCC".to_string()
                 },
             },
             state: InteractiveElementState::Normal,

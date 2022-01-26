@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     state::State,
-    Renderer, Camera, map::{map::{Map, InformationLayer}, district::create_district_for_street},
+    Renderer, Camera, map::{map::{Map, InformationLayer}, district::create_district_for_street}, gizmo::Id,
 };
 
 pub struct CreateDistrictState {
@@ -31,7 +31,7 @@ impl State for CreateDistrictState {
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
         match map.get_nearest_street_to_position(&mouse_pos) {
-            Some(street) => self.hovered_street = Some(street.id),
+            Some(street) => self.hovered_street = Some(street.id()),
             None => self.hovered_street = None,
         }
     }
@@ -49,7 +49,7 @@ impl State for CreateDistrictState {
         }
     }
 
-    fn enter(&self, _map: &mut Map) {}
+    fn enter(&mut self, _map: &mut Map) {}
 
     fn exit(&self, _map: &mut Map) {}
 

@@ -3,7 +3,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{state::{State}, Map, Camera, Renderer, style::Style, renderer::PrimitiveRenderer, gizmo::SetPosition, map::{intersection::Intersection, street::Street, district::create_district_for_street, map::InformationLayer}};
+use crate::{state::{State}, Map, Camera, Renderer, style::Style, renderer::PrimitiveRenderer, gizmo::{SetPosition, Id}, map::{intersection::Intersection, street::Street, district::create_district_for_street, map::InformationLayer}};
 
 
 pub struct CreateFreeFormDistrictState {
@@ -62,7 +62,7 @@ impl CreateFreeFormDistrictState {
                 let next_intersection = map.intersection(next_id).unwrap();
 
                 let mut street = Street::default();
-                street_id = street.id;
+                street_id = street.id();
                 street.set_start(&current_intersection);
                 street.set_end(&next_intersection);
 
@@ -136,7 +136,7 @@ impl State for CreateFreeFormDistrictState {
         Ok(())
     }
 
-    fn enter(&self, _: &mut Map) { }
+    fn enter(&mut self, _: &mut Map) { }
 
     fn exit(&self, _: &mut Map) {}
 }

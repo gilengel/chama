@@ -18,7 +18,7 @@ impl State for IdleState {
 
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
-    fn enter(&self, _: &mut Map) {}
+    fn enter(&mut self, _: &mut Map) {}
 
     fn exit(&self, _: &mut Map) {}
 }

@@ -7,7 +7,7 @@ use crate::{
     interactive_element::{InteractiveElementState, InteractiveElement},
 
     state::State,
-    Renderer, Camera, map::{district::District, map::{Map, InformationLayer}},
+    Renderer, Camera, map::{district::District, map::{Map, InformationLayer}}, gizmo::Id,
 };
 
 pub struct DeleteDistrictState {
@@ -42,7 +42,7 @@ impl State for DeleteDistrictState {
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
             let hovered_district: &mut District = map.district_mut(&hovered_district).unwrap();
             hovered_district.set_state(InteractiveElementState::Hover);
-            self.hovered_district = Some(hovered_district.id);
+            self.hovered_district = Some(hovered_district.id());
         }
     }
 
@@ -53,7 +53,7 @@ impl State for DeleteDistrictState {
         }
     }
 
-    fn enter(&self, _map: &mut Map) {}
+    fn enter(&mut self, _map: &mut Map) {}
 
     fn exit(&self, _map: &mut Map) {}
 

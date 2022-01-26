@@ -10,7 +10,7 @@ use web_sys::CanvasRenderingContext2d;
 use crate::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     map::intersection::Side,
-    style::{InteractiveElementStyle, Style}, renderer::PrimitiveRenderer,
+    style::{InteractiveElementStyle, Style}, renderer::PrimitiveRenderer, gizmo::Id,
 };
 
 use crate::map::house::generate_houses;
@@ -19,10 +19,16 @@ use super::map::{InformationLayer, Map};
 
 #[derive(Serialize, Deserialize)]
 pub struct District {
-    pub id: Uuid,
+    id: Uuid,
     polygon: Polygon<f64>,
     style: InteractiveElementStyle,
     state: InteractiveElementState,
+}
+
+impl Id for District {
+    fn id(&self) -> Uuid {
+        self.id
+    }
 }
 
 impl Default for District {
@@ -63,6 +69,10 @@ impl InteractiveElement for District {
             InteractiveElementState::Hover => return &self.style.hover,
             InteractiveElementState::Selected => return &self.style.selected,
         }
+    }
+
+    fn state(&self) -> InteractiveElementState {
+        self.state.clone()
     }
 }
 

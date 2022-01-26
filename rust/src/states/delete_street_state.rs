@@ -121,7 +121,7 @@ impl State for DeleteStreetState {
         }
     }
 
-    fn enter(&self, _map: &mut Map) {}
+    fn enter(&mut self, _map: &mut Map) {}
 
     fn exit(&self, map: &mut Map) {
         self.clean_hovered_street_state(map);

@@ -13,7 +13,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     state::State,
-    Camera, Map, Renderer, gizmo::{SetPosition, GetPosition}, map::{street::Street, intersection::{Intersection, Direction}, map::InformationLayer},
+    Camera, Map, Renderer, gizmo::{SetPosition, GetPosition, Id, SetId}, map::{street::Street, intersection::{Intersection, Direction}, map::InformationLayer},
 };
 
 #[allow(unused_macros)]
@@ -79,7 +79,7 @@ impl CreateStreetState {
     fn create_new_start(&mut self, position: &Coordinate<f64>) -> Intersection {
         self.temp_start = Uuid::new_v4();
         let mut start = Intersection::default();
-        start.id = self.temp_start;
+        start.set_id(self.temp_start);
         start.set_position(*position);
         start.add_outgoing_street(&self.temp_street);
 
@@ -89,7 +89,7 @@ impl CreateStreetState {
     fn create_new_end(&mut self, position: &Coordinate<f64>) -> Intersection {
         self.temp_end = Uuid::new_v4();
         let mut end = Intersection::default();
-        end.id = self.temp_end;
+        end.set_id(self.temp_end);
         end.set_position(*position);
         end.add_incoming_street(&self.temp_street);
 
@@ -104,7 +104,7 @@ impl CreateStreetState {
     ) -> Option<Uuid> {
         let mut old_end: Option<Uuid> = None;
         let mut new_intersection = Intersection::default();
-        let new_intersection_id = new_intersection.id;
+        let new_intersection_id = new_intersection.id();
         new_intersection.set_position(pos);
 
         if let Some(street) = map.street_mut(&street_id) as Option<&mut Street> {
@@ -116,15 +116,15 @@ impl CreateStreetState {
 
         // The street from new intersection to the old end
         let mut new_street = Street::default();
-        let new_id = new_street.id;
+        let new_id = new_street.id();
         new_street.set_start(&new_intersection);
         new_street.set_end(&map.intersection(&old_end.unwrap()).unwrap());
-        new_intersection.add_outgoing_street(&new_street.id);
+        new_intersection.add_outgoing_street(&new_street.id());
 
         if let Some(old_end) = map.intersection_mut(&old_end.unwrap()) as Option<&mut Intersection>
         {
             old_end.remove_connected_street(&street_id);
-            old_end.add_incoming_street(&new_street.id);
+            old_end.add_incoming_street(&new_street.id());
         }
 
         map.add_street(new_street);
@@ -257,7 +257,7 @@ impl<'a> State for CreateStreetState {
         let b = rng.gen_range(0..255);
         street.style.normal.border_color = format!("rgb({},{},{})", r, g, b).to_string();
         street.style.normal.border_width = 0;
-        street.id = self.temp_street;
+        street.set_id(self.temp_street);
 
         let end = self.create_new_end(&mouse_pos);
         street.set_end(&end);
@@ -286,7 +286,7 @@ impl<'a> State for CreateStreetState {
 
                 let start: &mut Intersection = map.intersection_mut(&self.temp_start).unwrap();
 
-                start.add_outgoing_street(&street.id);
+                start.add_outgoing_street(&street.id());
                 street.set_start(start);
             }
             None => {
@@ -402,7 +402,7 @@ impl<'a> State for CreateStreetState {
         Ok(())
     }
 
-    fn enter(&self, _map: &mut Map) {}
+    fn enter(&mut self, _map: &mut Map) {}
 
     fn exit(&self, map: &mut Map) {
         if let Some(intersection) = map.intersection(&self.temp_end) {

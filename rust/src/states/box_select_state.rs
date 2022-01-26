@@ -45,7 +45,7 @@ impl State for BoxSelectState {
         self.active = false;
     }
 
-    fn enter(&self, _: &mut Map) {}
+    fn enter(&mut self, _: &mut Map) {}
 
     fn exit(&self, _: &mut Map) {}
 

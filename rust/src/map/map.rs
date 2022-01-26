@@ -4,20 +4,20 @@ use geo::{Coordinate, Line, LineString, Polygon, Rect};
 use serde::{Deserialize, Serialize};
 
 use std::cmp::Ordering;
+use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
 use uuid::Uuid;
-use wasm_bindgen::{JsValue};
+use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::gizmo::{GetPosition, SetPosition};
-use crate::interactive_element::{InteractiveElementState, InteractiveElement};
-use crate::{Camera, Renderer};
+use crate::gizmo::{GetPosition, Id, SetPosition};
+use crate::interactive_element::{InteractiveElement, InteractiveElementState};
+use crate::{log, Camera, Renderer};
 
 use super::district::District;
 use super::intersection::Intersection;
 use super::street::Street;
-
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {
@@ -131,6 +131,10 @@ impl Map {
         &self.intersections
     }
 
+    pub fn intersections_keys<'a>(&'a self) -> Keys<'a, Uuid, Intersection> {
+        self.intersections.keys()
+    }
+
     pub fn streets(&self) -> &HashMap<Uuid, Street> {
         &self.streets
     }
@@ -139,40 +143,67 @@ impl Map {
         &mut self.streets
     }
 
-    pub fn intersections_within_rectangle<'a>(&'a self, rect: &'a Rect<f64>) -> impl Iterator<Item = &'a Intersection> {
-        self.intersections.values().filter(|intersection| {
-            rect.contains(&intersection.position())
-        })
+    pub fn intersections_by_ids<'a>(
+        &'a self,
+        ids: &'a Vec<Uuid>,
+    ) -> impl Iterator<Item = &'a Intersection> {
+        self.intersections
+            .values()
+            .filter(|intersection| ids.contains(&intersection.id()))
     }
 
-    pub fn intersections_within_rectangle_mut<'a>(&'a mut self, rect: &'a Rect<f64>) -> impl Iterator<Item = &'a mut Intersection> {
-        self.intersections.values_mut().filter(|intersection| {
-            rect.contains(&intersection.position())
-        })
+    pub fn intersections_within_rectangle<'a>(
+        &'a self,
+        rect: &'a Rect<f64>,
+    ) -> impl Iterator<Item = &'a Intersection> {
+        self.intersections
+            .values()
+            .filter(|intersection| rect.contains(&intersection.position()))
     }
 
-    pub fn intersections_with_state<'a>(&'a self, state: InteractiveElementState) -> impl Iterator<Item = &'a Intersection> {
-        self.intersections.values().filter(move |intersection| {
-            intersection.state() == state
-        })
+    pub fn intersections_within_rectangle_mut<'a>(
+        &'a mut self,
+        rect: &'a Rect<f64>,
+    ) -> impl Iterator<Item = &'a mut Intersection> {
+        self.intersections
+            .values_mut()
+            .filter(|intersection| rect.contains(&intersection.position()))
+    }
+
+    pub fn intersections_with_state<'a>(
+        &'a self,
+        state: InteractiveElementState,
+    ) -> impl Iterator<Item = &'a Intersection> {
+        self.intersections
+            .values()
+            .filter(move |intersection| intersection.state() == state)
+    }
+
+    pub fn intersections_with_state_mut<'a>(
+        &'a mut self,
+        state: InteractiveElementState,
+    ) -> impl Iterator<Item = &'a mut Intersection> {
+        self.intersections
+            .values_mut()
+            .filter(move |intersection| intersection.state() == state)
     }
 
     pub fn add_street(&mut self, street: Street) -> Uuid {
-        let id = street.id;
+        let id = street.id();
         self.streets.insert(id, street);
 
         id
     }
 
     pub fn add_district(&mut self, district: District) -> Uuid {
-        let id = district.id;
+        let id = district.id();
         self.districts.insert(id, district);
 
         id
     }
 
     pub fn add_intersection(&mut self, intersection: Intersection) -> Uuid {
-        let id = intersection.id;
+        let id = intersection.id();
         self.intersections.insert(id, intersection);
 
         self.update_bounding_box();
@@ -184,7 +215,7 @@ impl Map {
         let mut street = self.streets.remove(id).unwrap();
         street.update_geometry(&self.intersections, &self.streets);
 
-        self.streets.insert(street.id, street);
+        self.streets.insert(street.id(), street);
     }
 
     pub fn update_intersection(&mut self, id: &Uuid) {
@@ -207,11 +238,11 @@ impl Map {
         street.set_end(&end);
 
         if let Some(start) = self.intersection_mut(&start_id) {
-            start.add_outgoing_street(&street.id);
+            start.add_outgoing_street(&street.id());
         }
 
         if let Some(end) = self.intersection_mut(&end_id) {
-            end.add_incoming_street(&street.id);
+            end.add_incoming_street(&street.id());
         }
 
         self.add_street(street);
@@ -289,14 +320,12 @@ impl Map {
         let mut start_id = Uuid::default();
         match self.get_intersection_at_position(&start, snapping_offset, &vec![]) {
             Some(intersection) => start_id = intersection,
-            None => {
-                match self.get_street_at_position(start, &vec![]) {
-                    Some(street_id) => start_id = self.split_street(*start, &street_id),
-                    None => {
-                        start_id = self.add_intersection(Intersection::new(*start));
-                    }
+            None => match self.get_street_at_position(start, &vec![]) {
+                Some(street_id) => start_id = self.split_street(*start, &street_id),
+                None => {
+                    start_id = self.add_intersection(Intersection::new(*start));
                 }
-            }
+            },
         };
 
         let end_id = match self.get_intersection_at_position(&end, snapping_offset, &vec![]) {
@@ -338,7 +367,7 @@ impl Map {
         let street_id = *street_id;
 
         let mut new_intersection = Intersection::default();
-        let new_intersection_id = new_intersection.id;
+        let new_intersection_id = new_intersection.id();
         new_intersection.set_position(split_position);
 
         let splitted_street = self.street(&street_id).unwrap();
@@ -396,7 +425,7 @@ impl Map {
                 let foo = self.intersection(&next_street_end).unwrap().clone();
                 self.street_mut(&street_id).unwrap().set_end(&foo);
 
-                log!("{}", foo.id);
+                log!("{}", foo.id());
 
                 old_end = next_street_end;
 
@@ -415,14 +444,14 @@ impl Map {
 
         // The street from new intersection to the old end
         let mut new_street = Street::default();
-        let new_id = new_street.id;
+        let new_id = new_street.id();
         new_street.set_start(&new_intersection);
         new_street.set_end(&self.intersection(&old_end).unwrap());
-        new_intersection.add_outgoing_street(&new_street.id);
+        new_intersection.add_outgoing_street(&new_street.id());
 
         if let Some(old_end) = self.intersection_mut(&old_end) as Option<&mut Intersection> {
             old_end.remove_connected_street(&street_id);
-            old_end.add_incoming_street(&new_street.id);
+            old_end.add_incoming_street(&new_street.id());
         }
 
         self.add_street(new_street);
@@ -472,7 +501,7 @@ impl Map {
                         is_proper,
                     } => {
                         if is_proper {
-                            intersections.push((street.id, intersection));
+                            intersections.push((street.id(), intersection));
                         }
                     }
                     _ => {}
@@ -667,7 +696,7 @@ impl Map {
     pub fn get_district_at_position(&self, position: &Coordinate<f64>) -> Option<Uuid> {
         for (_, district) in &self.districts {
             if district.is_point_on_district(position) {
-                return Some(district.id);
+                return Some(district.id());
             }
         }
 
@@ -682,7 +711,7 @@ impl Map {
                 start.remove_connected_street(id);
 
                 is_start_empty = start.get_connected_streets().is_empty();
-                start_id = start.id;
+                start_id = start.id();
             }
 
             if is_start_empty {
@@ -697,7 +726,7 @@ impl Map {
                 end.remove_connected_street(id);
 
                 is_end_empty = end.get_connected_streets().is_empty();
-                end_id = end.id;
+                end_id = end.id();
             }
 
             if is_end_empty {
@@ -742,7 +771,7 @@ impl Map {
                         intersection: _,
                         is_proper: _,
                     } => {
-                        intersected_streets.push(street.id);
+                        intersected_streets.push(street.id());
                     }
                     _ => {}
                 }

@@ -96,9 +96,9 @@ impl Default for DeleteStreetSystem {
 }
 
 impl System for DeleteStreetSystem {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {}
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {}
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         self.clean_hovered_street_state(map);
 
         if let Some(hovered_street) = map.get_street_at_position(&mouse_pos, &vec![]) {
@@ -112,7 +112,7 @@ impl System for DeleteStreetSystem {
         }
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         if let Some(hovered_streets) = &self.hovered_streets {
             for street in hovered_streets {
                 map.remove_street(&street);

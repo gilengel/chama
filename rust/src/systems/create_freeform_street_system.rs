@@ -1,4 +1,4 @@
-use std::ops::Mul;
+
 
 use geo::{simplify::Simplify, Coordinate, LineString};
 use uuid::Uuid;
@@ -98,7 +98,7 @@ impl System for CreateFreeFormStreetSystem {
         _: Coordinate<f64>,
         button: u32,
         _: &mut Map,
-        actions: &mut Vec<Box<dyn Action>>,
+        _actions: &mut Vec<Box<dyn Action>>,
     ) {
         if button == 0 {
             self.brush_active = true;
@@ -111,7 +111,7 @@ impl System for CreateFreeFormStreetSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
-        actions: &mut Vec<Box<dyn Action>>,
+        _actions: &mut Vec<Box<dyn Action>>,
     ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
@@ -146,9 +146,9 @@ impl System for CreateFreeFormStreetSystem {
 
     fn render(
         &self,
-        map: &Map,
+        _map: &Map,
         context: &CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
+        _additional_information_layer: &Vec<InformationLayer>,
         camera: &Camera,
     ) -> Result<(), JsValue> {
         if self.brush_active && !self.raw_points.is_empty() {

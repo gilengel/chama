@@ -82,13 +82,6 @@ impl Editor {
         }
     }
 
-    fn execute_action(&mut self, mut action: Box<dyn Action>) {
-        (*action).execute(&mut self.map);
-
-        self.redo_stack.clear();
-        self.undo_stack.push(action);
-    }
-
     pub fn is_undoable(&self) -> bool {
         log!("{:?}", self.undo_stack.is_empty());
         !self.undo_stack.is_empty()
@@ -112,13 +105,6 @@ impl Editor {
         }
 
         self.undo_stack.push(self.redo_stack.pop().unwrap());
-    }
-
-    fn activate_system<T>(&mut self, system: T)
-    where
-        T: System + Send + Sync + 'static,
-    {
-        self.active_systems.push(Box::new(system));
     }
 
     pub fn deactivate_system(&mut self) {
@@ -219,27 +205,6 @@ impl Editor {
         };
 
         self.active_systems = new_systems;
-
-        /*
-        self.state.exit(&mut self.map);
-        match mode {
-            0 => log!("idle command, nothing to do"),
-            1 => self.state = Box::new(CreateStreetSystem::new()),
-            2 => self.state = Box::new(CreateFreeFormStreetSystem::new()),
-            3 => self.state = Box::new(DeleteStreetSystem::new()),
-            4 => self.state = Box::new(CreateDistrictSystem::new()),
-            5 => self.state = Box::new(CreateFreeFormStreetSystem::new()),
-            6 => self.state = Box::new(DeleteDistrictSystem::new()),
-            7 => self.state = Box::new(MoveControlSystem::new()),
-            8 => self.state = Box::new(BoxSelectSystem::new()),
-
-            _ => log!("unknown command, nothing to do"),
-        }
-        self.state.enter(&mut self.map);
-
-        self.activate_system(BoxSelectSystem::new());
-        self.activate_system(MoveControlSystem::new());
-        */
     }
 
     pub fn set_grid_enabled(&mut self, enabled: bool) {

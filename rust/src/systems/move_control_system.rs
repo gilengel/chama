@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use geo::{Coordinate, Rect};
+use geo::{Coordinate};
 use uuid::Uuid;
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     interactive_element::{InteractiveElement, InteractiveElementSystem},
     map::map::{InformationLayer, Map},
     state::System,
-    Camera, Renderer, renderer::PrimitiveRenderer, style::Style, log, actions::action::Action,
+    Camera, actions::action::Action,
 };
 
 
@@ -57,7 +57,7 @@ impl MoveControlSystem {
 
 
 impl System for MoveControlSystem {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         self.gizmo.mouse_down(
             mouse_pos,
             button,
@@ -77,7 +77,7 @@ impl System for MoveControlSystem {
         }
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         self.center_gizmo(map);
 
         self.gizmo.mouse_move(
@@ -91,7 +91,7 @@ impl System for MoveControlSystem {
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         if self.gizmo.is_active() {
             self.gizmo.mouse_up(
                 mouse_pos,
@@ -119,7 +119,7 @@ impl System for MoveControlSystem {
         &self,
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
+        _additional_information_layer: &Vec<InformationLayer>,
         camera: &Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
         self.gizmo.render(

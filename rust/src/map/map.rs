@@ -6,10 +6,10 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
-use std::io::Split;
+
 
 use uuid::Uuid;
-use wasm_bindgen::{JsValue, UnwrapThrowExt};
+use wasm_bindgen::{JsValue};
 use web_sys::CanvasRenderingContext2d;
 
 use crate::actions::action::{Action, MultiAction};
@@ -20,7 +20,7 @@ use crate::interactive_element::{InteractiveElement, InteractiveElementSystem};
 use crate::{log, Camera, Renderer};
 
 use super::district::District;
-use super::intersection::{Intersection, Side};
+use super::intersection::{Intersection};
 use super::street::Street;
 
 #[derive(Serialize, Deserialize)]

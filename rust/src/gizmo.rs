@@ -1,6 +1,6 @@
 use std::{collections::HashMap};
 
-use geo::{Coordinate, Line, Triangle, prelude::EuclideanDistance, Point};
+use geo::{Coordinate, Line, Triangle, prelude::EuclideanDistance};
 use uuid::Uuid;
 use wasm_bindgen::{JsValue, UnwrapThrowExt};
 
@@ -79,7 +79,7 @@ impl<'a, T: GetPosition + SetPosition + Id + 'a> Gizmo<'a, T> for MoveGizmo {
     fn mouse_down(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        button: u32,
+        _button: u32,
         elements: impl Iterator<Item = &'a mut T>,
     ) {
         self.cursor_to_element_offset = mouse_pos - self.position();
@@ -128,9 +128,9 @@ impl<'a, T: GetPosition + SetPosition + Id + 'a> Gizmo<'a, T> for MoveGizmo {
 
     fn mouse_up(
         &mut self,
-        mouse_pos: Coordinate<f64>,
-        button: u32,
-        elements: impl Iterator<Item = &'a mut T>,
+        _mouse_pos: Coordinate<f64>,
+        _button: u32,
+        _elements: impl Iterator<Item = &'a mut T>,
     ) {
         if self.active {
             self.active = false;

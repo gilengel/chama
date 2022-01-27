@@ -31,9 +31,9 @@ impl Default for DeleteDistrictSystem {
 }
 
 impl System for DeleteDistrictSystem {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {}
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {}
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         if let Some(old_hovered_district) = self.hovered_district {
             let old_hovered_district: &mut District = map.district_mut(&old_hovered_district).unwrap();
             old_hovered_district.set_state(InteractiveElementSystem::Normal);
@@ -46,7 +46,7 @@ impl System for DeleteDistrictSystem {
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
             map.remove_district(&hovered_district);
             self.hovered_district = None

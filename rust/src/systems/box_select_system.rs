@@ -5,7 +5,7 @@ use crate::{
     renderer::PrimitiveRenderer,
     state::System,
     style::Style,
-    Map, Renderer, actions::action::Action,
+    Map, actions::action::Action,
 };
 
 fn default_coordinate() -> Coordinate<f64> {
@@ -35,16 +35,16 @@ impl Default for BoxSelectSystem {
 }
 
 impl System for BoxSelectSystem {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         self.selection_min = mouse_pos;
         self.active = true;
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         self.selection_max = mouse_pos;
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         for intersection in map
             .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
         {
@@ -62,10 +62,10 @@ impl System for BoxSelectSystem {
 
     fn render(
         &self,
-        map: &Map,
+        _map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
-        additional_information_layer: &Vec<crate::map::map::InformationLayer>,
-        camera: &crate::Camera,
+        _additional_information_layer: &Vec<crate::map::map::InformationLayer>,
+        _camera: &crate::Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
 
         if self.active {

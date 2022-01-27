@@ -94,7 +94,7 @@ impl CreateFreeFormDistrictSystem {
 
 
 impl System for CreateFreeFormDistrictSystem {
-    fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         if button == 0 {
             self.raw_polygon.exterior_mut(|exterior| exterior.0.clear());
             self.raw_points.clear();
@@ -103,7 +103,7 @@ impl System for CreateFreeFormDistrictSystem {
         }
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
 
@@ -111,7 +111,7 @@ impl System for CreateFreeFormDistrictSystem {
         }
     }
 
-    fn mouse_up(&mut self, _: Coordinate<f64>, button: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, _: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         if button == 0 {
             self.brush_active = false;
         }

@@ -6,20 +6,21 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
+use std::io::Split;
 
 use uuid::Uuid;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsValue, UnwrapThrowExt};
 use web_sys::CanvasRenderingContext2d;
 
 use crate::actions::action::{Action, MultiAction};
 use crate::actions::redo::Redo;
 use crate::actions::undo::Undo;
-use crate::gizmo::{GetPosition, Id, SetPosition};
+use crate::gizmo::{GetPosition, Id, SetPosition, SetId};
 use crate::interactive_element::{InteractiveElement, InteractiveElementSystem};
 use crate::{log, Camera, Renderer};
 
 use super::district::District;
-use super::intersection::Intersection;
+use super::intersection::{Intersection, Side};
 use super::street::Street;
 
 #[derive(Serialize, Deserialize)]
@@ -111,19 +112,25 @@ impl geo::algorithm::concave_hull::ConcaveHull for Map {
 struct CreateStreet {
     start_intersection_id: Uuid,
     end_intersection_id: Uuid,
-
-    created_street_id: Option<Uuid>
+    street_id: Uuid,
 }
 
 impl CreateStreet {
     pub fn new(start_intersection_id: Uuid, end_intersection_id: Uuid) -> Self {
-        CreateStreet { start_intersection_id, end_intersection_id, created_street_id: None }
+        CreateStreet {
+            start_intersection_id,
+            end_intersection_id,
+            street_id: Uuid::new_v4(),
+        }
     }
 }
 
 impl Undo for CreateStreet {
     fn undo(&mut self, map: &mut Map) {
-        map.remove_street(&self.created_street_id.unwrap());
+        
+        map.remove_street(&self.street_id);
+        
+
     }
 }
 
@@ -133,7 +140,7 @@ impl Redo for CreateStreet {
         let end = map.intersection(&self.end_intersection_id).unwrap();
 
         let mut street = Street::default();
-
+        street.set_id(self.street_id);
         street.set_start(&start);
         street.set_end(&end);
 
@@ -145,7 +152,7 @@ impl Redo for CreateStreet {
             end.add_incoming_street(&street.id());
         }
 
-        self.created_street_id = Some(map.add_street(street));
+        Some(map.add_street(street));
 
         map.update_intersection(&self.start_intersection_id);
         map.update_intersection(&self.end_intersection_id);
@@ -155,17 +162,28 @@ impl Redo for CreateStreet {
     }
 }
 
-struct SplitStreet {
+pub struct SplitStreet {
     split_position: Coordinate<f64>,
-    street_id: Uuid
+    street_id: Uuid,
+    new_street_id: Uuid,
+    pub intersection_id: Option<Uuid>,
 }
 
 impl SplitStreet {
+    pub fn new(split_position: Coordinate<f64>, street_id: Uuid) -> Self {
+        SplitStreet {
+            split_position,
+            street_id,
+            intersection_id: None,
+            new_street_id: Uuid::new_v4(),
+        }
+    }
+
     fn project_point_onto_middle_of_street(
         &self,
         point: Coordinate<f64>,
         street_id: &Uuid,
-        map: &Map
+        map: &Map,
     ) -> Coordinate<f64> {
         let street: &Street = map.street(street_id).unwrap();
 
@@ -190,88 +208,45 @@ impl SplitStreet {
         }
 
         point
-    }    
+    }
 }
 
 impl Undo for SplitStreet {
     fn undo(&mut self, map: &mut Map) {
-        todo!();
+
+        if map.street(&self.new_street_id).is_none() {
+            return;
+        }
+        
+        let end = map.street(&self.new_street_id).unwrap().end;
+        let start = map.street(&self.new_street_id).unwrap().start;
+        map.intersection_mut(&end).unwrap().add_incoming_street(&self.street_id);
+        map.intersection_mut(&start).unwrap().remove_connected_street(&self.street_id);
+        map.remove_street(&self.new_street_id);
+
+
+        let end = map.intersection(&end).unwrap().clone();
+        map.street_mut(&self.street_id).unwrap().set_end(&end);
+
+        let end = map.street(&self.street_id).unwrap().end;
+        let start = map.street(&self.street_id).unwrap().start;    
+        map.update_intersection(&end);    
+        map.update_intersection(&start);    
     }
 }
 
 impl Redo for SplitStreet {
     fn redo(&mut self, map: &mut Map) {
-        let split_position = self.project_point_onto_middle_of_street(self.split_position, &self.street_id, &map);
+        let split_position =
+            self.project_point_onto_middle_of_street(self.split_position, &self.street_id, &map);
 
         let mut new_intersection = Intersection::default();
         let new_intersection_id = new_intersection.id();
         new_intersection.set_position(split_position);
 
         let splitted_street = map.street(&self.street_id).unwrap();
-        //let splitted_street_start_id = splitted_street.start;
 
         let old_end = splitted_street.end;
-        //let old_start = splitted_street.start;
-
-        /*
-        if splitted_street.start().euclidean_distance(&split_position) < 40.0 {
-
-            let conntected_streets = self.intersection(&splitted_street_start_id).unwrap().get_connected_streets().len();
-            if conntected_streets  == 2 {
-                let previous_street = splitted_street.get_previous(Side::Left).unwrap();
-
-                if let Some(old_start) = self.intersection_mut(&old_start) {
-                    old_start.remove_connected_street(&previous_street);
-                }
-
-                if let Some(end) = self.intersection_mut(&old_end) {
-                    end.add_incoming_street(&previous_street);
-                }
-
-                let foo = self.intersection(&old_end).unwrap().clone();
-
-                self.street_mut(&previous_street).unwrap().set_end(&foo);
-                self.remove_street(&street_id);
-
-                street_id = previous_street.clone();
-            }
-        }
-
-        let splitted_street = self.street(&street_id).unwrap();
-        let splitted_street_end_id = splitted_street.end;
-
-
-        if splitted_street.end().euclidean_distance(&split_position) < 20.0 {
-
-            let conntected_streets = self.intersection(&splitted_street_end_id).unwrap().get_connected_streets().len();
-
-            if conntected_streets  == 2 {
-
-                let next_street = splitted_street.get_next(Side::Left).unwrap();
-                let next_street_end = self.street(&next_street).unwrap().end;
-
-                if let Some(old_end) = self.intersection_mut(&old_end) {
-                    old_end.remove_connected_street(&street_id);
-
-                }
-
-                if let Some(next_street_end) = self.intersection_mut(&next_street_end) {
-                    next_street_end.add_incoming_street(&street_id);
-                }
-
-                let foo = self.intersection(&next_street_end).unwrap().clone();
-                self.street_mut(&street_id).unwrap().set_end(&foo);
-
-                log!("{}", foo.id());
-
-                old_end = next_street_end;
-
-
-                self.remove_street(&next_street);
-            }
-
-        }
-        */
 
         map.street_mut(&self.street_id)
             .unwrap()
@@ -281,7 +256,8 @@ impl Redo for SplitStreet {
 
         // The street from new intersection to the old end
         let mut new_street = Street::default();
-        let new_id = new_street.id();
+        
+        new_street.set_id(self.new_street_id);
         new_street.set_start(&new_intersection);
         new_street.set_end(&map.intersection(&old_end).unwrap());
         new_intersection.add_outgoing_street(&new_street.id());
@@ -298,13 +274,15 @@ impl Redo for SplitStreet {
 
         // Prevents visual glitches such as that the new street is not visible until the user moves the cursor
         map.update_street(&self.street_id);
-        map.update_street(&new_id);
+        map.update_street(&self.new_street_id);
 
         map.update_intersection(&old_end);
 
-        new_intersection_id
+        self.intersection_id = Some(new_intersection_id);
     }
 }
+
+impl Action for SplitStreet {}
 
 impl Action for CreateStreet {}
 
@@ -431,16 +409,16 @@ impl Map {
         }
     }
 
-    fn _create_street(&mut self, start_intersection_id: Uuid, end_intersection_id: Uuid) -> CreateStreet {
-        let mut action = CreateStreet::new(
-            start_intersection_id,
-            end_intersection_id);
+    fn _create_street(
+        &mut self,
+        start_intersection_id: Uuid,
+        end_intersection_id: Uuid,
+    ) -> CreateStreet {
+        let mut action = CreateStreet::new(start_intersection_id, end_intersection_id);
 
         action.execute(self);
         action
     }
-
-    
 
     pub fn create_street(
         &mut self,
@@ -454,51 +432,65 @@ impl Map {
         match self.get_intersection_at_position(&start, snapping_offset, &vec![]) {
             Some(intersection) => start_id = intersection,
             None => match self.get_street_at_position(start, &vec![]) {
-                Some(street_id) => start_id = self.split_street(*start, &street_id),
+                Some(street_id) => {
+                    let split_action = self.split_street(*start, &street_id);
+                    start_id = split_action.intersection_id.unwrap();
+
+                    action.actions.push(Box::new(split_action));
+                }
                 None => {
                     start_id = self.add_intersection(Intersection::new(*start));
                 }
             },
         };
 
-        let end_id = match self.get_intersection_at_position(&end, snapping_offset, &vec![]) {
-            Some(intersection) => intersection,
+        let mut end_id = Uuid::default();
+        match self.get_intersection_at_position(&end, snapping_offset, &vec![]) {
+            Some(intersection) => end_id = intersection,
             None => match self.get_street_at_position(end, &vec![]) {
-                Some(street_id) => self.split_street(*end, &street_id),
-                None => self.add_intersection(Intersection::new(*end)),
+                Some(street_id) => {
+                    let split_action = self.split_street(*end, &street_id);
+                    end_id = split_action.intersection_id.unwrap();
+
+                    action.actions.push(Box::new(split_action));
+                }
+                None => end_id = self.add_intersection(Intersection::new(*end)),
             },
         };
 
         match self.line_intersection_with_street(&Line::new(*start, *end)) {
             Some((street_id, intersection)) => {
-                let split_id = self.split_street(intersection, &street_id);
+                let split_action = self.split_street(intersection, &street_id);
+                let split_id = split_action.intersection_id.unwrap();
+                action.actions.push(Box::new(split_action));
 
-                action.actions.push(Box::new(self._create_street(start_id, split_id)));
-                action.actions.push(Box::new(self._create_street(split_id, end_id)));
+                action
+                    .actions
+                    .push(Box::new(self._create_street(start_id, split_id)));
+                action
+                    .actions
+                    .push(Box::new(self._create_street(split_id, end_id)));
             }
-            None => { action.actions.push(Box::new(self._create_street(start_id, end_id))); },
+            None => {
+                action
+                    .actions
+                    .push(Box::new(self._create_street(start_id, end_id)));
+            }
         };
-        /*
-                match self.get_intersection_contained_in_polygon(&temp_polygon(
-                self.intersection(&start_id).unwrap().get_position(),
-                self.intersection(&end_id).unwrap().get_position(),
-            )) {
-                Some(split_id) => {
-                    log!("WOW");
-                    self._create_street(start_id, split_id);
-                    self._create_street(split_id, end_id);
-                }
-                None => self._create_street(start_id, end_id),
-            },
-        };
-        */
-
-        
 
         Box::new(action)
     }
 
-    pub fn split_street(&mut self, split_position: Coordinate<f64>, street_id: &Uuid) -> Uuid {
+    pub fn split_street(
+        &mut self,
+        split_position: Coordinate<f64>,
+        street_id: &Uuid,
+    ) -> SplitStreet {
+        let mut action = SplitStreet::new(split_position, *street_id);
+        action.execute(self);
+
+        action
+        /*
         let split_position = self.project_point_onto_middle_of_street(split_position, &street_id);
 
         let street_id = *street_id;
@@ -603,6 +595,7 @@ impl Map {
         self.update_intersection(&old_end);
 
         new_intersection_id
+        */
     }
 
     pub fn get_intersection_at_position(
@@ -874,6 +867,8 @@ impl Map {
 
             return Some(street);
         }
+
+        log!(":(");
 
         None
     }

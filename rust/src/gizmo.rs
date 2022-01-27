@@ -259,4 +259,8 @@ impl MoveGizmo {
             return;
         }
     }
+
+    pub fn is_active(&self) -> bool {
+        self.active
+    }
 }

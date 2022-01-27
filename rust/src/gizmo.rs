@@ -1,6 +1,6 @@
 use std::{collections::HashMap};
 
-use geo::{Coordinate, Line, Triangle};
+use geo::{Coordinate, Line, Triangle, prelude::EuclideanDistance, Point};
 use uuid::Uuid;
 use wasm_bindgen::{JsValue, UnwrapThrowExt};
 
@@ -146,10 +146,8 @@ impl<'a, T: GetPosition + SetPosition + Id + 'a> Gizmo<'a, T> for MoveGizmo {
             let position = self.position();
             context.translate(position.x + camera.x as f64, position.y + camera.y as f64)?;
 
-            self.x_axis.render(&self.x_style, &context)?;
-            self.x_arrow.render(&self.x_style, &context)?;
-            self.y_axis.render(&self.y_style, &context)?;
-            self.y_arrow.render(&self.y_style, &context)?;
+            self.x_handle.render(&context)?;
+            self.y_handle.render(&context)?;
 
             context.set_transform(1., 0., 0., 1., 0., 0.)?;
         }
@@ -162,16 +160,46 @@ static ARROW_WIDTH: f64 = 6.0;
 static ARROW_HEIGHT: f64 = 10.0;
 static LINE_LENGTH: f64 = 100.0;
 
+struct GizmoArrow {
+    style: Style,
+    line: Line<f64>,
+    arrow: Triangle<f64>
+}
+
+impl GizmoArrow {
+    pub fn new(line_end: Coordinate<f64>, style: Style) -> Self {
+        let len = line_end.euclidean_distance(&Coordinate { x: 0., y: 0.});
+        let norm = Coordinate { x: line_end.x / len, y: line_end.y / len };
+        let perp = Coordinate { x: -norm.y, y: norm.x };
+
+        GizmoArrow {
+            line: Line::new(
+                Coordinate { x: 0., y: 0. },
+                line_end
+            ),
+            style,
+            arrow: Triangle(
+                norm * (len - ARROW_HEIGHT) - perp * ARROW_WIDTH / 2.,
+                line_end,
+                norm * (len - ARROW_HEIGHT) + perp * ARROW_WIDTH / 2.
+            ),            
+        }
+    }
+
+    pub fn render(&self, context: &web_sys::CanvasRenderingContext2d) -> Result<(), JsValue> {
+        self.line.render(&self.style, context)?;
+        self.arrow.render(&self.style, context)?;
+
+        Ok(())
+    }
+}
+
+
 pub struct MoveGizmo {
     position: Coordinate<f64>,
 
-    x_style: Style,
-    x_axis: Line<f64>,
-    x_arrow: Triangle<f64>,
-
-    y_style: Style,
-    y_axis: Line<f64>,
-    y_arrow: Triangle<f64>,
+    x_handle: GizmoArrow,
+    y_handle: GizmoArrow,
 
     cursor_to_element_offset: Coordinate<f64>,
 
@@ -193,59 +221,23 @@ impl MoveGizmo {
 
             offsets: HashMap::new(),
 
-            x_axis: Line::new(
-                Coordinate { x: 0., y: 0. },
-                Coordinate {
-                    x: LINE_LENGTH,
-                    y: 0.,
-                },
-            ),
-            x_style: Style {
+            x_handle: GizmoArrow::new(Coordinate {
+                x: 0.,
+                y: -LINE_LENGTH,
+            },Style {
                 border_width: 2,
                 border_color: "#C45D53".to_string(),
                 background_color: "#C45D53".to_string(),
-            },
-            x_arrow: Triangle(
-                Coordinate {
-                    x: LINE_LENGTH - ARROW_HEIGHT,
-                    y: -ARROW_WIDTH / 2.,
-                },
-                Coordinate {
-                    x: LINE_LENGTH,
-                    y: 0.,
-                },
-                Coordinate {
-                    x: LINE_LENGTH - ARROW_HEIGHT,
-                    y: ARROW_WIDTH / 2.,
-                },
-            ),
+            }),
 
-            y_axis: Line::new(
-                Coordinate { x: 0., y: 0. },
-                Coordinate {
-                    x: 0.,
-                    y: -LINE_LENGTH,
-                },
-            ),
-            y_style: Style {
+            y_handle: GizmoArrow::new(Coordinate {
+                x: LINE_LENGTH,
+                y: 0.,
+            },Style {
                 border_width: 2,
-                border_color: "#11CC80".to_string(),
-                background_color: "#11CC80".to_string(),
-            },
-            y_arrow: Triangle(
-                Coordinate {
-                    x: -ARROW_WIDTH / 2.,
-                    y: -LINE_LENGTH + ARROW_HEIGHT,
-                },
-                Coordinate {
-                    x: 0.,
-                    y: -LINE_LENGTH,
-                },
-                Coordinate {
-                    x: ARROW_WIDTH / 2.,
-                    y: -LINE_LENGTH + ARROW_HEIGHT,
-                },
-            ),
+                border_color: "#C45D53".to_string(),
+                background_color: "#C45D53".to_string(),
+            }),
         }
     }
 

@@ -1,9 +1,20 @@
 use geo::{Coordinate, Rect};
 
-use crate::{renderer::PrimitiveRenderer, state::State, style::Style, Map, Renderer, interactive_element::{InteractiveElement, InteractiveElementState}};
+use crate::{
+    interactive_element::{InteractiveElement, InteractiveElementState},
+    renderer::PrimitiveRenderer,
+    state::State,
+    style::Style,
+    Map, Renderer,
+};
+
+fn default_coordinate() -> Coordinate<f64> {
+    Coordinate { x: 0., y: 0. }
+}
 
 pub struct BoxSelectState {
-    selection_rect: Rect<f64>,
+    selection_min: Coordinate<f64>,
+    selection_max: Coordinate<f64>,
     active: bool,
 }
 
@@ -16,32 +27,32 @@ impl BoxSelectState {
 impl Default for BoxSelectState {
     fn default() -> Self {
         BoxSelectState {
-            selection_rect: default_rect(),
+            selection_min: default_coordinate(),
+            selection_max: default_coordinate(),
             active: false,
         }
     }
 }
 
-fn default_rect() -> Rect<f64> {
-    Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. })
-}
-
 impl State for BoxSelectState {
     fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {
-        self.selection_rect.set_min(mouse_pos);
+        self.selection_min = mouse_pos;
         self.active = true;
     }
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map) {
-        self.selection_rect.set_max(mouse_pos);
+        self.selection_max = mouse_pos;
     }
 
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
-        for intersection in map.intersections_within_rectangle_mut(&self.selection_rect) {
+        for intersection in map
+            .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
+        {
             intersection.set_state(InteractiveElementState::Selected);
         }
 
-        self.selection_rect = default_rect();
+        self.selection_min = default_coordinate();
+        self.selection_max = default_coordinate();
         self.active = false;
     }
 
@@ -59,7 +70,7 @@ impl State for BoxSelectState {
         map.render(context, additional_information_layer, camera)?;
 
         if self.active {
-            self.selection_rect.render(
+            Rect::new(self.selection_min, self.selection_max).render(
                 &Style {
                     border_width: 2,
                     border_color: "rgba(255, 255, 255, 0.1)".to_string(),

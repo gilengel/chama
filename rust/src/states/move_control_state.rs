@@ -18,9 +18,6 @@ fn default_rect() -> Rect<f64> {
 pub struct MoveControlState {
     hovered_control: Option<Uuid>,
     gizmo: MoveGizmo,
-    selection_min: Coordinate<f64>,
-    selection_max: Coordinate<f64>,
-    //selection_active: bool,
 }
 
 impl MoveControlState {
@@ -29,8 +26,6 @@ impl MoveControlState {
             hovered_control: None,
 
             gizmo: MoveGizmo::new(),
-            selection_min: Coordinate { x: 0., y: 0. },
-            selection_max: Coordinate { x: 0., y: 0. },
         }
     }
 
@@ -40,6 +35,25 @@ impl MoveControlState {
                 .unwrap()
                 .set_state(InteractiveElementState::Normal);
         }
+    }
+
+    fn center_gizmo(&mut self, map: &Map) {
+        let elements = map.intersections_with_state(InteractiveElementState::Selected);
+
+        let mut sum = Coordinate { x: 0., y: 0. };
+        let mut num_elements = 0;
+        for x in elements {
+            sum = sum.add(x.position());
+
+            num_elements += 1;
+        }
+
+        let origin = Coordinate {
+            x: sum.x / num_elements as f64,
+            y: sum.y / num_elements as f64,
+        };
+
+        self.gizmo.set_position(origin);
     }
 }
 
@@ -64,12 +78,11 @@ impl State for MoveControlState {
                 intersection.set_state(InteractiveElementState::Normal);
             }
         }
-
-        // At this point we assume the user want to select multiple entities
-        self.selection_min = mouse_pos;
     }
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+        self.center_gizmo(map);
+        
         self.gizmo.mouse_move(
             mouse_pos,
             map.intersections_with_state_mut(InteractiveElementState::Selected),
@@ -78,10 +91,6 @@ impl State for MoveControlState {
         let keys: Vec<Uuid> = map.intersections_keys().map(|x| *x).collect();
         for k in keys {
             map.update_intersection(&k);
-        }
-        
-        if self.selection_min != (Coordinate { x: 0., y: 0. }) {
-            self.selection_max = mouse_pos;
         }
     }
 
@@ -95,32 +104,14 @@ impl State for MoveControlState {
 
             return;
         }
+    }
 
-        for intersection in map.intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max)) {
-            intersection.set_state(InteractiveElementState::Selected);
-        }
-
-        self.selection_min = Coordinate { x: 0., y: 0.};
-        self.selection_max = Coordinate { x: 0., y: 0.};
+    fn blocks_next_systems(&self) -> bool {
+        self.gizmo.is_active()
     }
 
     fn enter(&mut self, map: &mut Map) {
-        let elements = map.intersections_with_state(InteractiveElementState::Selected);
-
-        let mut sum = Coordinate { x: 0., y: 0. };
-        let mut num_elements = 0;
-        for x in elements {
-            sum = sum.add(x.position());
-
-            num_elements += 1;
-        }
-
-        let origin = Coordinate {
-            x: sum.x / num_elements as f64,
-            y: sum.y / num_elements as f64,
-        };
-
-        self.gizmo.set_position(origin);
+        self.center_gizmo(map);
     }
 
     fn exit(&self, map: &mut Map) {
@@ -140,15 +131,6 @@ impl State for MoveControlState {
             context,
             camera,
             map.intersections_with_state(InteractiveElementState::Selected),
-        )?;
-
-        Rect::new(self.selection_min, self.selection_max).render(
-            &Style {
-                border_width: 2,
-                border_color: "rgba(255, 255, 255, 0.1)".to_string(),
-                background_color: "rgba(255, 255, 255, 0.05)".to_string(),
-            },
-            context,
         )?;
 
         Ok(())

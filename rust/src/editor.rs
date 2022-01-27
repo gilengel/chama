@@ -5,7 +5,22 @@ use js_sys::encode_uri_component;
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
-use crate::{map::map::{InformationLayer, Map}, state::State, grid::Grid, Camera, store::Store, states::{idle_state::IdleState, create_street_state::CreateStreetState, create_freeform_street_state::CreateFreeFormStreetState, delete_street_state::DeleteStreetState, create_district_state::CreateDistrictState, delete_district_state::DeleteDistrictState, move_control_state::MoveControlState, box_select_state::BoxSelectState}, err, log};
+use crate::{
+    err,
+    grid::Grid,
+    log,
+    map::map::{InformationLayer, Map},
+    state::State,
+    states::{
+        box_select_state::BoxSelectState, create_district_state::CreateDistrictState,
+        create_freeform_street_state::CreateFreeFormStreetState,
+        create_street_state::CreateStreetState, delete_district_state::DeleteDistrictState,
+        delete_street_state::DeleteStreetState, idle_state::IdleState,
+        move_control_state::MoveControlState,
+    },
+    store::Store,
+    Camera,
+};
 
 #[wasm_bindgen]
 pub struct Editor {
@@ -16,7 +31,7 @@ pub struct Editor {
     render_intersections: bool,
     render_streets: bool,
 
-    state: Box<dyn State + Send + Sync>,
+    active_systems: Vec<Box<dyn State + Send + Sync>>,
     map: Map,
     grid: Grid,
     camera: Camera,
@@ -51,14 +66,30 @@ impl Editor {
             context,
             additional_information_layers: vec![],
 
+            active_systems: Vec::new(),
+
             render_intersections: true,
             render_streets: true,
-            state: Box::new(IdleState::default()),
             map: Map::new(width, height),
             grid: Grid::default(),
             store: Store::new("fantasy_city_map"),
             camera: Camera::default(),
         }
+    }
+
+    fn activate_system<T>(&mut self, system: T)
+    where
+        T: State + Send + Sync + 'static,
+    {
+        self.active_systems.push(Box::new(system));
+    }
+
+    pub fn deactivate_system(&mut self) {
+        todo!();
+    }
+
+    pub fn deactivate_all_systems(&mut self) {
+        self.active_systems.clear();
     }
 
     pub fn import(&mut self, content: String) {
@@ -130,6 +161,28 @@ impl Editor {
     }
 
     pub fn switch_to_mode(&mut self, mode: u32) {
+        self.deactivate_all_systems();
+
+        let mut new_systems: Vec<Box<dyn State + Send + Sync>> = Vec::new();
+
+        match mode {
+            1 => new_systems.push(Box::new(CreateStreetState::new())),
+            3 => new_systems.push(Box::new(DeleteStreetState::new())),
+            4 => new_systems.push(Box::new(CreateDistrictState::new())),
+            2 => new_systems.push(Box::new(CreateFreeFormStreetState::new())),
+            5 => new_systems.push(Box::new(CreateFreeFormStreetState::new())),
+            6 => new_systems.push(Box::new(DeleteDistrictState::new())),
+            7 => {
+                new_systems.push(Box::new(MoveControlState::new()));
+                new_systems.push(Box::new(BoxSelectState::new()));                
+            }
+            8 => new_systems.push(Box::new(BoxSelectState::new())),
+            _ => log!("unknown command, nothing to do"),
+        };
+
+        self.active_systems = new_systems;
+
+        /*
         self.state.exit(&mut self.map);
         match mode {
             0 => log!("idle command, nothing to do"),
@@ -141,10 +194,14 @@ impl Editor {
             6 => self.state = Box::new(DeleteDistrictState::new()),
             7 => self.state = Box::new(MoveControlState::new()),
             8 => self.state = Box::new(BoxSelectState::new()),
-            
+
             _ => log!("unknown command, nothing to do"),
         }
         self.state.enter(&mut self.map);
+
+        self.activate_system(BoxSelectState::new());
+        self.activate_system(MoveControlState::new());
+        */
     }
 
     pub fn set_grid_enabled(&mut self, enabled: bool) {
@@ -209,12 +266,20 @@ impl Editor {
             self.context.set_transform(1., 0., 0., 1., 0., 0.)?;
         }
 
-        self.state.render(
-            &self.map,
-            &self.context,
-            &self.additional_information_layers,
-            &self.camera,
-        )
+        for system in &self.active_systems {
+            system.render(
+                &self.map,
+                &self.context,
+                &self.additional_information_layers,
+                &self.camera,
+            )?;
+
+            if system.blocks_next_systems() {
+                break;
+            }
+        }
+
+        Ok(())
     }
 
     fn transform_cursor_pos_to_grid(&self, x: u32, y: u32, camera: &Camera) -> Coordinate<f64> {
@@ -243,11 +308,14 @@ impl Editor {
             return;
         }
 
-        self.state.mouse_down(
-            self.transform_cursor_pos_to_grid(x, y, &self.camera),
-            button,
-            &mut self.map,
-        );
+        let mouse_pos = self.transform_cursor_pos_to_grid(x, y, &self.camera);
+        for system in &mut self.active_systems {
+            system.mouse_down(mouse_pos, button, &mut self.map);
+
+            if system.blocks_next_systems() {
+                break;
+            }
+        }
     }
 
     pub fn mouse_up(&mut self, x: u32, y: u32, button: u32) {
@@ -258,11 +326,14 @@ impl Editor {
             return;
         }
 
-        self.state.mouse_up(
-            self.transform_cursor_pos_to_grid(x, y, &self.camera),
-            button,
-            &mut self.map,
-        );
+        let mouse_pos = self.transform_cursor_pos_to_grid(x, y, &self.camera);
+        for system in &mut self.active_systems {
+            system.mouse_up(mouse_pos, button, &mut self.map);
+
+            if system.blocks_next_systems() {
+                break;
+            }
+        }
     }
 
     pub fn mouse_move(&mut self, x: u32, y: u32, dx: i32, dy: i32) {
@@ -273,9 +344,14 @@ impl Editor {
             return;
         }
 
-        self.state.mouse_move(
-            self.transform_cursor_pos_to_grid(x, y, &self.camera),
-            &mut self.map,
-        );
+        let mouse_pos = self.transform_cursor_pos_to_grid(x, y, &self.camera);
+
+        for system in &mut self.active_systems {
+            system.mouse_move(mouse_pos, &mut self.map);
+
+            if system.blocks_next_systems() {
+                break;
+            }
+        }
     }
 }

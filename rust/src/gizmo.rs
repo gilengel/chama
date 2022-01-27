@@ -87,7 +87,8 @@ impl<'a, T: GetPosition + SetPosition + Id + 'a> Gizmo<'a, T> for MoveGizmo {
             self.offsets.insert(x.id(), self.position() - x.position());
         }
 
-        self.active = true;
+        self.active = mouse_over(mouse_pos, self.position());
+
         self.affected_axis(mouse_pos, self.position());
     }
 

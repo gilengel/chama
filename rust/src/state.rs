@@ -42,6 +42,11 @@ pub trait State {
         Ok(())
     }
 
+    /// Indicates that an event is consumed by the system and should not be consumed by following systems. 
+    fn blocks_next_systems(&self) -> bool {
+        false
+    }
+
     /// Called every time the state is activated by the state maschine. Use it to 
     /// initialize values for the state.
     fn enter(&mut self, map: &mut Map);

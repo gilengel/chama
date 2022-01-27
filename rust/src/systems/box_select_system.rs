@@ -5,7 +5,7 @@ use crate::{
     renderer::PrimitiveRenderer,
     state::System,
     style::Style,
-    Map, Renderer,
+    Map, Renderer, actions::action::Action,
 };
 
 fn default_coordinate() -> Coordinate<f64> {
@@ -35,16 +35,16 @@ impl Default for BoxSelectSystem {
 }
 
 impl System for BoxSelectSystem {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         self.selection_min = mouse_pos;
         self.active = true;
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         self.selection_max = mouse_pos;
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         for intersection in map
             .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
         {

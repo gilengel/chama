@@ -30,6 +30,21 @@
   export let gridSubdivisions = 8;
   $: if (editor) editor.set_grid_subdivisions(gridSubdivisions);
 
+  export let is_undoable = false;
+  $: if (editor) editor.is_undoable();
+
+  export function undo() {
+    if (!editor) return;
+
+    editor.undo();
+  }
+
+  export function redo() {
+    if (!editor) return;
+    
+    editor.redo();
+  }
+
   let canvas;
   $: {
     loadEditor().then(

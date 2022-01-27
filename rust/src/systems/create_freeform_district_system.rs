@@ -3,7 +3,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{state::{System}, Map, Camera, Renderer, style::Style, renderer::PrimitiveRenderer, gizmo::{SetPosition, Id}, map::{intersection::Intersection, street::Street, district::create_district_for_street, map::InformationLayer}};
+use crate::{state::{System}, Map, Camera, Renderer, style::Style, renderer::PrimitiveRenderer, gizmo::{SetPosition, Id}, map::{intersection::Intersection, street::Street, district::create_district_for_street, map::InformationLayer}, actions::action::Action};
 
 
 pub struct CreateFreeFormDistrictSystem {
@@ -94,7 +94,7 @@ impl CreateFreeFormDistrictSystem {
 
 
 impl System for CreateFreeFormDistrictSystem {
-    fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map) {
+    fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         if button == 0 {
             self.raw_polygon.exterior_mut(|exterior| exterior.0.clear());
             self.raw_points.clear();
@@ -103,7 +103,7 @@ impl System for CreateFreeFormDistrictSystem {
         }
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
 
@@ -111,7 +111,7 @@ impl System for CreateFreeFormDistrictSystem {
         }
     }
 
-    fn mouse_up(&mut self, _: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _: Coordinate<f64>, button: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         if button == 0 {
             self.brush_active = false;
         }

@@ -2,7 +2,7 @@ use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{Map, Renderer, Camera, map::map::InformationLayer};
+use crate::{Map, Renderer, Camera, map::map::InformationLayer, actions::action::Action};
 
 
 
@@ -19,7 +19,7 @@ pub trait System {
     /// * `x` - x coordinate of the cursor where the click occured
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map)
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>)
     {}
 
     /// Is used to implement behaviour of the state if the user moved the cursor inside the
@@ -27,7 +27,7 @@ pub trait System {
     ///
     /// * `x` - x coordinate of the cursor where the click occured
     /// * `y` - x coordinate of the cursor where the click occured
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map)
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, actions: &mut Vec<Box<dyn Action>>)
     {}
 
     /// Is used to implement behaviour of the state if the user released a pressed mouse button
@@ -36,7 +36,7 @@ pub trait System {
     /// * `x` - x coordinate of the cursor where the click occured
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map)
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>)
     {}
 
     fn render(&self, map: &Map, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>, camera: &Camera) -> Result<(), JsValue> {

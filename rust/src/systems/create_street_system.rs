@@ -13,7 +13,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     state::System,
-    Camera, Map, Renderer, gizmo::{SetPosition, GetPosition, Id, SetId}, map::{street::Street, intersection::{Intersection, Direction}, map::InformationLayer},
+    Camera, Map, Renderer, gizmo::{SetPosition, GetPosition, Id, SetId}, map::{street::Street, intersection::{Intersection, Direction}, map::InformationLayer}, actions::action::Action,
 };
 
 #[allow(unused_macros)]
@@ -240,7 +240,7 @@ impl CreateStreetSystem {
 }
 
 impl<'a> System for CreateStreetSystem {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         // We only check for left click
         if button != 0 {
             return;
@@ -299,7 +299,7 @@ impl<'a> System for CreateStreetSystem {
         map.add_street(street);
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         if !self.mouse_pressed {
             return;
         }
@@ -375,7 +375,7 @@ impl<'a> System for CreateStreetSystem {
         map.update_intersection(&start);
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _map: &mut Map, actions: &mut Vec<Box<dyn Action>>) {
         // Cancel creation of street with right mouse button click
         if button == 2 {
             self.mouse_pressed = false;

@@ -1,12 +1,22 @@
+use std::ops::Mul;
 
-
-use geo::{prelude::EuclideanDistance, simplify::Simplify, Coordinate, LineString};
+use geo::{simplify::Simplify, Coordinate, LineString};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    log, renderer::apply_style, state::System, style::Style, Camera, Map, Renderer, gizmo::SetPosition, map::map::InformationLayer,
+    actions::{
+        action::{Action, MultiAction},
+        redo::Redo,
+        undo::Undo,
+    },
+    log,
+    map::map::InformationLayer,
+    renderer::apply_style,
+    state::System,
+    style::Style,
+    Camera, Map,
 };
 
 pub struct CreateFreeFormStreetSystem {
@@ -30,12 +40,29 @@ impl Default for CreateFreeFormStreetSystem {
     }
 }
 
-impl CreateFreeFormStreetSystem {
-    pub fn new() -> CreateFreeFormStreetSystem {
-        CreateFreeFormStreetSystem::default()
-    }
+struct CreateFreeFormStreetAction {
+    raw_points: Vec<Coordinate<f64>>,
+    action_stack: MultiAction,
+}
 
-    pub fn transform_polygon_into_streets(&self, map: &mut Map) {
+impl CreateFreeFormStreetAction {
+    pub fn new(raw_points: Vec<Coordinate<f64>>) -> Self {
+        CreateFreeFormStreetAction {
+            raw_points,
+            action_stack: MultiAction::new(),
+        }
+    }
+}
+
+impl Undo for CreateFreeFormStreetAction {
+    fn undo(&mut self, map: &mut Map) {
+        self.action_stack.undo(map);
+    }
+}
+
+impl Redo for CreateFreeFormStreetAction {
+    fn redo(&mut self, map: &mut Map) {
+
         let _intersections: Vec<Uuid> = vec![];
 
         let mut index_to_be_skipped = 0;
@@ -48,15 +75,31 @@ impl CreateFreeFormStreetSystem {
 
         let mut previous = &self.raw_points[index_to_be_skipped];
         for point in self.raw_points.iter().skip(index_to_be_skipped + 1) {
-            map.create_street(&previous, point, 10.0);
+            self.action_stack
+                .actions
+                .push(map.create_street(&previous, point, 10.0));
 
             previous = point;
         }
     }
 }
 
+impl Action for CreateFreeFormStreetAction {}
+
+impl CreateFreeFormStreetSystem {
+    pub fn new() -> CreateFreeFormStreetSystem {
+        CreateFreeFormStreetSystem::default()
+    }
+}
+
 impl System for CreateFreeFormStreetSystem {
-    fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map) {
+    fn mouse_down(
+        &mut self,
+        _: Coordinate<f64>,
+        button: u32,
+        _: &mut Map,
+        actions: &mut Vec<Box<dyn Action>>,
+    ) {
         if button == 0 {
             self.brush_active = true;
         }
@@ -64,24 +107,40 @@ impl System for CreateFreeFormStreetSystem {
         log!("{}", button);
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map) {
+    fn mouse_move(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        _: &mut Map,
+        actions: &mut Vec<Box<dyn Action>>,
+    ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
         }
     }
 
-    fn mouse_up(&mut self, _: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_up(
+        &mut self,
+        _: Coordinate<f64>,
+        button: u32,
+        map: &mut Map,
+        actions: &mut Vec<Box<dyn Action>>,
+    ) {
         if button == 0 {
             self.brush_active = false;
         }
 
         let line_string = LineString(self.raw_points.clone());
         let points = line_string.simplify(&4.0).into_points();
-        self.raw_points = points
-            .iter()
-            .map(|x| Coordinate { x: x.x(), y: x.y() })
-            .collect();
-        self.transform_polygon_into_streets(map);
+
+        let mut action = CreateFreeFormStreetAction::new(
+            points
+                .iter()
+                .map(|x| Coordinate { x: x.x(), y: x.y() })
+                .collect(),
+        );
+        action.execute(map);
+        actions.push(Box::new(action));
+
         self.raw_points.clear();
     }
 
@@ -92,10 +151,12 @@ impl System for CreateFreeFormStreetSystem {
         additional_information_layer: &Vec<InformationLayer>,
         camera: &Camera,
     ) -> Result<(), JsValue> {
-
         if self.brush_active && !self.raw_points.is_empty() {
             context.begin_path();
-            context.move_to(self.raw_points[0].x + camera.x as f64, self.raw_points[0].y + camera.y as f64);
+            context.move_to(
+                self.raw_points[0].x + camera.x as f64,
+                self.raw_points[0].y + camera.y as f64,
+            );
 
             for point in self.raw_points.iter().skip(1) {
                 context.line_to(point.x + camera.x as f64, point.y + camera.y as f64);

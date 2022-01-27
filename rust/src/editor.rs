@@ -6,20 +6,20 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::{
+    actions::action::Action,
     err,
     grid::Grid,
     log,
     map::map::{InformationLayer, Map},
     state::System,
+    store::Store,
     systems::{
         box_select_system::BoxSelectSystem, create_district_system::CreateDistrictSystem,
         create_freeform_street_system::CreateFreeFormStreetSystem,
         create_street_system::CreateStreetSystem, delete_district_system::DeleteDistrictSystem,
-        delete_street_system::DeleteStreetSystem,
-        move_control_system::MoveControlSystem,
-        render_map_system::MapRenderSystem
+        delete_street_system::DeleteStreetSystem, move_control_system::MoveControlSystem,
+        render_map_system::MapRenderSystem,
     },
-    store::Store,
     Camera,
 };
 
@@ -33,6 +33,8 @@ pub struct Editor {
     render_streets: bool,
 
     active_systems: Vec<Box<dyn System + Send + Sync>>,
+    undo_stack: Vec<Box<dyn Action>>,
+    redo_stack: Vec<Box<dyn Action>>,
     map: Map,
     grid: Grid,
     camera: Camera,
@@ -68,6 +70,8 @@ impl Editor {
             additional_information_layers: vec![],
 
             active_systems: Vec::new(),
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
 
             render_intersections: true,
             render_streets: true,
@@ -76,6 +80,38 @@ impl Editor {
             store: Store::new("fantasy_city_map"),
             camera: Camera::default(),
         }
+    }
+
+    fn execute_action(&mut self, mut action: Box<dyn Action>) {
+        (*action).execute(&mut self.map);
+
+        self.redo_stack.clear();
+        self.undo_stack.push(action);
+    }
+
+    pub fn is_undoable(&self) -> bool {
+        log!("{:?}", self.undo_stack.is_empty());
+        !self.undo_stack.is_empty()
+    }
+
+    pub fn is_redoable(&self) -> bool {
+        !self.redo_stack.is_empty()
+    }
+
+    pub fn undo(&mut self) {
+        if let Some(action) = self.undo_stack.last_mut() {
+            (**action).undo(&mut self.map);
+        }
+
+        self.redo_stack.push(self.undo_stack.pop().unwrap());
+    }
+
+    pub fn redo(&mut self) {
+        if let Some(action) = self.redo_stack.last_mut() {
+            (**action).redo(&mut self.map);
+        }
+
+        self.undo_stack.push(self.redo_stack.pop().unwrap());
     }
 
     fn activate_system<T>(&mut self, system: T)
@@ -176,7 +212,7 @@ impl Editor {
             6 => new_systems.push(Box::new(DeleteDistrictSystem::new())),
             7 => {
                 new_systems.push(Box::new(MoveControlSystem::new()));
-                new_systems.push(Box::new(BoxSelectSystem::new()));                
+                new_systems.push(Box::new(BoxSelectSystem::new()));
             }
             8 => new_systems.push(Box::new(BoxSelectSystem::new())),
             _ => log!("unknown command, nothing to do"),
@@ -312,7 +348,7 @@ impl Editor {
 
         let mouse_pos = self.transform_cursor_pos_to_grid(x, y, &self.camera);
         for system in &mut self.active_systems {
-            system.mouse_down(mouse_pos, button, &mut self.map);
+            system.mouse_down(mouse_pos, button, &mut self.map, &mut self.undo_stack);
 
             if system.blocks_next_systems() {
                 break;
@@ -330,7 +366,7 @@ impl Editor {
 
         let mouse_pos = self.transform_cursor_pos_to_grid(x, y, &self.camera);
         for system in &mut self.active_systems {
-            system.mouse_up(mouse_pos, button, &mut self.map);
+            system.mouse_up(mouse_pos, button, &mut self.map, &mut self.undo_stack);
 
             if system.blocks_next_systems() {
                 break;
@@ -349,7 +385,7 @@ impl Editor {
         let mouse_pos = self.transform_cursor_pos_to_grid(x, y, &self.camera);
 
         for system in &mut self.active_systems {
-            system.mouse_move(mouse_pos, &mut self.map);
+            system.mouse_move(mouse_pos, &mut self.map, &mut self.undo_stack);
 
             if system.blocks_next_systems() {
                 break;

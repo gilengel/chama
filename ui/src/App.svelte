@@ -101,8 +101,12 @@ import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
 <header>
   <div class="toolbar">
     
+    <button  on:click={() => editor.undo()}>
       <span class="material-icons">undo</span>
+    </button>
+    <button on:click={() => editor.redo()}>
       <span class="material-icons">redo</span>
+    </button>
 
       <ToggleToolbarButton bind:value={enableGrid}>
         <Textfield bind:value={gridOffset} label="Grid Size">

@@ -16,6 +16,7 @@ mod renderer;
 mod state;
 mod store;
 mod style;
+mod actions;
 
 mod map;
 

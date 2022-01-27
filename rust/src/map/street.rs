@@ -8,7 +8,7 @@ use geo::{
     prelude::{Centroid, Contains, EuclideanDistance},
     Coordinate, Line, LineString, Point, Polygon,
 };
-use rust_editor::{gizmo::{SetId, Id, GetPosition}, style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, renderer::PrimitiveRenderer, InformationLayer};
+use rust_editor::{gizmo::{GetPosition, Id, SetId}, style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, renderer::PrimitiveRenderer, InformationLayer};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -18,7 +18,7 @@ use geo::line_intersection::line_intersection;
 
 use super::intersection::{Intersection, Side};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, ElementId)]
 pub struct Street {
     id: Uuid,
 
@@ -44,18 +44,6 @@ pub struct Street {
     pub style: InteractiveElementStyle,
 
     state: InteractiveElementState,
-}
-
-impl Id for Street {
-    fn id(&self) -> Uuid {
-        self.id
-    }
-}
-
-impl SetId for Street {
-    fn set_id(&mut self, id: Uuid) {
-        self.id = id;
-    }
 }
 
 impl<'a> From<&'a Street> for &'a Line<f64> {

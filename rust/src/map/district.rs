@@ -7,23 +7,18 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
+use rust_editor::gizmo::{SetId}; // TODO
 
 use crate::map::intersection::Side;
 use crate::map::house::generate_houses;
 use super::map::Map;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ElementId)]
 pub struct District {
     id: Uuid,
     polygon: Polygon<f64>,
     style: InteractiveElementStyle,
     state: InteractiveElementState,
-}
-
-impl Id for District {
-    fn id(&self) -> Uuid {
-        self.id
-    }
 }
 
 impl Default for District {

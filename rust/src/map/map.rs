@@ -3,7 +3,7 @@ use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
 use rust_editor::InformationLayer;
 use rust_editor::camera::{Renderer, Camera};
-use rust_editor::gizmo::{GetPosition, SetId, Id, SetPosition};
+use rust_editor::gizmo::{GetPosition, Id, SetId, SetPosition};
 use rust_editor::interactive_element::{InteractiveElementState, InteractiveElement};
 use serde::{Deserialize, Serialize};
 
@@ -486,112 +486,6 @@ impl Map {
         action.execute(self);
 
         action
-        /*
-        let split_position = self.project_point_onto_middle_of_street(split_position, &street_id);
-
-        let street_id = *street_id;
-
-        let mut new_intersection = Intersection::default();
-        let new_intersection_id = new_intersection.id();
-        new_intersection.set_position(split_position);
-
-        let splitted_street = self.street(&street_id).unwrap();
-        //let splitted_street_start_id = splitted_street.start;
-
-        let old_end = splitted_street.end;
-        //let old_start = splitted_street.start;
-
-        /*
-        if splitted_street.start().euclidean_distance(&split_position) < 40.0 {
-
-            let conntected_streets = self.intersection(&splitted_street_start_id).unwrap().get_connected_streets().len();
-            if conntected_streets  == 2 {
-                let previous_street = splitted_street.get_previous(Side::Left).unwrap();
-
-                if let Some(old_start) = self.intersection_mut(&old_start) {
-                    old_start.remove_connected_street(&previous_street);
-                }
-
-                if let Some(end) = self.intersection_mut(&old_end) {
-                    end.add_incoming_street(&previous_street);
-                }
-
-                let foo = self.intersection(&old_end).unwrap().clone();
-
-                self.street_mut(&previous_street).unwrap().set_end(&foo);
-                self.remove_street(&street_id);
-
-                street_id = previous_street.clone();
-            }
-        }
-
-        let splitted_street = self.street(&street_id).unwrap();
-        let splitted_street_end_id = splitted_street.end;
-
-
-        if splitted_street.end().euclidean_distance(&split_position) < 20.0 {
-
-            let conntected_streets = self.intersection(&splitted_street_end_id).unwrap().get_connected_streets().len();
-
-            if conntected_streets  == 2 {
-
-                let next_street = splitted_street.get_next(Side::Left).unwrap();
-                let next_street_end = self.street(&next_street).unwrap().end;
-
-                if let Some(old_end) = self.intersection_mut(&old_end) {
-                    old_end.remove_connected_street(&street_id);
-
-                }
-
-                if let Some(next_street_end) = self.intersection_mut(&next_street_end) {
-                    next_street_end.add_incoming_street(&street_id);
-                }
-
-                let foo = self.intersection(&next_street_end).unwrap().clone();
-                self.street_mut(&street_id).unwrap().set_end(&foo);
-
-                log!("{}", foo.id());
-
-                old_end = next_street_end;
-
-
-                self.remove_street(&next_street);
-            }
-
-        }
-        */
-
-        self.street_mut(&street_id)
-            .unwrap()
-            .set_end(&new_intersection);
-
-        new_intersection.add_incoming_street(&street_id);
-
-        // The street from new intersection to the old end
-        let mut new_street = Street::default();
-        let new_id = new_street.id();
-        new_street.set_start(&new_intersection);
-        new_street.set_end(&self.intersection(&old_end).unwrap());
-        new_intersection.add_outgoing_street(&new_street.id());
-
-        if let Some(old_end) = self.intersection_mut(&old_end) as Option<&mut Intersection> {
-            old_end.remove_connected_street(&street_id);
-            old_end.add_incoming_street(&new_street.id());
-        }
-
-        self.add_street(new_street);
-        self.add_intersection(new_intersection);
-
-        self.update_intersection(&new_intersection_id);
-
-        // Prevents visual glitches such as that the new street is not visible until the user moves the cursor
-        self.update_street(&street_id);
-        self.update_street(&new_id);
-
-        self.update_intersection(&old_end);
-
-        new_intersection_id
-        */
     }
 
     pub fn get_intersection_at_position(
@@ -851,7 +745,7 @@ impl Map {
             if let Some(end) = self.intersections.get_mut(&street.end) {
                 end.remove_connected_street(id);
 
-                is_end_empty = end.get_connected_streets().is_empty();
+                is_end_empty = end.get_connected_streets().is_empty();            
                 end_id = end.id();
             }
 

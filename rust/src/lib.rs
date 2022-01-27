@@ -6,6 +6,8 @@ mod state;
 mod map;
 mod editor;
 
+#[macro_use]
+extern crate rust_macro;
 
 extern crate alloc;
 

@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap, f64::consts::PI};
 
 use geo::Coordinate;
-use rust_editor::{style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, gizmo::{SetId, Id, SetPosition, GetPosition}, renderer::apply_style, InformationLayer};
+use rust_editor::{style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, gizmo::{SetPosition, GetPosition, Id, SetId}, renderer::apply_style, InformationLayer};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -22,7 +22,7 @@ pub enum Side {
     Right,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, ElementId)]
 pub struct Intersection {
     id: Uuid,
     position: Coordinate<f64>,
@@ -31,18 +31,6 @@ pub struct Intersection {
 
     style: InteractiveElementStyle, 
     state: InteractiveElementState,
-}
-
-impl Id for Intersection {
-    fn id(&self) -> Uuid {
-        self.id
-    }
-}
-
-impl SetId for Intersection {
-    fn set_id(&mut self, id: Uuid) {
-        self.id = id;
-    }
 }
 
 impl InteractiveElement for Intersection {

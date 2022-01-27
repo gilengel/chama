@@ -1,9 +1,9 @@
 use geo::Coordinate;
+use rust_editor::{gizmo::Id, InformationLayer, camera::{Camera, Renderer}};
 use uuid::Uuid;
 
 use crate::{
-    state::System,
-    Renderer, Camera, map::{map::{Map, InformationLayer}, district::create_district_for_street}, gizmo::Id, actions::action::Action,
+    state::System, map::{district::create_district_for_street, map::Map}, actions::action::Action,
 };
 
 pub struct CreateDistrictSystem {
@@ -44,8 +44,6 @@ impl System for CreateDistrictSystem {
             if let Some(district) = create_district_for_street(side, hovered_street_id, map) {
                 map.add_district(district);
             }
-
-            
         }
     }
 

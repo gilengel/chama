@@ -4,13 +4,13 @@ use geo::{Coordinate, Line, Triangle, prelude::EuclideanDistance};
 use uuid::Uuid;
 use wasm_bindgen::{JsValue, UnwrapThrowExt};
 
+use crate::{camera::Camera, style::Style, renderer::PrimitiveRenderer};
+
 pub enum Axis {
     X,
     Y,
     XY,
 }
-
-use crate::{renderer::PrimitiveRenderer, style::Style, Camera};
 
 pub trait GetPosition {
     fn position(&self) -> Coordinate<f64>;

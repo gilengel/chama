@@ -1,6 +1,10 @@
 use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
+use rust_editor::InformationLayer;
+use rust_editor::camera::{Renderer, Camera};
+use rust_editor::gizmo::{GetPosition, SetId, Id, SetPosition};
+use rust_editor::interactive_element::{InteractiveElementState, InteractiveElement};
 use serde::{Deserialize, Serialize};
 
 use std::cmp::Ordering;
@@ -15,9 +19,6 @@ use web_sys::CanvasRenderingContext2d;
 use crate::actions::action::{Action, MultiAction};
 use crate::actions::redo::Redo;
 use crate::actions::undo::Undo;
-use crate::gizmo::{GetPosition, Id, SetPosition, SetId};
-use crate::interactive_element::{InteractiveElement, InteractiveElementSystem};
-use crate::{log, Camera, Renderer};
 
 use super::district::District;
 use super::intersection::{Intersection};
@@ -33,11 +34,6 @@ pub struct Map {
     districts: HashMap<Uuid, District>,
 
     bounding_box: Rect<f64>,
-}
-
-#[derive(PartialEq)]
-pub enum InformationLayer {
-    Debug,
 }
 
 impl Default for Map {
@@ -353,7 +349,7 @@ impl Map {
 
     pub fn intersections_with_state<'a>(
         &'a self,
-        state: InteractiveElementSystem,
+        state: InteractiveElementState,
     ) -> impl Iterator<Item = &'a Intersection> {
         self.intersections
             .values()
@@ -362,7 +358,7 @@ impl Map {
 
     pub fn intersections_with_state_mut<'a>(
         &'a mut self,
-        state: InteractiveElementSystem,
+        state: InteractiveElementState,
     ) -> impl Iterator<Item = &'a mut Intersection> {
         self.intersections
             .values_mut()
@@ -867,8 +863,6 @@ impl Map {
 
             return Some(street);
         }
-
-        log!(":(");
 
         None
     }

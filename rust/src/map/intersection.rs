@@ -1,14 +1,14 @@
 use std::{cmp::Ordering, collections::HashMap, f64::consts::PI};
 
 use geo::Coordinate;
+use rust_editor::{style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, gizmo::{SetId, Id, SetPosition, GetPosition}, renderer::apply_style, InformationLayer};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{log,interactive_element::{InteractiveElement, InteractiveElementSystem}, style::{Style, InteractiveElementStyle}, renderer::apply_style, gizmo::{SetPosition, GetPosition, Id, SetId}};
 use serde::{Deserialize, Serialize};
 
-use super::{map::InformationLayer, street::Street};
+use super::street::Street;
 
 #[derive(Clone, PartialEq, Copy, Debug, Serialize, Deserialize)]
 pub enum Direction {
@@ -30,7 +30,7 @@ pub struct Intersection {
     connected_streets: Vec<(Direction, Uuid)>,
 
     style: InteractiveElementStyle, 
-    state: InteractiveElementSystem,
+    state: InteractiveElementState,
 }
 
 impl Id for Intersection {
@@ -46,19 +46,19 @@ impl SetId for Intersection {
 }
 
 impl InteractiveElement for Intersection {
-    fn set_state(&mut self, new_state: InteractiveElementSystem) {
+    fn set_state(&mut self, new_state: InteractiveElementState) {
         self.state = new_state;
     }
 
     fn style(&self) -> &Style {
         match self.state {
-            InteractiveElementSystem::Normal => return &self.style.normal,
-            InteractiveElementSystem::Hover => return &self.style.hover,
-            InteractiveElementSystem::Selected => return &self.style.selected,
+            InteractiveElementState::Normal => return &self.style.normal,
+            InteractiveElementState::Hover => return &self.style.hover,
+            InteractiveElementState::Selected => return &self.style.selected,
         }
     }
 
-    fn state(&self) -> InteractiveElementSystem {
+    fn state(&self) -> InteractiveElementState {
         self.state.clone()
     }
 }
@@ -258,7 +258,7 @@ impl Default for Intersection {
                     background_color: "#00FFCC".to_string()
                 },
             },
-            state: InteractiveElementSystem::Normal,
+            state: InteractiveElementState::Normal,
         }
     }
 }

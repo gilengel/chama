@@ -1,11 +1,9 @@
 use geo::{Coordinate, Rect};
+use rust_editor::{InformationLayer, camera::Camera, interactive_element::{InteractiveElementState, InteractiveElement}, renderer::PrimitiveRenderer, style::Style};
 
 use crate::{
-    interactive_element::{InteractiveElement, InteractiveElementSystem},
-    renderer::PrimitiveRenderer,
     state::System,
-    style::Style,
-    Map, actions::action::Action,
+    actions::action::Action, map::map::Map,
 };
 
 fn default_coordinate() -> Coordinate<f64> {
@@ -48,7 +46,7 @@ impl System for BoxSelectSystem {
         for intersection in map
             .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
         {
-            intersection.set_state(InteractiveElementSystem::Selected);
+            intersection.set_state(InteractiveElementState::Selected);
         }
 
         self.selection_min = default_coordinate();
@@ -64,8 +62,8 @@ impl System for BoxSelectSystem {
         &self,
         _map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
-        _additional_information_layer: &Vec<crate::map::map::InformationLayer>,
-        _camera: &crate::Camera,
+        _additional_information_layer: &Vec<InformationLayer>,
+        _camera: &Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
 
         if self.active {

@@ -1,13 +1,13 @@
 
 
 use geo::Coordinate;
+use rust_editor::{interactive_element::{InteractiveElementState, InteractiveElement}, gizmo::Id, InformationLayer, camera::{Camera, Renderer}};
 use uuid::Uuid;
 
 use crate::{
-    interactive_element::{InteractiveElementSystem, InteractiveElement},
 
     state::System,
-    Renderer, Camera, map::{district::District, map::{Map, InformationLayer}}, gizmo::Id, actions::action::Action,
+    map::{district::District, map::Map}, actions::action::Action,
 };
 
 pub struct DeleteDistrictSystem {
@@ -36,12 +36,12 @@ impl System for DeleteDistrictSystem {
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
         if let Some(old_hovered_district) = self.hovered_district {
             let old_hovered_district: &mut District = map.district_mut(&old_hovered_district).unwrap();
-            old_hovered_district.set_state(InteractiveElementSystem::Normal);
+            old_hovered_district.set_state(InteractiveElementState::Normal);
         }
 
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
             let hovered_district: &mut District = map.district_mut(&hovered_district).unwrap();
-            hovered_district.set_state(InteractiveElementSystem::Hover);
+            hovered_district.set_state(InteractiveElementState::Hover);
             self.hovered_district = Some(hovered_district.id());
         }
     }

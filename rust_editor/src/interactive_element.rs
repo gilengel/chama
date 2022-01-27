@@ -3,16 +3,16 @@ use serde::{Serialize, Deserialize};
 use crate::{style::Style};
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
-pub enum InteractiveElementSystem {
+pub enum InteractiveElementState {
     Normal,
     Hover,
     Selected
 }
 
 pub trait InteractiveElement {
-    fn state(&self) -> InteractiveElementSystem;
+    fn state(&self) -> InteractiveElementState;
 
-    fn set_state(&mut self, new_state: InteractiveElementSystem);
+    fn set_state(&mut self, new_state: InteractiveElementState);
 
     fn style(&self) -> &Style;
 }

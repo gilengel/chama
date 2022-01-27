@@ -7,13 +7,14 @@ use geo::{
 };
 
 use rand::{thread_rng, Rng};
+use rust_editor::{gizmo::{SetId, SetPosition, Id, GetPosition}, InformationLayer, camera::Camera};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
     state::System,
-    Camera, Map, gizmo::{SetPosition, GetPosition, Id, SetId}, map::{street::Street, intersection::{Intersection, Direction}, map::InformationLayer}, actions::action::Action,
+    map::{street::Street, intersection::{Intersection, Direction}, map::Map}, actions::action::Action,
 };
 
 #[allow(unused_macros)]

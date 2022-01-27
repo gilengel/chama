@@ -1,10 +1,10 @@
 use geo::{Coordinate, Polygon, LineString, winding_order::Winding, Point, prelude::Centroid, coords_iter::CoordsIter, simplify::Simplify};
+use rust_editor::{style::Style, renderer::PrimitiveRenderer, camera::{Renderer, Camera}, InformationLayer, gizmo::{SetPosition, Id}};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{state::{System}, Map, Camera, Renderer, style::Style, renderer::PrimitiveRenderer, gizmo::{SetPosition, Id}, map::{intersection::Intersection, street::Street, district::create_district_for_street, map::InformationLayer}, actions::action::Action};
-
+use crate::{map::{intersection::Intersection, map::Map, district::create_district_for_street, street::Street}, state::System, actions::action::Action};
 
 pub struct CreateFreeFormDistrictSystem {
     raw_points: Vec<Coordinate<f64>>,

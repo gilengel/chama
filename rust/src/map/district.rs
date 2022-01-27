@@ -1,28 +1,23 @@
 use geo::{
     prelude::{Centroid, Contains},
-    Coordinate, LineString, Polygon, 
+    Coordinate, LineString, Polygon,
 };
-use serde::{Serialize, Deserialize};
+use rust_editor::{style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, gizmo::Id, InformationLayer, renderer::PrimitiveRenderer};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{
-    interactive_element::{InteractiveElement, InteractiveElementSystem},
-    map::intersection::Side,
-    style::{InteractiveElementStyle, Style}, renderer::PrimitiveRenderer, gizmo::Id,
-};
-
+use crate::map::intersection::Side;
 use crate::map::house::generate_houses;
-
-use super::map::{InformationLayer, Map};
+use super::map::Map;
 
 #[derive(Serialize, Deserialize)]
 pub struct District {
     id: Uuid,
     polygon: Polygon<f64>,
     style: InteractiveElementStyle,
-    state: InteractiveElementSystem,
+    state: InteractiveElementState,
 }
 
 impl Id for District {
@@ -53,25 +48,25 @@ impl Default for District {
                     background_color: "hsl(0, 100%, 50%)".to_string(),
                 },
             },
-            state: InteractiveElementSystem::Normal,
+            state: InteractiveElementState::Normal,
         }
     }
 }
 
 impl InteractiveElement for District {
-    fn set_state(&mut self, new_state: InteractiveElementSystem) {
+    fn set_state(&mut self, new_state: InteractiveElementState) {
         self.state = new_state;
     }
 
     fn style(&self) -> &Style {
         match self.state {
-            InteractiveElementSystem::Normal => return &self.style.normal,
-            InteractiveElementSystem::Hover => return &self.style.hover,
-            InteractiveElementSystem::Selected => return &self.style.selected,
+            InteractiveElementState::Normal => return &self.style.normal,
+            InteractiveElementState::Hover => return &self.style.hover,
+            InteractiveElementState::Selected => return &self.style.selected,
         }
     }
 
-    fn state(&self) -> InteractiveElementSystem {
+    fn state(&self) -> InteractiveElementState {
         self.state.clone()
     }
 }
@@ -121,7 +116,6 @@ impl District {
             };
             p.render(&style, context)?;
         }
-        
 
         context.restore();
 
@@ -140,7 +134,7 @@ pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map) -> Op
 
     let factor = match side {
         Side::Left => -1.0,
-        Side::Right => 1.0
+        Side::Right => 1.0,
     };
     let street_perp = map.street(&street).unwrap().perp();
     let street_start: Coordinate<f64> = map.street(&street).unwrap().line.centroid().into();

@@ -1,3 +1,5 @@
+extern crate rust_editor;
+
 use std::collections::HashMap;
 
 use geo::{
@@ -6,6 +8,7 @@ use geo::{
     prelude::{Centroid, Contains, EuclideanDistance},
     Coordinate, Line, LineString, Point, Polygon,
 };
+use rust_editor::{gizmo::{SetId, Id, GetPosition}, style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, renderer::PrimitiveRenderer, InformationLayer};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -13,14 +16,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use geo::line_intersection::line_intersection;
 
-use crate::{
-    interactive_element::InteractiveElement,
-    interactive_element::InteractiveElementSystem,
-    renderer::PrimitiveRenderer,
-    style::{InteractiveElementStyle, Style}, gizmo::{GetPosition, Id, SetId},
-};
-
-use super::{intersection::{Intersection, Side}, map::InformationLayer};
+use super::intersection::{Intersection, Side};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Street {
@@ -47,7 +43,7 @@ pub struct Street {
 
     pub style: InteractiveElementStyle,
 
-    state: InteractiveElementSystem,
+    state: InteractiveElementState,
 }
 
 impl Id for Street {
@@ -87,26 +83,26 @@ impl Default for Street {
             inverse_norm: Coordinate { x: 0.0, y: 0.0 },
 
             style: InteractiveElementStyle::default(),
-            state: InteractiveElementSystem::Normal,
+            state: InteractiveElementState::Normal,
         }
     }
 }
 
 impl InteractiveElement for Street {
-    fn set_state(&mut self, new_state: InteractiveElementSystem) {
+    fn set_state(&mut self, new_state: InteractiveElementState) {
         self.state = new_state;
     }
 
     fn style(&self) -> &Style {
         match self.state {
-            InteractiveElementSystem::Normal => return &self.style.normal,
-            InteractiveElementSystem::Hover => return &self.style.hover,
-            InteractiveElementSystem::Selected => return &self.style.selected,
+            InteractiveElementState::Normal => return &self.style.normal,
+            InteractiveElementState::Hover => return &self.style.hover,
+            InteractiveElementState::Selected => return &self.style.selected,
         }
     }
 
-    fn state(&self) -> InteractiveElementSystem {
-        InteractiveElementSystem::Normal
+    fn state(&self) -> InteractiveElementState {
+        InteractiveElementState::Normal
     }
 }
 

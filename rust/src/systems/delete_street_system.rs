@@ -1,10 +1,10 @@
 use geo::Coordinate;
+use rust_editor::{interactive_element::{InteractiveElementState, InteractiveElement}, InformationLayer, camera::{Camera, Renderer}};
 use uuid::Uuid;
 
 use crate::{
-    interactive_element::{InteractiveElement, InteractiveElementSystem},
     state::System,
-    Camera, Renderer, map::{map::{Map, InformationLayer}, intersection::Side, street::Street}, actions::action::Action,
+    map::{map::Map, intersection::Side, street::Street}, actions::action::Action,
 };
 
 pub struct DeleteStreetSystem {
@@ -20,7 +20,7 @@ impl DeleteStreetSystem {
 
     fn clean_hovered_street_state(&self, map: &mut Map) {
         for (_, street) in map.streets_mut() {
-            street.set_state(InteractiveElementSystem::Normal);
+            street.set_state(InteractiveElementState::Normal);
         }
     }
 
@@ -106,7 +106,7 @@ impl System for DeleteStreetSystem {
 
             for street in self.hovered_streets.as_ref().unwrap() {
                 if let Some(street) = map.street_mut(&street) as Option<&mut Street> {
-                    street.set_state(InteractiveElementSystem::Hover)
+                    street.set_state(InteractiveElementState::Hover)
                 }
             }
         }

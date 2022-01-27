@@ -1,8 +1,6 @@
 use serde::{de::DeserializeOwned, Serialize};
 use wasm_bindgen::JsValue;
 
-use crate::log;
-
 pub struct Store {
     local_storage: web_sys::Storage,
     name: String,
@@ -29,7 +27,7 @@ impl Store {
         if let Ok(Some(value)) = self.local_storage.get_item(&self.name) {
             match serde_json::from_str::<T>(&value) {
                 Ok(value) => return Some(value),
-                Err(e) => log!("{}", e),
+                Err(_) => {},
             }
         }
 
@@ -42,7 +40,7 @@ impl Store {
             Ok(s) => {
                 return self.local_storage.set_item(&self.name, &s);
             }
-            Err(e) => log!("{}", e),
+            Err(_) => {},
         }
 
         Ok(())

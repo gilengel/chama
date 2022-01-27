@@ -1,6 +1,7 @@
 
 
 use geo::{simplify::Simplify, Coordinate, LineString};
+use rust_editor::{style::Style, InformationLayer, camera::Camera, renderer::apply_style};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -12,11 +13,7 @@ use crate::{
         undo::Undo,
     },
     log,
-    map::map::InformationLayer,
-    renderer::apply_style,
-    state::System,
-    style::Style,
-    Camera, Map,
+    state::System, map::map::Map,
 };
 
 pub struct CreateFreeFormStreetSystem {

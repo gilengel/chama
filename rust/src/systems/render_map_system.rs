@@ -1,7 +1,8 @@
+use rust_editor::{InformationLayer, camera::{Camera, Renderer}};
+
 use crate::{
-    map::map::{InformationLayer, Map},
+    map::map::Map,
     state::System,
-    Camera, Renderer,
 };
 
 pub struct MapRenderSystem {}

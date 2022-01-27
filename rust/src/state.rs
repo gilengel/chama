@@ -1,8 +1,9 @@
 use geo::Coordinate;
+use rust_editor::{InformationLayer, camera::{Renderer, Camera}};
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{Map, Renderer, Camera, map::map::InformationLayer, actions::action::Action};
+use crate::{actions::action::Action, map::map::Map};
 
 
 

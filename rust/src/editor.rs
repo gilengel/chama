@@ -1,18 +1,21 @@
+extern crate rust_editor;
+
 use std::panic;
+
+
 
 use geo::Coordinate;
 use js_sys::encode_uri_component;
+use rust_editor::{grid::Grid, store::Store, camera::Camera, InformationLayer};
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::{
     actions::action::Action,
     err,
-    grid::Grid,
     log,
-    map::map::{InformationLayer, Map},
+    map::map::Map,
     state::System,
-    store::Store,
     systems::{
         box_select_system::BoxSelectSystem, create_district_system::CreateDistrictSystem,
         create_freeform_street_system::CreateFreeFormStreetSystem,
@@ -20,7 +23,6 @@ use crate::{
         delete_street_system::DeleteStreetSystem, move_control_system::MoveControlSystem,
         render_map_system::MapRenderSystem,
     },
-    Camera,
 };
 
 #[wasm_bindgen]
@@ -36,7 +38,7 @@ pub struct Editor {
     undo_stack: Vec<Box<dyn Action>>,
     redo_stack: Vec<Box<dyn Action>>,
     map: Map,
-    grid: Grid,
+    grid: rust_editor::grid::Grid,
     camera: Camera,
     store: Option<Store>,
 }

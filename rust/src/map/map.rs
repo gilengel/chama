@@ -12,7 +12,7 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::gizmo::{GetPosition, Id, SetPosition};
-use crate::interactive_element::{InteractiveElement, InteractiveElementState};
+use crate::interactive_element::{InteractiveElement, InteractiveElementSystem};
 use crate::{log, Camera, Renderer};
 
 use super::district::District;
@@ -172,7 +172,7 @@ impl Map {
 
     pub fn intersections_with_state<'a>(
         &'a self,
-        state: InteractiveElementState,
+        state: InteractiveElementSystem,
     ) -> impl Iterator<Item = &'a Intersection> {
         self.intersections
             .values()
@@ -181,7 +181,7 @@ impl Map {
 
     pub fn intersections_with_state_mut<'a>(
         &'a mut self,
-        state: InteractiveElementState,
+        state: InteractiveElementSystem,
     ) -> impl Iterator<Item = &'a mut Intersection> {
         self.intersections
             .values_mut()

@@ -10,13 +10,14 @@ use crate::{
     grid::Grid,
     log,
     map::map::{InformationLayer, Map},
-    state::State,
-    states::{
-        box_select_state::BoxSelectState, create_district_state::CreateDistrictState,
-        create_freeform_street_state::CreateFreeFormStreetState,
-        create_street_state::CreateStreetState, delete_district_state::DeleteDistrictState,
-        delete_street_state::DeleteStreetState, idle_state::IdleState,
-        move_control_state::MoveControlState,
+    state::System,
+    systems::{
+        box_select_system::BoxSelectSystem, create_district_system::CreateDistrictSystem,
+        create_freeform_street_system::CreateFreeFormStreetSystem,
+        create_street_system::CreateStreetSystem, delete_district_system::DeleteDistrictSystem,
+        delete_street_system::DeleteStreetSystem,
+        move_control_system::MoveControlSystem,
+        render_map_system::MapRenderSystem
     },
     store::Store,
     Camera,
@@ -31,7 +32,7 @@ pub struct Editor {
     render_intersections: bool,
     render_streets: bool,
 
-    active_systems: Vec<Box<dyn State + Send + Sync>>,
+    active_systems: Vec<Box<dyn System + Send + Sync>>,
     map: Map,
     grid: Grid,
     camera: Camera,
@@ -79,7 +80,7 @@ impl Editor {
 
     fn activate_system<T>(&mut self, system: T)
     where
-        T: State + Send + Sync + 'static,
+        T: System + Send + Sync + 'static,
     {
         self.active_systems.push(Box::new(system));
     }
@@ -163,20 +164,21 @@ impl Editor {
     pub fn switch_to_mode(&mut self, mode: u32) {
         self.deactivate_all_systems();
 
-        let mut new_systems: Vec<Box<dyn State + Send + Sync>> = Vec::new();
+        let mut new_systems: Vec<Box<dyn System + Send + Sync>> = Vec::new();
+        new_systems.push(Box::new(MapRenderSystem::new()));
 
         match mode {
-            1 => new_systems.push(Box::new(CreateStreetState::new())),
-            3 => new_systems.push(Box::new(DeleteStreetState::new())),
-            4 => new_systems.push(Box::new(CreateDistrictState::new())),
-            2 => new_systems.push(Box::new(CreateFreeFormStreetState::new())),
-            5 => new_systems.push(Box::new(CreateFreeFormStreetState::new())),
-            6 => new_systems.push(Box::new(DeleteDistrictState::new())),
+            1 => new_systems.push(Box::new(CreateStreetSystem::new())),
+            3 => new_systems.push(Box::new(DeleteStreetSystem::new())),
+            4 => new_systems.push(Box::new(CreateDistrictSystem::new())),
+            2 => new_systems.push(Box::new(CreateFreeFormStreetSystem::new())),
+            5 => new_systems.push(Box::new(CreateFreeFormStreetSystem::new())),
+            6 => new_systems.push(Box::new(DeleteDistrictSystem::new())),
             7 => {
-                new_systems.push(Box::new(MoveControlState::new()));
-                new_systems.push(Box::new(BoxSelectState::new()));                
+                new_systems.push(Box::new(MoveControlSystem::new()));
+                new_systems.push(Box::new(BoxSelectSystem::new()));                
             }
-            8 => new_systems.push(Box::new(BoxSelectState::new())),
+            8 => new_systems.push(Box::new(BoxSelectSystem::new())),
             _ => log!("unknown command, nothing to do"),
         };
 
@@ -186,21 +188,21 @@ impl Editor {
         self.state.exit(&mut self.map);
         match mode {
             0 => log!("idle command, nothing to do"),
-            1 => self.state = Box::new(CreateStreetState::new()),
-            2 => self.state = Box::new(CreateFreeFormStreetState::new()),
-            3 => self.state = Box::new(DeleteStreetState::new()),
-            4 => self.state = Box::new(CreateDistrictState::new()),
-            5 => self.state = Box::new(CreateFreeFormStreetState::new()),
-            6 => self.state = Box::new(DeleteDistrictState::new()),
-            7 => self.state = Box::new(MoveControlState::new()),
-            8 => self.state = Box::new(BoxSelectState::new()),
+            1 => self.state = Box::new(CreateStreetSystem::new()),
+            2 => self.state = Box::new(CreateFreeFormStreetSystem::new()),
+            3 => self.state = Box::new(DeleteStreetSystem::new()),
+            4 => self.state = Box::new(CreateDistrictSystem::new()),
+            5 => self.state = Box::new(CreateFreeFormStreetSystem::new()),
+            6 => self.state = Box::new(DeleteDistrictSystem::new()),
+            7 => self.state = Box::new(MoveControlSystem::new()),
+            8 => self.state = Box::new(BoxSelectSystem::new()),
 
             _ => log!("unknown command, nothing to do"),
         }
         self.state.enter(&mut self.map);
 
-        self.activate_system(BoxSelectState::new());
-        self.activate_system(MoveControlState::new());
+        self.activate_system(BoxSelectSystem::new());
+        self.activate_system(MoveControlSystem::new());
         */
     }
 

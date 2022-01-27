@@ -15,7 +15,7 @@ use geo::line_intersection::line_intersection;
 
 use crate::{
     interactive_element::InteractiveElement,
-    interactive_element::InteractiveElementState,
+    interactive_element::InteractiveElementSystem,
     renderer::PrimitiveRenderer,
     style::{InteractiveElementStyle, Style}, gizmo::{GetPosition, Id, SetId},
 };
@@ -47,7 +47,7 @@ pub struct Street {
 
     pub style: InteractiveElementStyle,
 
-    state: InteractiveElementState,
+    state: InteractiveElementSystem,
 }
 
 impl Id for Street {
@@ -87,26 +87,26 @@ impl Default for Street {
             inverse_norm: Coordinate { x: 0.0, y: 0.0 },
 
             style: InteractiveElementStyle::default(),
-            state: InteractiveElementState::Normal,
+            state: InteractiveElementSystem::Normal,
         }
     }
 }
 
 impl InteractiveElement for Street {
-    fn set_state(&mut self, new_state: InteractiveElementState) {
+    fn set_state(&mut self, new_state: InteractiveElementSystem) {
         self.state = new_state;
     }
 
     fn style(&self) -> &Style {
         match self.state {
-            InteractiveElementState::Normal => return &self.style.normal,
-            InteractiveElementState::Hover => return &self.style.hover,
-            InteractiveElementState::Selected => return &self.style.selected,
+            InteractiveElementSystem::Normal => return &self.style.normal,
+            InteractiveElementSystem::Hover => return &self.style.hover,
+            InteractiveElementSystem::Selected => return &self.style.selected,
         }
     }
 
-    fn state(&self) -> InteractiveElementState {
-        InteractiveElementState::Normal
+    fn state(&self) -> InteractiveElementSystem {
+        InteractiveElementSystem::Normal
     }
 }
 

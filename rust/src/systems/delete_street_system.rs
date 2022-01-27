@@ -2,25 +2,25 @@ use geo::Coordinate;
 use uuid::Uuid;
 
 use crate::{
-    interactive_element::{InteractiveElement, InteractiveElementState},
-    state::State,
+    interactive_element::{InteractiveElement, InteractiveElementSystem},
+    state::System,
     Camera, Renderer, map::{map::{Map, InformationLayer}, intersection::Side, street::Street},
 };
 
-pub struct DeleteStreetState {
+pub struct DeleteStreetSystem {
     hovered_streets: Option<Vec<Uuid>>,
 }
 
-impl DeleteStreetState {
+impl DeleteStreetSystem {
     pub fn new() -> Self {
-        DeleteStreetState {
+        DeleteStreetSystem {
             hovered_streets: None,
         }
     }
 
     fn clean_hovered_street_state(&self, map: &mut Map) {
         for (_, street) in map.streets_mut() {
-            street.set_state(InteractiveElementState::Normal);
+            street.set_state(InteractiveElementSystem::Normal);
         }
     }
 
@@ -87,15 +87,15 @@ impl DeleteStreetState {
     }
 }
 
-impl Default for DeleteStreetState {
-    fn default() -> DeleteStreetState {
-        DeleteStreetState {
+impl Default for DeleteStreetSystem {
+    fn default() -> DeleteStreetSystem {
+        DeleteStreetSystem {
             hovered_streets: None,
         }
     }
 }
 
-impl State for DeleteStreetState {
+impl System for DeleteStreetSystem {
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
@@ -106,7 +106,7 @@ impl State for DeleteStreetState {
 
             for street in self.hovered_streets.as_ref().unwrap() {
                 if let Some(street) = map.street_mut(&street) as Option<&mut Street> {
-                    street.set_state(InteractiveElementState::Hover)
+                    street.set_state(InteractiveElementSystem::Hover)
                 }
             }
         }

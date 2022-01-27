@@ -5,7 +5,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{log,interactive_element::{InteractiveElement, InteractiveElementState}, style::{Style, InteractiveElementStyle}, renderer::apply_style, gizmo::{SetPosition, GetPosition, Gizmo, Id, SetId}};
+use crate::{log,interactive_element::{InteractiveElement, InteractiveElementSystem}, style::{Style, InteractiveElementStyle}, renderer::apply_style, gizmo::{SetPosition, GetPosition, Gizmo, Id, SetId}};
 use serde::{Deserialize, Serialize};
 
 use super::{map::InformationLayer, street::Street};
@@ -30,7 +30,7 @@ pub struct Intersection {
     connected_streets: Vec<(Direction, Uuid)>,
 
     style: InteractiveElementStyle, 
-    state: InteractiveElementState,
+    state: InteractiveElementSystem,
 }
 
 impl Id for Intersection {
@@ -46,19 +46,19 @@ impl SetId for Intersection {
 }
 
 impl InteractiveElement for Intersection {
-    fn set_state(&mut self, new_state: InteractiveElementState) {
+    fn set_state(&mut self, new_state: InteractiveElementSystem) {
         self.state = new_state;
     }
 
     fn style(&self) -> &Style {
         match self.state {
-            InteractiveElementState::Normal => return &self.style.normal,
-            InteractiveElementState::Hover => return &self.style.hover,
-            InteractiveElementState::Selected => return &self.style.selected,
+            InteractiveElementSystem::Normal => return &self.style.normal,
+            InteractiveElementSystem::Hover => return &self.style.hover,
+            InteractiveElementSystem::Selected => return &self.style.selected,
         }
     }
 
-    fn state(&self) -> InteractiveElementState {
+    fn state(&self) -> InteractiveElementSystem {
         self.state.clone()
     }
 }
@@ -260,7 +260,7 @@ impl Default for Intersection {
                     background_color: "#00FFCC".to_string()
                 },
             },
-            state: InteractiveElementState::Normal,
+            state: InteractiveElementSystem::Normal,
         }
     }
 }

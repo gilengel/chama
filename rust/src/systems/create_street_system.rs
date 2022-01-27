@@ -12,7 +12,7 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    state::State,
+    state::System,
     Camera, Map, Renderer, gizmo::{SetPosition, GetPosition, Id, SetId}, map::{street::Street, intersection::{Intersection, Direction}, map::InformationLayer},
 };
 
@@ -23,16 +23,16 @@ macro_rules! log {
     }
 }
 
-pub struct CreateStreetState {
+pub struct CreateStreetSystem {
     mouse_pressed: bool,
     temp_street: Uuid,
     temp_start: Uuid,
     temp_end: Uuid,
 }
 
-impl Default for CreateStreetState {
-    fn default() -> CreateStreetState {
-        CreateStreetState {
+impl Default for CreateStreetSystem {
+    fn default() -> CreateStreetSystem {
+        CreateStreetSystem {
             mouse_pressed: false,
             temp_street: Uuid::new_v4(),
             temp_start: Uuid::new_v4(),
@@ -41,9 +41,9 @@ impl Default for CreateStreetState {
     }
 }
 
-impl CreateStreetState {
+impl CreateStreetSystem {
     pub fn new() -> Self {
-        CreateStreetState::default()
+        CreateStreetSystem::default()
     }
     fn project_point_onto_middle_of_street(
         &self,
@@ -239,7 +239,7 @@ impl CreateStreetState {
     }
 }
 
-impl<'a> State for CreateStreetState {
+impl<'a> System for CreateStreetSystem {
     fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
         // We only check for left click
         if button != 0 {
@@ -397,7 +397,6 @@ impl<'a> State for CreateStreetState {
         additional_information_layer: &Vec<InformationLayer>,
         camera: &Camera,
     ) -> Result<(), JsValue> {
-        map.render(&context, additional_information_layer, camera)?;
 
         Ok(())
     }

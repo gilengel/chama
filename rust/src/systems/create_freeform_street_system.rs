@@ -6,19 +6,19 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    log, renderer::apply_style, state::State, style::Style, Camera, Map, Renderer, gizmo::SetPosition, map::map::InformationLayer,
+    log, renderer::apply_style, state::System, style::Style, Camera, Map, Renderer, gizmo::SetPosition, map::map::InformationLayer,
 };
 
-pub struct CreateFreeFormStreetState {
+pub struct CreateFreeFormStreetSystem {
     raw_points: Vec<Coordinate<f64>>,
     raw_point_style: Style,
 
     brush_active: bool,
 }
 
-impl Default for CreateFreeFormStreetState {
+impl Default for CreateFreeFormStreetSystem {
     fn default() -> Self {
-        CreateFreeFormStreetState {
+        CreateFreeFormStreetSystem {
             raw_points: Vec::new(),
             raw_point_style: Style {
                 border_width: 15,
@@ -30,9 +30,9 @@ impl Default for CreateFreeFormStreetState {
     }
 }
 
-impl CreateFreeFormStreetState {
-    pub fn new() -> CreateFreeFormStreetState {
-        CreateFreeFormStreetState::default()
+impl CreateFreeFormStreetSystem {
+    pub fn new() -> CreateFreeFormStreetSystem {
+        CreateFreeFormStreetSystem::default()
     }
 
     pub fn transform_polygon_into_streets(&self, map: &mut Map) {
@@ -55,7 +55,7 @@ impl CreateFreeFormStreetState {
     }
 }
 
-impl State for CreateFreeFormStreetState {
+impl System for CreateFreeFormStreetSystem {
     fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map) {
         if button == 0 {
             self.brush_active = true;
@@ -92,7 +92,6 @@ impl State for CreateFreeFormStreetState {
         additional_information_layer: &Vec<InformationLayer>,
         camera: &Camera,
     ) -> Result<(), JsValue> {
-        map.render(context, additional_information_layer, camera)?;
 
         if self.brush_active && !self.raw_points.is_empty() {
             context.begin_path();

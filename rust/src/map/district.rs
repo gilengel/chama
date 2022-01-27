@@ -8,7 +8,7 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    interactive_element::{InteractiveElement, InteractiveElementState},
+    interactive_element::{InteractiveElement, InteractiveElementSystem},
     map::intersection::Side,
     style::{InteractiveElementStyle, Style}, renderer::PrimitiveRenderer, gizmo::Id,
 };
@@ -22,7 +22,7 @@ pub struct District {
     id: Uuid,
     polygon: Polygon<f64>,
     style: InteractiveElementStyle,
-    state: InteractiveElementState,
+    state: InteractiveElementSystem,
 }
 
 impl Id for District {
@@ -53,25 +53,25 @@ impl Default for District {
                     background_color: "hsl(0, 100%, 50%)".to_string(),
                 },
             },
-            state: InteractiveElementState::Normal,
+            state: InteractiveElementSystem::Normal,
         }
     }
 }
 
 impl InteractiveElement for District {
-    fn set_state(&mut self, new_state: InteractiveElementState) {
+    fn set_state(&mut self, new_state: InteractiveElementSystem) {
         self.state = new_state;
     }
 
     fn style(&self) -> &Style {
         match self.state {
-            InteractiveElementState::Normal => return &self.style.normal,
-            InteractiveElementState::Hover => return &self.style.hover,
-            InteractiveElementState::Selected => return &self.style.selected,
+            InteractiveElementSystem::Normal => return &self.style.normal,
+            InteractiveElementSystem::Hover => return &self.style.hover,
+            InteractiveElementSystem::Selected => return &self.style.selected,
         }
     }
 
-    fn state(&self) -> InteractiveElementState {
+    fn state(&self) -> InteractiveElementSystem {
         self.state.clone()
     }
 }

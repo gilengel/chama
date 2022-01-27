@@ -1,9 +1,9 @@
 use geo::{Coordinate, Rect};
 
 use crate::{
-    interactive_element::{InteractiveElement, InteractiveElementState},
+    interactive_element::{InteractiveElement, InteractiveElementSystem},
     renderer::PrimitiveRenderer,
-    state::State,
+    state::System,
     style::Style,
     Map, Renderer,
 };
@@ -12,21 +12,21 @@ fn default_coordinate() -> Coordinate<f64> {
     Coordinate { x: 0., y: 0. }
 }
 
-pub struct BoxSelectState {
+pub struct BoxSelectSystem {
     selection_min: Coordinate<f64>,
     selection_max: Coordinate<f64>,
     active: bool,
 }
 
-impl BoxSelectState {
+impl BoxSelectSystem {
     pub fn new() -> Self {
-        BoxSelectState::default()
+        BoxSelectSystem::default()
     }
 }
 
-impl Default for BoxSelectState {
+impl Default for BoxSelectSystem {
     fn default() -> Self {
-        BoxSelectState {
+        BoxSelectSystem {
             selection_min: default_coordinate(),
             selection_max: default_coordinate(),
             active: false,
@@ -34,7 +34,7 @@ impl Default for BoxSelectState {
     }
 }
 
-impl State for BoxSelectState {
+impl System for BoxSelectSystem {
     fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {
         self.selection_min = mouse_pos;
         self.active = true;
@@ -48,7 +48,7 @@ impl State for BoxSelectState {
         for intersection in map
             .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
         {
-            intersection.set_state(InteractiveElementState::Selected);
+            intersection.set_state(InteractiveElementSystem::Selected);
         }
 
         self.selection_min = default_coordinate();
@@ -67,7 +67,6 @@ impl State for BoxSelectState {
         additional_information_layer: &Vec<crate::map::map::InformationLayer>,
         camera: &crate::Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(context, additional_information_layer, camera)?;
 
         if self.active {
             Rect::new(self.selection_min, self.selection_max).render(

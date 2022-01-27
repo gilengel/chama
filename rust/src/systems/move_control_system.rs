@@ -5,24 +5,21 @@ use uuid::Uuid;
 
 use crate::{
     gizmo::{mouse_over, GetPosition, Gizmo, MoveGizmo, SetPosition},
-    interactive_element::{InteractiveElement, InteractiveElementState},
+    interactive_element::{InteractiveElement, InteractiveElementSystem},
     map::map::{InformationLayer, Map},
-    state::State,
+    state::System,
     Camera, Renderer, renderer::PrimitiveRenderer, style::Style, log,
 };
 
-fn default_rect() -> Rect<f64> {
-    Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. })
-}
 
-pub struct MoveControlState {
+pub struct MoveControlSystem {
     hovered_control: Option<Uuid>,
     gizmo: MoveGizmo,
 }
 
-impl MoveControlState {
+impl MoveControlSystem {
     pub fn new() -> Self {
-        MoveControlState {
+        MoveControlSystem {
             hovered_control: None,
 
             gizmo: MoveGizmo::new(),
@@ -33,12 +30,12 @@ impl MoveControlState {
         if let Some(hovered_control) = self.hovered_control {
             map.intersection_mut(&hovered_control)
                 .unwrap()
-                .set_state(InteractiveElementState::Normal);
+                .set_state(InteractiveElementSystem::Normal);
         }
     }
 
     fn center_gizmo(&mut self, map: &Map) {
-        let elements = map.intersections_with_state(InteractiveElementState::Selected);
+        let elements = map.intersections_with_state(InteractiveElementSystem::Selected);
 
         let mut sum = Coordinate { x: 0., y: 0. };
         let mut num_elements = 0;
@@ -59,12 +56,12 @@ impl MoveControlState {
 
 
 
-impl State for MoveControlState {
+impl System for MoveControlSystem {
     fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
         self.gizmo.mouse_down(
             mouse_pos,
             button,
-            map.intersections_with_state_mut(InteractiveElementState::Selected),
+            map.intersections_with_state_mut(InteractiveElementSystem::Selected),
         );
 
         if mouse_over(mouse_pos, self.gizmo.position()) {
@@ -73,19 +70,19 @@ impl State for MoveControlState {
 
         // Single select of intersection
         if map.get_intersection_at_position(&mouse_pos, 50., &vec![]) == None {
-            for intersection in map.intersections_with_state_mut(InteractiveElementState::Selected)
+            for intersection in map.intersections_with_state_mut(InteractiveElementSystem::Selected)
             {
-                intersection.set_state(InteractiveElementState::Normal);
+                intersection.set_state(InteractiveElementSystem::Normal);
             }
         }
     }
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {
         self.center_gizmo(map);
-        
+
         self.gizmo.mouse_move(
             mouse_pos,
-            map.intersections_with_state_mut(InteractiveElementState::Selected),
+            map.intersections_with_state_mut(InteractiveElementSystem::Selected),
         );
 
         let keys: Vec<Uuid> = map.intersections_keys().map(|x| *x).collect();
@@ -99,7 +96,7 @@ impl State for MoveControlState {
             self.gizmo.mouse_up(
                 mouse_pos,
                 button,
-                map.intersections_with_state_mut(InteractiveElementState::Selected),
+                map.intersections_with_state_mut(InteractiveElementSystem::Selected),
             );
 
             return;
@@ -125,12 +122,10 @@ impl State for MoveControlState {
         additional_information_layer: &Vec<InformationLayer>,
         camera: &Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(context, additional_information_layer, camera)?;
-
         self.gizmo.render(
             context,
             camera,
-            map.intersections_with_state(InteractiveElementState::Selected),
+            map.intersections_with_state(InteractiveElementSystem::Selected),
         )?;
 
         Ok(())

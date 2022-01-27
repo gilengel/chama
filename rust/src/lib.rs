@@ -8,7 +8,7 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 mod interactive_element;
-mod states;
+mod systems;
 
 mod gizmo;
 mod grid;

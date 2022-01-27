@@ -2,31 +2,31 @@ use geo::Coordinate;
 use uuid::Uuid;
 
 use crate::{
-    state::State,
+    state::System,
     Renderer, Camera, map::{map::{Map, InformationLayer}, district::create_district_for_street}, gizmo::Id,
 };
 
-pub struct CreateDistrictState {
+pub struct CreateDistrictSystem {
     hovered_street: Option<Uuid>,
 }
 
-impl CreateDistrictState {
+impl CreateDistrictSystem {
     pub fn new() -> Self {
-        CreateDistrictState {
+        CreateDistrictSystem {
             hovered_street: None,
         }
     }
 }
 
-impl Default for CreateDistrictState {
-    fn default() -> CreateDistrictState {
-        CreateDistrictState {
+impl Default for CreateDistrictSystem {
+    fn default() -> CreateDistrictSystem {
+        CreateDistrictSystem {
             hovered_street: None,
         }
     }
 }
 
-impl State for CreateDistrictState {
+impl System for CreateDistrictSystem {
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map) {}
 
     fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map) {

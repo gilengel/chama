@@ -3,10 +3,10 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{state::{State}, Map, Camera, Renderer, style::Style, renderer::PrimitiveRenderer, gizmo::{SetPosition, Id}, map::{intersection::Intersection, street::Street, district::create_district_for_street, map::InformationLayer}};
+use crate::{state::{System}, Map, Camera, Renderer, style::Style, renderer::PrimitiveRenderer, gizmo::{SetPosition, Id}, map::{intersection::Intersection, street::Street, district::create_district_for_street, map::InformationLayer}};
 
 
-pub struct CreateFreeFormDistrictState {
+pub struct CreateFreeFormDistrictSystem {
     raw_points: Vec<Coordinate<f64>>,
     raw_point_style: Style,
     raw_polygon: Polygon<f64>,
@@ -15,9 +15,9 @@ pub struct CreateFreeFormDistrictState {
     brush_active: bool
 }
 
-impl Default for CreateFreeFormDistrictState {
+impl Default for CreateFreeFormDistrictSystem {
     fn default() -> Self {
-        CreateFreeFormDistrictState {
+        CreateFreeFormDistrictSystem {
             raw_points: Vec::new(),
             raw_point_style: Style {
                 border_width: 0,
@@ -35,7 +35,7 @@ impl Default for CreateFreeFormDistrictState {
     }
 }
 
-impl CreateFreeFormDistrictState {
+impl CreateFreeFormDistrictSystem {
     fn create_intersection(&self, pos: &Point<f64>) -> Intersection {
         let mut intersection = Intersection::default();
         intersection.set_position(Coordinate { x: pos.x(), y: pos.y() });
@@ -93,7 +93,7 @@ impl CreateFreeFormDistrictState {
 }
 
 
-impl State for CreateFreeFormDistrictState {
+impl System for CreateFreeFormDistrictSystem {
     fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map) {
         if button == 0 {
             self.raw_polygon.exterior_mut(|exterior| exterior.0.clear());

@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+
+use map::street::Street;
+use map::intersection::Intersection;
+use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 mod systems;
@@ -25,5 +30,23 @@ macro_rules! err {
     }
 }
 
+#[data_source(Street, Intersection)]   
+struct Data {}
+
+
+/*
+impl Data {
+    pub fn streets(&self) -> &HashMap<Uuid, Street> {
+        &self.streets
+    }
+}
+*/
+
 #[wasm_bindgen(start)]
-pub fn main() {}
+pub fn main() {
+    let data = Data::new();
+    data.streets();
+    data.intersections();
+    //let a = data.street(&Uuid::default());
+
+}

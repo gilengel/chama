@@ -24,6 +24,7 @@ use super::district::District;
 use super::intersection::{Intersection};
 use super::street::Street;
 
+
 #[derive(Serialize, Deserialize)]
 pub struct Map {
     width: u32,
@@ -34,6 +35,8 @@ pub struct Map {
     districts: HashMap<Uuid, District>,
 
     bounding_box: Rect<f64>,
+
+    
 }
 
 impl Default for Map {
@@ -45,7 +48,7 @@ impl Default for Map {
             intersections: HashMap::new(),
             districts: HashMap::new(),
 
-            bounding_box: Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. }),
+            bounding_box: Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. }),            
         }
     }
 }

@@ -6,13 +6,14 @@ use rust_editor::camera::{Renderer, Camera};
 use rust_editor::gizmo::{GetPosition, Id, SetId, SetPosition};
 use rust_editor::interactive_element::{InteractiveElementState, InteractiveElement};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
 
-use uuid::Uuid;
+
 use wasm_bindgen::{JsValue};
 use web_sys::CanvasRenderingContext2d;
 
@@ -34,9 +35,7 @@ pub struct Map {
     intersections: HashMap<Uuid, Intersection>,
     districts: HashMap<Uuid, District>,
 
-    bounding_box: Rect<f64>,
-
-    
+    bounding_box: Rect<f64>, 
 }
 
 impl Default for Map {

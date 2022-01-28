@@ -59,7 +59,7 @@ pub fn data_source(args: TokenStream, input: TokenStream) -> TokenStream {
 
                         fields.named.push(
                             syn::Field::parse_named
-                                .parse2(quote! { #name: HashMap<Uuid, #data_type_arg> })
+                                .parse2(quote! { pub #name: HashMap<Uuid, #data_type_arg> })
                                 .unwrap_or_abort(),
                         );
                     }
@@ -78,6 +78,8 @@ pub fn data_source(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let mut get_all_fn: Vec<TokenStream2> = vec![];
     let mut get_single_fn: Vec<TokenStream2> = vec![];
+    let mut get_multiple_by_id_fn: Vec<TokenStream2> = vec![];
+    let mut get_multiple_at_position_fn: Vec<TokenStream2> = vec![];
     for (i, _) in var_names.iter().enumerate() {
         get_all_fn.push(implement_get_all(
             var_names[i].clone(),
@@ -87,13 +89,27 @@ pub fn data_source(args: TokenStream, input: TokenStream) -> TokenStream {
             var_names[i].clone(),
             var_types[i].clone(),
         ));
+        get_multiple_by_id_fn.push(implement_get_multiple_by_id(
+            var_names[i].clone(),
+            var_types[i].clone(),
+        ));
+
+        get_multiple_at_position_fn.push(implement_get_at_position(
+            var_names[i].clone(),
+            var_types[i].clone(),
+        ));
     }
 
     let result = quote! {
+        use std::collections::HashMap;
+        use uuid::Uuid;
+        use geo_types::Coordinate;
+
         //#[derive(Debug)]
         #ast
 
         impl #struct_name {
+
             pub fn new() -> Self {
                 #struct_name { #( #var_names: HashMap::new()),* }
             }
@@ -101,10 +117,27 @@ pub fn data_source(args: TokenStream, input: TokenStream) -> TokenStream {
             #( #get_all_fn )*
 
             #( #get_single_fn )*
+
+            #( #get_multiple_by_id_fn )*
+
+            #( #get_multiple_at_position_fn )*
         }
     };
 
     result.into()
+}
+
+fn function_name(var_name: &Ident, suffix: String, mutable: bool) -> Ident {
+    Ident::new(
+        &format!(
+            "{}_{}{}",
+            var_name.to_string(),
+            suffix,
+            if mutable { "_mut" } else { "" }
+        )
+        .to_string(),
+        Span::call_site(),
+    )
 }
 
 fn implement_get_all(var_name: Ident, var_type: Ident) -> TokenStream2 {
@@ -144,6 +177,68 @@ fn implement_get_single(var_name: Ident, var_type: Ident) -> TokenStream2 {
         pub fn #single_var_name_mut(&mut self, id: &Uuid) -> Option<&mut #var_type> {
             if self.#var_name.contains_key(id) {
                 return Some(self.#var_name.get_mut(id).unwrap());
+            }
+
+            None
+        }
+    }
+}
+
+fn implement_get_multiple_by_id(var_name: Ident, var_type: Ident) -> TokenStream2 {
+    let fn_name = function_name(&var_name, "by_ids".to_string(), false);
+    let fn_name_mut = function_name(&var_name, "by_ids".to_string(), true);
+
+    quote! {
+        pub fn #fn_name <'a>(
+            &'a self,
+            ids: &'a Vec<Uuid>,
+        ) -> impl Iterator<Item = &'a #var_type> {
+            self.#var_name
+                .values()
+                .filter(|element| ids.contains(&element.id()))
+        }
+
+
+        pub fn #fn_name_mut <'a>(
+            &'a mut self,
+            ids: &'a Vec<Uuid>,
+        ) -> impl Iterator<Item = &'a mut #var_type> {
+            self.#var_name
+                .values_mut()
+                .filter(|element| ids.contains(&element.id()))
+        }
+
+    }
+}
+
+fn implement_get_at_position(var_name: Ident, var_type: Ident) -> TokenStream2 {
+    let fn_name = function_name(&var_name, "at_position".to_string(), false);
+    let fn_name_mut = function_name(&var_name, "at_position".to_string(), true);
+
+    quote! {
+        pub fn #fn_name <'a>(
+            &'a self,
+            position: &Coordinate<f64>,
+            offset: f64
+        ) -> Option<&'a #var_type> {
+            for (id, element) in &self.#var_name {
+                if element.position().euclidean_distance(position) < offset {
+                    return Some(*id);
+                }
+            }
+
+            None
+        }
+
+        pub fn #fn_name_mut <'a>(
+            &'a mut self,
+            position: &Coordinate<f64>,
+            offset: f64
+        ) -> Option<&'a mut #var_type> {
+            for (id, element) in &mut self.#var_name {                
+                if element.position().euclidean_distance(position) < offset {
+                    return Some(*id);
+                }
             }
 
             None

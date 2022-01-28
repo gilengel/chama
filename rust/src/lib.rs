@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
-use map::street::Street;
-use map::intersection::Intersection;
+use geo::Coordinate;
+use map::map_city::City;
 use uuid::Uuid;
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -30,9 +28,6 @@ macro_rules! err {
     }
 }
 
-#[data_source(Street, Intersection)]   
-struct Data {}
-
 
 /*
 impl Data {
@@ -44,9 +39,10 @@ impl Data {
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    let data = Data::new();
-    data.streets();
-    data.intersections();
-    //let a = data.street(&Uuid::default());
+    
+    let a = City::new();
 
+    let ids : Vec<Uuid> = vec![];
+    a.streets_by_ids(&ids);
+    a.intersections_at_position(&Coordinate { x: 0., y: 0. }, 40.0);
 }

@@ -98,6 +98,7 @@ import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
 
 <svelte:window on:keydown={handleKeydown} />
 
+
 <header>
   <div class="toolbar">
     
@@ -119,7 +120,7 @@ import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
   </div>
 </header>
 
-<main>
+<main id="main">
   <MapEditor
     bind:this={editor}
     bind:selectedAction
@@ -128,12 +129,14 @@ import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
     bind:gridOffset
     bind:gridSubdivisions
   />
+  <!--
   <div class="main-toolbar">
     <Toolbar options={generalToolbarOptions} bind:group={selectedAction} />
     <Toolbar options={streetToolbarOptions} bind:group={selectedAction} />
     <Toolbar options={districtToolbarOptions} bind:group={selectedAction} />
     <Toolbar options={controlPointOptions} bind:group={selectedAction} />
   </div>
+  -->
 
   <div class="debug-panel">
     <FormField>
@@ -145,6 +148,8 @@ import ToggleToolbarButton from "./ToggleToolbarButton.svelte";
 </main>
 
 <style lang="scss">
+
+
   // app colors
   $primary: #1e88e5;
   $text: #ffffff;

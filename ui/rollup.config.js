@@ -71,7 +71,9 @@ export default {
       verbose: true,
       serverPath: "/build/",
 
-      wasmPackPath: "~/.cargo/bin/wasm-pack"
+      wasmPackPath: "~/.cargo/bin/wasm-pack",
+
+      searchPatterns: ["src/**", "../rust_editor/src/**", "../rust_macro/src/**"]
     }),
 
     // In dev mode, call `npm run start` once

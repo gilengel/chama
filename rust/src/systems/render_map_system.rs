@@ -1,8 +1,7 @@
-use rust_editor::{InformationLayer, camera::{Camera, Renderer}};
+use rust_editor::{InformationLayer, camera::{Camera, Renderer}, system::System};
 
 use crate::{
     map::map::Map,
-    state::System,
 };
 
 pub struct MapRenderSystem {}
@@ -13,7 +12,7 @@ impl MapRenderSystem {
     }
 }
 
-impl System for MapRenderSystem {
+impl System<Map> for MapRenderSystem {
     fn render(
         &self,
         map: &Map,

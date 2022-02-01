@@ -1,13 +1,11 @@
 use std::ops::Add;
 
 use geo::Coordinate;
-use rust_editor::{gizmo::{MoveGizmo, GetPosition, SetPosition, Gizmo, mouse_over}, interactive_element::{InteractiveElement, InteractiveElementState}, camera::Camera, InformationLayer};
+use rust_editor::{gizmo::{MoveGizmo, GetPosition, SetPosition, Gizmo, mouse_over}, interactive_element::{InteractiveElement, InteractiveElementState}, camera::Camera, InformationLayer, actions::Action, system::System};
 use uuid::Uuid;
 
 use crate::{
     map::map::Map,
-    state::System,
-    actions::action::Action,
 };
 
 
@@ -55,8 +53,8 @@ impl MoveControlSystem {
 
 
 
-impl System for MoveControlSystem {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+impl System<Map> for MoveControlSystem {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         self.gizmo.mouse_down(
             mouse_pos,
             button,
@@ -76,7 +74,7 @@ impl System for MoveControlSystem {
         }
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         self.center_gizmo(map);
 
         self.gizmo.mouse_move(
@@ -90,7 +88,7 @@ impl System for MoveControlSystem {
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         if self.gizmo.is_active() {
             self.gizmo.mouse_up(
                 mouse_pos,

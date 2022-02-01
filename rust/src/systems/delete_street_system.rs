@@ -1,10 +1,9 @@
 use geo::Coordinate;
-use rust_editor::{interactive_element::{InteractiveElementState, InteractiveElement}, InformationLayer, camera::{Camera, Renderer}};
+use rust_editor::{interactive_element::{InteractiveElementState, InteractiveElement}, InformationLayer, camera::{Camera, Renderer}, actions::Action, system::System};
 use uuid::Uuid;
 
 use crate::{
-    state::System,
-    map::{map::Map, intersection::Side, street::Street}, actions::action::Action,
+    map::{map::Map, intersection::Side, street::Street},
 };
 
 pub struct DeleteStreetSystem {
@@ -95,10 +94,10 @@ impl Default for DeleteStreetSystem {
     }
 }
 
-impl System for DeleteStreetSystem {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {}
+impl System<Map> for DeleteStreetSystem {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {}
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         self.clean_hovered_street_state(map);
 
         if let Some(hovered_street) = map.get_street_at_position(&mouse_pos, &vec![]) {
@@ -112,7 +111,7 @@ impl System for DeleteStreetSystem {
         }
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         if let Some(hovered_streets) = &self.hovered_streets {
             for street in hovered_streets {
                 map.remove_street(&street);

@@ -1,10 +1,8 @@
 use geo::Coordinate;
-use rust_editor::{gizmo::Id, InformationLayer, camera::{Camera, Renderer}};
+use rust_editor::{gizmo::Id, InformationLayer, camera::{Camera, Renderer}, actions::Action, system::System};
 use uuid::Uuid;
 
-use crate::{
-    state::System, map::{district::create_district_for_street, map::Map}, actions::action::Action,
-};
+use crate::map::{district::create_district_for_street, map::Map};
 
 pub struct CreateDistrictSystem {
     hovered_street: Option<Uuid>,
@@ -26,17 +24,17 @@ impl Default for CreateDistrictSystem {
     }
 }
 
-impl System for CreateDistrictSystem {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {}
+impl System<Map> for CreateDistrictSystem {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {}
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         match map.get_nearest_street_to_position(&mouse_pos) {
             Some(street) => self.hovered_street = Some(street.id()),
             None => self.hovered_street = None,
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         if let Some(hovered_street_id) = self.hovered_street {
             let hovered_street = map.street(&hovered_street_id).unwrap();
             let side = hovered_street.get_side_of_position(&mouse_pos);

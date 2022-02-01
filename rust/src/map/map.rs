@@ -2,6 +2,7 @@ use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
 use rust_editor::InformationLayer;
+use rust_editor::actions::{MultiAction, Action, Redo, Undo};
 use rust_editor::camera::{Renderer, Camera};
 use rust_editor::gizmo::{GetPosition, Id, SetId, SetPosition};
 use rust_editor::interactive_element::{InteractiveElementState, InteractiveElement};
@@ -16,10 +17,6 @@ use std::collections::HashMap;
 
 use wasm_bindgen::{JsValue};
 use web_sys::CanvasRenderingContext2d;
-
-use crate::actions::action::{Action, MultiAction};
-use crate::actions::redo::Redo;
-use crate::actions::undo::Undo;
 
 use super::district::District;
 use super::intersection::{Intersection};
@@ -123,7 +120,7 @@ impl CreateStreet {
     }
 }
 
-impl Undo for CreateStreet {
+impl Undo<Map> for CreateStreet {
     fn undo(&mut self, map: &mut Map) {
         
         map.remove_street(&self.street_id);
@@ -132,7 +129,7 @@ impl Undo for CreateStreet {
     }
 }
 
-impl Redo for CreateStreet {
+impl Redo<Map> for CreateStreet {
     fn redo(&mut self, map: &mut Map) {
         let start = map.intersection(&self.start_intersection_id).unwrap();
         let end = map.intersection(&self.end_intersection_id).unwrap();
@@ -209,7 +206,7 @@ impl SplitStreet {
     }
 }
 
-impl Undo for SplitStreet {
+impl Undo<Map> for SplitStreet {
     fn undo(&mut self, map: &mut Map) {
 
         if map.street(&self.new_street_id).is_none() {
@@ -233,7 +230,7 @@ impl Undo for SplitStreet {
     }
 }
 
-impl Redo for SplitStreet {
+impl Redo<Map> for SplitStreet {
     fn redo(&mut self, map: &mut Map) {
         let split_position =
             self.project_point_onto_middle_of_street(self.split_position, &self.street_id, &map);
@@ -280,9 +277,9 @@ impl Redo for SplitStreet {
     }
 }
 
-impl Action for SplitStreet {}
+impl Action<Map> for SplitStreet {}
 
-impl Action for CreateStreet {}
+impl Action<Map> for CreateStreet {}
 
 impl Map {
     pub fn new(width: u32, height: u32) -> Self {
@@ -423,7 +420,7 @@ impl Map {
         start: &Coordinate<f64>,
         end: &Coordinate<f64>,
         snapping_offset: f64,
-    ) -> Box<dyn Action> {
+    ) -> Box<dyn Action<Map>> {
         let mut action = MultiAction::new();
 
         let mut start_id = Uuid::default();

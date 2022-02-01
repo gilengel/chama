@@ -1,19 +1,14 @@
 
 
 use geo::{simplify::Simplify, Coordinate, LineString};
-use rust_editor::{style::Style, InformationLayer, camera::Camera, renderer::apply_style};
+use rust_editor::{style::Style, InformationLayer, camera::Camera, renderer::apply_style, actions::{MultiAction, Undo, Redo, Action}, system::System};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    actions::{
-        action::{Action, MultiAction},
-        redo::Redo,
-        undo::Undo,
-    },
     log,
-    state::System, map::map::Map,
+    map::map::Map,
 };
 
 pub struct CreateFreeFormStreetSystem {
@@ -39,7 +34,7 @@ impl Default for CreateFreeFormStreetSystem {
 
 struct CreateFreeFormStreetAction {
     raw_points: Vec<Coordinate<f64>>,
-    action_stack: MultiAction,
+    action_stack: MultiAction<Map>,
 }
 
 impl CreateFreeFormStreetAction {
@@ -51,13 +46,13 @@ impl CreateFreeFormStreetAction {
     }
 }
 
-impl Undo for CreateFreeFormStreetAction {
+impl Undo<Map> for CreateFreeFormStreetAction {
     fn undo(&mut self, map: &mut Map) {
         self.action_stack.undo(map);
     }
 }
 
-impl Redo for CreateFreeFormStreetAction {
+impl Redo<Map> for CreateFreeFormStreetAction {
     fn redo(&mut self, map: &mut Map) {
 
         let _intersections: Vec<Uuid> = vec![];
@@ -81,7 +76,7 @@ impl Redo for CreateFreeFormStreetAction {
     }
 }
 
-impl Action for CreateFreeFormStreetAction {}
+impl Action<Map> for CreateFreeFormStreetAction {}
 
 impl CreateFreeFormStreetSystem {
     pub fn new() -> CreateFreeFormStreetSystem {
@@ -89,13 +84,13 @@ impl CreateFreeFormStreetSystem {
     }
 }
 
-impl System for CreateFreeFormStreetSystem {
+impl System<Map> for CreateFreeFormStreetSystem {
     fn mouse_down(
         &mut self,
         _: Coordinate<f64>,
         button: u32,
         _: &mut Map,
-        _actions: &mut Vec<Box<dyn Action>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         if button == 0 {
             self.brush_active = true;
@@ -108,7 +103,7 @@ impl System for CreateFreeFormStreetSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
-        _actions: &mut Vec<Box<dyn Action>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
@@ -120,7 +115,7 @@ impl System for CreateFreeFormStreetSystem {
         _: Coordinate<f64>,
         button: u32,
         map: &mut Map,
-        actions: &mut Vec<Box<dyn Action>>,
+        actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         if button == 0 {
             self.brush_active = false;

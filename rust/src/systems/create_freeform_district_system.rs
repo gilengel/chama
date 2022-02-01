@@ -1,10 +1,10 @@
 use geo::{Coordinate, Polygon, LineString, winding_order::Winding, Point, prelude::Centroid, coords_iter::CoordsIter, simplify::Simplify};
-use rust_editor::{style::Style, renderer::PrimitiveRenderer, camera::{Renderer, Camera}, InformationLayer, gizmo::{SetPosition, Id}};
+use rust_editor::{style::Style, renderer::PrimitiveRenderer, camera::{Renderer, Camera}, InformationLayer, gizmo::{SetPosition, Id}, actions::Action, system::System};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{map::{intersection::Intersection, map::Map, district::create_district_for_street, street::Street}, state::System, actions::action::Action};
+use crate::{map::{intersection::Intersection, map::Map, district::create_district_for_street, street::Street}};
 
 pub struct CreateFreeFormDistrictSystem {
     raw_points: Vec<Coordinate<f64>>,
@@ -93,8 +93,8 @@ impl CreateFreeFormDistrictSystem {
 }
 
 
-impl System for CreateFreeFormDistrictSystem {
-    fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+impl System<Map> for CreateFreeFormDistrictSystem {
+    fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         if button == 0 {
             self.raw_polygon.exterior_mut(|exterior| exterior.0.clear());
             self.raw_points.clear();
@@ -103,7 +103,7 @@ impl System for CreateFreeFormDistrictSystem {
         }
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
 
@@ -111,7 +111,7 @@ impl System for CreateFreeFormDistrictSystem {
         }
     }
 
-    fn mouse_up(&mut self, _: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, _: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         if button == 0 {
             self.brush_active = false;
         }

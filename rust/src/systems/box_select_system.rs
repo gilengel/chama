@@ -1,9 +1,8 @@
 use geo::{Coordinate, Rect};
-use rust_editor::{InformationLayer, camera::Camera, interactive_element::{InteractiveElementState, InteractiveElement}, renderer::PrimitiveRenderer, style::Style};
+use rust_editor::{InformationLayer, camera::Camera, interactive_element::{InteractiveElementState, InteractiveElement}, renderer::PrimitiveRenderer, style::Style, actions::Action, system::System};
 
 use crate::{
-    state::System,
-    actions::action::Action, map::map::Map,
+    map::map::Map,
 };
 
 fn default_coordinate() -> Coordinate<f64> {
@@ -32,17 +31,17 @@ impl Default for BoxSelectSystem {
     }
 }
 
-impl System for BoxSelectSystem {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+impl System<Map> for BoxSelectSystem {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         self.selection_min = mouse_pos;
         self.active = true;
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         self.selection_max = mouse_pos;
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action>>) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
         for intersection in map
             .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
         {

@@ -1,13 +1,16 @@
-use geo::Coordinate;
-use map::map_city::City;
-use uuid::Uuid;
-use wasm_bindgen::prelude::wasm_bindgen;
+use std::{cell::RefCell, rc::Rc, sync::Mutex};
 
-mod systems;
-mod actions;
-mod state;
+use map::map::Map;
+use rust_editor::{
+    editor::{Editor, Toolbar, ToolbarButton, ToolbarPosition, add_toolbar},
+    toolbar_button, system::System,
+};
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+
+use lazy_static::lazy_static;
+
 mod map;
-mod editor;
+mod systems;
 
 #[macro_use]
 extern crate rust_macro;
@@ -28,21 +31,50 @@ macro_rules! err {
     }
 }
 
+type EditorMode = Vec<Box<dyn System<Map> + Send + Sync>>;
 
-/*
-impl Data {
-    pub fn streets(&self) -> &HashMap<Uuid, Street> {
-        &self.streets
-    }
+enum Modes {
+    CreateSimpleStreet(EditorMode),
+    CreateFreeformStreet(EditorMode),
+    DeleteStreem(EditorMode)
 }
-*/
+
+
+lazy_static! {
+    static ref EDITOR: Mutex<Editor<Map>> = Mutex::new(Editor::new(1920, 1080));
+}
+
+fn add_modes() -> Result<(), JsValue> {
+    Ok(())   
+}
+
+fn add_toolbars() -> Result<(), JsValue> {
+    let street_toolbar = Toolbar {
+        buttons: vec![
+            toolbar_button! { "add", "Create Straight Street", "0"},
+            toolbar_button! { "brush", "Freestyle Add Street", "1"},
+            toolbar_button! { "delete", "Delete Street", "2"},
+        ],
+    };
+    add_toolbar(EDITOR.lock().unwrap(), street_toolbar, ToolbarPosition::Left)?;
+
+    let district_toolbar = Toolbar {
+        buttons: vec![
+            toolbar_button! { "add", "Create District", "0"},
+            toolbar_button! { "delete", "Delete District", "1"},
+        ],
+    };
+    add_toolbar(EDITOR.lock().unwrap(), district_toolbar, ToolbarPosition::Left)?; 
+    
+    Ok(())
+}
 
 #[wasm_bindgen(start)]
-pub fn main() {
-    
-    let a = City::new();
+pub fn main() -> Result<(), JsValue> {
+    add_modes()?;
+    add_toolbars()?;
 
-    let ids : Vec<Uuid> = vec![];
-    a.streets_by_ids(&ids);
-    a.intersections_at_position(&Coordinate { x: 0., y: 0. }, 40.0);
+
+
+    Ok(())
 }

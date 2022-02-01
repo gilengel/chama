@@ -1,3 +1,4 @@
+/*
 extern crate rust_editor;
 
 use std::panic;
@@ -6,15 +7,13 @@ use std::panic;
 
 use geo::Coordinate;
 use js_sys::encode_uri_component;
-use rust_editor::{grid::Grid, store::Store, camera::Camera, InformationLayer};
-use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
+use rust_editor::{grid::Grid, store::Store, camera::Camera, InformationLayer, actions::Action};
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
 use crate::{
-    actions::action::Action,
     err,
     log,
-    map::{map::Map, map_city::City},
     state::System,
     systems::{
         box_select_system::BoxSelectSystem, create_district_system::CreateDistrictSystem,
@@ -22,11 +21,13 @@ use crate::{
         create_street_system::CreateStreetSystem, delete_district_system::DeleteDistrictSystem,
         delete_street_system::DeleteStreetSystem, move_control_system::MoveControlSystem,
         render_map_system::MapRenderSystem,
-    },
+    }, map::map::Map,
 };
 
-#[wasm_bindgen]
-pub struct Editor {
+//#[wasm_bindgen]
+type MapEditor = Editor<Map>;
+//#[wasm_bindgen]
+pub struct Editor<T> {
     context: CanvasRenderingContext2d,
 
     additional_information_layers: Vec<InformationLayer>,
@@ -34,11 +35,10 @@ pub struct Editor {
     render_intersections: bool,
     render_streets: bool,
 
-    active_systems: Vec<Box<dyn System + Send + Sync>>,
-    undo_stack: Vec<Box<dyn Action>>,
-    redo_stack: Vec<Box<dyn Action>>,
+    active_systems: Vec<Box<dyn System<T> + Send + Sync>>,
+    undo_stack: Vec<Box<dyn Action<T>>>,
+    redo_stack: Vec<Box<dyn Action<T>>>,
     map: Map,
-    city: City,
     grid: rust_editor::grid::Grid,
     camera: Camera,
     store: Option<Store>,
@@ -62,9 +62,8 @@ fn get_canvas_and_context(
     Ok((canvas, context))
 }
 
-#[wasm_bindgen]
-impl Editor {
-    pub fn new(id: String, width: u32, height: u32) -> Editor {
+impl<Map> Editor<Map> {
+    pub fn new(id: String, width: u32, height: u32) -> Editor<Map> {
         panic::set_hook(Box::new(console_error_panic_hook::hook));
 
         let (_, context) = get_canvas_and_context(&id).unwrap();
@@ -79,7 +78,6 @@ impl Editor {
             render_intersections: true,
             render_streets: true,
             map: Map::new(width, height),
-            city: City::new(),
             grid: Grid::default(),
             store: Store::new("fantasy_city_map"),
             camera: Camera::default(),
@@ -95,6 +93,7 @@ impl Editor {
         !self.redo_stack.is_empty()
     }
 
+    /*
     pub fn undo(&mut self) {
         if let Some(action) = self.undo_stack.last_mut() {
             (**action).undo(&mut self.map);
@@ -110,6 +109,7 @@ impl Editor {
 
         self.undo_stack.push(self.redo_stack.pop().unwrap());
     }
+    */
 
     pub fn deactivate_system(&mut self) {
         todo!();
@@ -119,12 +119,14 @@ impl Editor {
         self.active_systems.clear();
     }
 
+    /*
     pub fn import(&mut self, content: String) {
         match serde_json::from_str::<Map>(&content) {
             Ok(m) => self.map = m,
             Err(e) => err!("{:?}", e),
         }
     }
+    */
 
     /// Generates a file locally containing the current map as a JSON file and triggers the browser file download dialog
     pub fn download(&self) -> Result<(), JsValue> {
@@ -190,7 +192,7 @@ impl Editor {
     pub fn switch_to_mode(&mut self, mode: u32) {
         self.deactivate_all_systems();
 
-        let mut new_systems: Vec<Box<dyn System + Send + Sync>> = Vec::new();
+        let mut new_systems: Vec<Box<dyn System<Map> + Send + Sync>> = Vec::new();
         new_systems.push(Box::new(MapRenderSystem::new()));
 
         match mode {
@@ -362,3 +364,4 @@ impl Editor {
         }
     }
 }
+*/

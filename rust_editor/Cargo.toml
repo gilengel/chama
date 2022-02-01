@@ -3,6 +3,8 @@ name = "rust_editor"
 version = "0.1.0"
 edition = "2021"
 
+
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -14,8 +16,8 @@ geo = { version = "0.18.0", features = ["use-serde"] }
 uuid = { version = "0.8.2", features = ["v4", "wasm-bindgen", "serde"] }
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
+gloo = "0.6.0"
 rust_macro = { path = "../rust_macro" }
-
 
 [dependencies.web-sys]
 version = "0.3.4"
@@ -27,7 +29,13 @@ features = [
   'EventTarget',
   'HtmlCanvasElement',
   'HtmlElement',
+  'HtmlInputElement',
   'HtmlAnchorElement',
+  'HtmlButtonElement',
+  'HtmlParagraphElement',
+  'HtmlLabelElement',
+  'HtmlSpanElement',
+  'HtmlSelectElement',
   'MouseEvent',
   'Node',
   'Window',
@@ -37,5 +45,8 @@ features = [
   'DataTransfer',
   'FileList',
   'File',
-  'DomRect'
+  'DomRect',
+  'DomTokenList',
+  'EventListener'
 ]
+

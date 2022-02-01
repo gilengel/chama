@@ -1,10 +1,12 @@
-use std::{rc::Rc, sync::Mutex};
+use std::sync::Mutex;
+use std::fmt::Debug;
+use std::hash::Hash;
 
 use js_sys::Array;
 use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::{Document, HtmlElement, HtmlInputElement};
 
-use crate::{editor::Editor, camera::Renderer};
+use crate::{editor::{Editor, EditorMode}, camera::Renderer};
 
 pub fn get_element(document: &Document, id: Option<String>) -> HtmlElement {
     match id {
@@ -73,7 +75,7 @@ pub fn set_type(stack: &mut Vec<HtmlElement>, input_type: &str) {
     stack.push(element.into());
 }
 
-pub fn set_onchange<F, T>(stack: &mut Vec<HtmlElement>, callback: F) where F: Fn(Mutex<Editor<T>>) -> () + 'static, T: Renderer{
+pub fn set_onchange<F, T, M>(stack: &mut Vec<HtmlElement>, callback: F) where F: Fn(Mutex<Editor<T>>) -> () + 'static, T: Renderer, M: EditorMode {
     let window = web_sys::window().expect("should have a window in this context");
     let document = window.document().expect("window should have a document");
 
@@ -112,6 +114,13 @@ pub fn slugify(text: &str) -> String {
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into())
+    }
+}
+
+#[macro_export]
+macro_rules! error {
+    ( $( $t:tt )* ) => {
+        web_sys::console::error_1(&format!( $( $t )* ).into())
     }
 }
 
@@ -265,7 +274,7 @@ macro_rules! toolbar_button {
         ToolbarButton {
             icon: $icon.to_string(),
             tooltip: $tooltip.to_string(),
-            value: $value.to_string(),
+            value: $value,
         }
     };
 }

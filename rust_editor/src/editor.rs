@@ -1,29 +1,24 @@
-use std::{cell::RefCell, collections::HashMap, panic, rc::Rc, sync::{MutexGuard, Mutex}};
+use std::fmt::Debug;
+use std::hash::Hash;
+use std::{cell::RefCell, collections::HashMap, panic, rc::Rc};
 
 use geo::Coordinate;
-use wasm_bindgen::{prelude::Closure, JsCast, JsValue, UnwrapThrowExt};
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlInputElement, HtmlLabelElement, HtmlSpanElement, HtmlElement, HtmlSelectElement};
+use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
+use web_sys::{
+    CanvasRenderingContext2d, HtmlElement, HtmlInputElement, HtmlLabelElement, HtmlSpanElement,
+};
 
+use crate::log;
 use crate::{
     actions::Action,
     camera::{Camera, Renderer},
-    html, html_impl, log,
+    html, html_impl,
     macros::slugify,
     system::System,
     InformationLayer,
 };
 
-/*
-#[function_component(Toolbar)]
-pub fn toolbar() -> Html {
-    html! {
-        <p>
-            { "TOOLBAR" }
-        </p>
-
-    }
-}
-*/
+pub trait EditorMode = Copy + Clone;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum ToolbarPosition {
@@ -38,13 +33,50 @@ pub struct Toolbar {
 }
 
 pub struct ToolbarButton {
-    pub icon: String,
-    pub tooltip: String,
-    pub value: String,
+    pub icon: &'static str,
+    pub tooltip: &'static str,
+    pub value: u8,
 }
 
-pub fn add_toolbar<T>(mut editor: MutexGuard<'static, Editor<T>>, toolbar: Toolbar, position: ToolbarPosition) -> Result<(), JsValue> where T: Renderer + Default + 'static  {
+pub fn window() -> web_sys::Window {
+    web_sys::window().expect("no global `window` exists")
+}
 
+pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+    window()
+        .request_animation_frame(f.as_ref().unchecked_ref())
+        .expect("should register `requestAnimationFrame` OK");
+}
+
+pub fn document() -> web_sys::Document {
+    window()
+        .document()
+        .expect("should have a document on window")
+}
+
+pub fn add_mode<T>(
+    editor: Rc<RefCell<Editor<T>>>,
+    mode: u8,
+    systems: Vec<Box<dyn System<T> + Send + Sync>>,
+) where
+    T: Renderer + Default + 'static,
+{
+    if editor.borrow().modes.contains_key(&mode) {
+        // TODO Error handling
+        todo!()
+    }
+
+    editor.borrow_mut().modes.insert(mode as u8, systems);
+}
+
+pub fn add_toolbar<T>(
+    editor: Rc<RefCell<Editor<T>>>,
+    toolbar: Toolbar,
+    position: ToolbarPosition,
+) -> Result<(), JsValue>
+where
+    T: Renderer + Default + 'static,
+{
     let container_id = match position {
         ToolbarPosition::Top => "top_primary_toolbar",
         ToolbarPosition::Right => "right_primary_toolbar",
@@ -52,18 +84,20 @@ pub fn add_toolbar<T>(mut editor: MutexGuard<'static, Editor<T>>, toolbar: Toolb
         ToolbarPosition::Left => "left_primary_toolbar",
     };
 
-    if editor.toolbars.get(&position).is_none() {
-        editor.toolbars.insert(position.clone(), vec![]);
+    {
+        let mut editor = editor.borrow_mut();
+        if editor.toolbars.get(&position).is_none() {
+            editor.toolbars.insert(position.clone(), vec![]);
 
-        html! {
-            ["main"]
+            html! {
+                ["main"]
 
-            <div id=(container_id)></div>
+                <div id=(container_id)></div>
+            }
         }
     }
 
-    let window = web_sys::window().expect("no global `window` exists");
-    let document = window.document().expect("should have a document on window");
+    let document = document();
     let ul = document
         .create_element("ul")
         .unwrap()
@@ -74,195 +108,213 @@ pub fn add_toolbar<T>(mut editor: MutexGuard<'static, Editor<T>>, toolbar: Toolb
     ul.set_attribute("role", "radiogroup")?;
 
     let a = Closure::wrap(Box::new(move |evt: web_sys::Event| {
-        log!("{}", evt.target().unwrap().dyn_into::<HtmlInputElement>().unwrap().value());
-    }) as Box<dyn Fn(_)>);
+        let value = evt
+            .target()
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap()
+            .value();
+
+        let value = value.as_bytes()[0];
+
+        editor.borrow_mut().active_mode = value;
+    }) as Box<dyn FnMut(_)>);
 
     for i in &toolbar.buttons {
-        let li = document.create_element("li").unwrap().dyn_into::<HtmlElement>().unwrap();
-        let input = document.create_element("input").unwrap().dyn_into::<HtmlInputElement>().unwrap();
+        let li = document
+            .create_element("li")
+            .unwrap()
+            .dyn_into::<HtmlElement>()
+            .unwrap();
+        let input = document
+            .create_element("input")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap();
         input.set_id(&slugify(&i.tooltip));
         input.set_type("radio");
-        input.set_value(&i.value);
+        input.set_value(std::str::from_utf8(&vec![i.value]).unwrap());
         input.set_name("muu");
         input.set_onchange(Some(a.as_ref().unchecked_ref()));
-        
-        
+
         li.append_child(&input)?;
 
-        let label = document.create_element("label").unwrap().dyn_into::<HtmlLabelElement>().unwrap();
+        let label = document
+            .create_element("label")
+            .unwrap()
+            .dyn_into::<HtmlLabelElement>()
+            .unwrap();
         label.set_html_for(&slugify(&i.tooltip));
 
-        let span = document.create_element("span").unwrap().dyn_into::<HtmlSpanElement>().unwrap();
+        let span = document
+            .create_element("span")
+            .unwrap()
+            .dyn_into::<HtmlSpanElement>()
+            .unwrap();
         span.set_class_name("material-icons");
         span.set_text_content(Some(&i.icon));
         label.append_child(&span)?;
         li.append_child(&label)?;
 
-        let span_tooltip = document.create_element("span").unwrap().dyn_into::<HtmlSpanElement>().unwrap();
+        let span_tooltip = document
+            .create_element("span")
+            .unwrap()
+            .dyn_into::<HtmlSpanElement>()
+            .unwrap();
         span_tooltip.set_class_name("tooltip");
         span_tooltip.set_text_content(Some(&i.tooltip));
         li.append_child(&span_tooltip)?;
-        
+
         ul.append_child(&li)?;
     }
     a.forget();
 
     let toolbar_container = document.get_element_by_id(container_id).unwrap();
     toolbar_container.append_child(&ul)?;
-    /*
-    html! {
-        [container_id]
-
-        <div class="toolbar" role="radiogroup">
-        (for i in &toolbar.buttons) {
-            <li>
-                <input id=(slugify(&i.tooltip)) type="radio" value=(i.value) name="muu"></input>
-
-                <label for=(slugify(&i.tooltip))>
-                    <span class="material-icons">(i.icon)</span>
-                </label>
-                <span class="tooltip">(i.tooltip)</span>
-            </li>
-        }
-       </div>
-    }
-    */
-
-    //editor.toolbars.get_mut(&position).unwrap().push(toolbar);
 
     Ok(())
+}
 
-    /*
-    let window = web_sys::window().expect("should have a window in this context");
-    let document = window.document().expect("window should have a document");
+struct RenderLoop {
+    animation_id: Option<i32>,
+    pub closure: Option<Closure<dyn Fn()>>,
+}
 
-    let num_clicks = document
-        .get_element_by_id("num-clicks")
-        .expect("should have #num-clicks on the page");
-    let mut clicks = 0;
+pub fn launch<T>(mut editor: Rc<RefCell<Editor<T>>>) -> Result<(), JsValue>
+where
+    T: Renderer + Default + 'static,
+{
+    let document = document();
 
-    let a = Closure::wrap(Box::new(move || {
-        
-        editor.muu();
-        
-        clicks += 1;
-        num_clicks.set_inner_html(&clicks.to_string());
-    }) as Box<dyn FnMut()>);
-    document
-        .get_element_by_id("green-square")
-        .expect("should have #green-square on the page")
-        .dyn_ref::<HtmlElement>()
-        .expect("#green-square be an `HtmlElement`")
-        .set_onclick(Some(a.as_ref().unchecked_ref()));
+    let canvas = document
+        .create_element("canvas")?
+        .dyn_into::<web_sys::HtmlCanvasElement>()?;
+    document.body().unwrap().append_child(&canvas)?;
+    canvas.set_width(1920);
+    canvas.set_height(1080);
+    canvas.style().set_property("border", "solid")?;
+    {
+        let context = canvas
+        .get_context("2d")?
+        .unwrap()
+        .dyn_into::<web_sys::CanvasRenderingContext2d>()?;
+    
+        editor.borrow_mut().context = Some(context);
+    }
+    
 
-    // See comments in `setup_clock` above for why we use `a.forget()`.
-    a.forget();
-    */
+    {
+        let editor = editor.clone();
+        let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
+            editor.borrow_mut().mouse_down(
+                event.client_x() as u32,
+                event.client_y() as u32,
+                event.button() as u32,
+            );
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+    {
+        let editor = editor.clone();
+        let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
+            editor.borrow_mut().mouse_up(
+                event.client_x() as u32,
+                event.client_y() as u32,
+                event.button() as u32,
+            );
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("mouseup", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+    {
+        let editor = editor.clone();
+        let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
+            // TODO reenable the movement difference
+            editor
+                .borrow_mut()
+                .mouse_move(event.client_x() as u32, event.client_y() as u32, 0, 0);
+        }) as Box<dyn FnMut(_)>);
+        canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+    {
+        let f = Rc::new(RefCell::new(None));
+        let g = f.clone();
+    
+        *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+            editor.borrow().render();
+            // Schedule ourself for another requestAnimationFrame callback.
+            request_animation_frame(f.borrow().as_ref().unwrap());
+        }) as Box<dyn FnMut()>));
+    
+        request_animation_frame(g.borrow().as_ref().unwrap());
+    }
+
+
+    // TODO forget leaks memory we need a more intelligent way to handle this
+
+    let main = document
+        .get_element_by_id("main")
+        .expect("expecting an element with id \"main\"");
+    main.append_child(&canvas)?;
+
+    Ok(())
 }
 
 pub struct Editor<T>
 where
     T: Renderer,
 {
-    //context: CanvasRenderingContext2d,
+    context: Option<CanvasRenderingContext2d>,
     additional_information_layers: Vec<InformationLayer>,
 
-    active_systems: Vec<Box<dyn System<T> + Send + Sync>>,
     camera: Camera,
     data: T,
 
     toolbars: HashMap<ToolbarPosition, Vec<Toolbar>>,
 
-    modes: Vec<String>,
+    active_mode: u8,
+    modes: HashMap<u8, Vec<Box<dyn System<T> + Send + Sync + 'static>>>,
 
     undo_stack: Vec<Box<dyn Action<T>>>,
     redo_stack: Vec<Box<dyn Action<T>>>,
 }
 
-fn get_canvas_and_context(
-    id: &String,
-) -> Result<(HtmlCanvasElement, CanvasRenderingContext2d), JsValue> {
-    let document = web_sys::window().unwrap().document().unwrap();
-    let canvas = document.get_element_by_id(id).unwrap();
-    let canvas: web_sys::HtmlCanvasElement = canvas
-        .dyn_into::<web_sys::HtmlCanvasElement>()
-        .map_err(|_| ())
-        .unwrap();
-
-    let context = canvas
-        .get_context("2d")?
-        .unwrap()
-        .dyn_into::<web_sys::CanvasRenderingContext2d>()?;
-
-    Ok((canvas, context))
-}
-
-unsafe impl<T> Sync for Editor<T> where T: Renderer {}
-
 impl<T> Editor<T>
 where
     T: Renderer + Default,
 {
-
-    pub fn launch(&self) {
-        let window = web_sys::window().expect("global window does not exists");
-        let document = window.document().expect("expecting a document on window");
-        let body = document
-            .body()
-            .expect("document expect to have have a body");
-
-        let button = document.create_element("button").unwrap();
-        button.set_text_content(Some("Bella Ciao"));
-
-        let editor = Rc::new(RefCell::new(self));
-        {
-            let editor = editor.clone();
-
-            let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-                //let a = editor.borrow_mut();
-                //a.muuh();
-            }) as Box<dyn FnMut(_)>);
-            button.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref());
-            closure.forget();
-        }
-
-        body.append_child(&button);
+    pub fn launch(&self, _width: u32, _height: u32) -> Result<(), JsValue> {
+        Ok(())
     }
-    pub fn new(width: u32, height: u32) -> Editor<T> {
+    pub fn new(_width: u32, _height: u32) -> Editor<T> {
         panic::set_hook(Box::new(console_error_panic_hook::hook));
 
         //let (_, context) = get_canvas_and_context(&id).unwrap();
         Editor {
-            //context,
+            context: None,
             additional_information_layers: vec![],
 
-            active_systems: Vec::new(),
+            active_mode: 0,
             camera: Camera::default(),
             data: T::default(),
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             toolbars: HashMap::new(),
-            modes: Vec::new(),
+            modes: HashMap::new(),
         }
     }
 
-    pub fn deactivate_system(&mut self) {
-        todo!();
-    }
-
-    pub fn deactivate_all_systems(&mut self) {
-        self.active_systems.clear();
-    }
-
     pub fn render(&self) -> Result<(), JsValue> {
-        /*
-        self.context
-            .clear_rect(0.0, 0.0, 2000.0, 2000.0);
+        let context = self.context.as_ref().unwrap();
 
-        for system in &self.active_systems {
+        context.clear_rect(0.0, 0.0, 2000.0, 2000.0);
+
+        for system in self.modes.get(&self.active_mode).unwrap().iter() {
             system.render(
                 &self.data,
-                &self.context,
+                &context,
                 &self.additional_information_layers,
                 &self.camera,
             )?;
@@ -271,7 +323,6 @@ where
                 break;
             }
         }
-        */
 
         Ok(())
     }
@@ -292,7 +343,7 @@ where
         }
 
         let mouse_pos = self.mouse_pos(x, y, &self.camera);
-        for system in &mut self.active_systems {
+        for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
             system.mouse_down(mouse_pos, button, &mut self.data, &mut self.undo_stack);
 
             if system.blocks_next_systems() {
@@ -310,7 +361,7 @@ where
         }
 
         let mouse_pos = self.mouse_pos(x, y, &self.camera);
-        for system in &mut self.active_systems {
+        for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
             system.mouse_up(mouse_pos, button, &mut self.data, &mut self.undo_stack);
 
             if system.blocks_next_systems() {
@@ -328,7 +379,7 @@ where
         }
 
         let mouse_pos = self.mouse_pos(x, y, &self.camera);
-        for system in &mut self.active_systems {
+        for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
             system.mouse_move(mouse_pos, &mut self.data, &mut self.undo_stack);
 
             if system.blocks_next_systems() {

@@ -1,3 +1,5 @@
+#![feature(trait_alias)]
+
 pub mod actions;
 pub mod camera;
 pub mod editor;

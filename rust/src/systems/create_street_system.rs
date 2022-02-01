@@ -13,15 +13,8 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::{
-    map::{street::Street, intersection::{Intersection, Direction}, map::Map},
+    map::{street::Street, intersection::{Intersection, Direction}, map::Map}, log,
 };
-
-#[allow(unused_macros)]
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into())
-    }
-}
 
 pub struct CreateStreetSystem {
     mouse_pressed: bool,

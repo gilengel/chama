@@ -1,13 +1,15 @@
-use std::{cell::RefCell, rc::Rc, sync::Mutex};
+use std::{cell::RefCell, rc::Rc};
 
 use map::map::Map;
 use rust_editor::{
-    editor::{Editor, Toolbar, ToolbarButton, ToolbarPosition, add_toolbar},
-    toolbar_button, system::System,
+    editor::{add_toolbar, launch, Editor, Toolbar, ToolbarButton, ToolbarPosition, add_mode, request_animation_frame},
+    system::System
 };
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-
-use lazy_static::lazy_static;
+use systems::{
+    create_freeform_street_system::CreateFreeFormStreetSystem,
+    create_street_system::CreateStreetSystem, delete_street_system::DeleteStreetSystem,
+};
+use wasm_bindgen::{prelude::{wasm_bindgen, Closure}, JsValue};
 
 mod map;
 mod systems;
@@ -31,50 +33,77 @@ macro_rules! err {
     }
 }
 
-type EditorMode = Vec<Box<dyn System<Map> + Send + Sync>>;
-
+#[derive(Debug, PartialEq, Eq, Hash)]
 enum Modes {
-    CreateSimpleStreet(EditorMode),
-    CreateFreeformStreet(EditorMode),
-    DeleteStreem(EditorMode)
+    CreateSimpleStreet,
+    CreateFreeformStreet,
+    DeleteStreet,
 }
 
-
-lazy_static! {
-    static ref EDITOR: Mutex<Editor<Map>> = Mutex::new(Editor::new(1920, 1080));
+impl std::fmt::Display for Modes {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
-fn add_modes() -> Result<(), JsValue> {
-    Ok(())   
-}
-
-fn add_toolbars() -> Result<(), JsValue> {
-    let street_toolbar = Toolbar {
-        buttons: vec![
-            toolbar_button! { "add", "Create Straight Street", "0"},
-            toolbar_button! { "brush", "Freestyle Add Street", "1"},
-            toolbar_button! { "delete", "Delete Street", "2"},
-        ],
-    };
-    add_toolbar(EDITOR.lock().unwrap(), street_toolbar, ToolbarPosition::Left)?;
-
-    let district_toolbar = Toolbar {
-        buttons: vec![
-            toolbar_button! { "add", "Create District", "0"},
-            toolbar_button! { "delete", "Delete District", "1"},
-        ],
-    };
-    add_toolbar(EDITOR.lock().unwrap(), district_toolbar, ToolbarPosition::Left)?; 
-    
-    Ok(())
+thread_local! {
+    static EDITOR: Rc<RefCell<Editor<Map>>> = Rc::new(RefCell::new(Editor::new(1920, 1080)));
 }
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
-    add_modes()?;
-    add_toolbars()?;
+    //let editor = EDITOR.lock().unwrap();
+
+    EDITOR.with(|e| {
+        let street_toolbar = Toolbar {
+            buttons: vec![
+                ToolbarButton {
+                    icon: "add",
+                    tooltip: "Create Straight Street",
+                    value: Modes::CreateSimpleStreet as u8,
+                },
+                ToolbarButton {
+                    icon: "brush",
+                    tooltip: "Freestyle Add Street",
+                    value: Modes::CreateFreeformStreet as u8,
+                },
+                ToolbarButton {
+                    icon: "delete",
+                    tooltip: "Delete Street",
+                    value: Modes::DeleteStreet as u8,
+                },
+            ],
+        };
+        add_toolbar(e.clone(), street_toolbar, ToolbarPosition::Left);
+
+        let street_toolbar2 = Toolbar {
+            buttons: vec![
+                ToolbarButton {
+                    icon: "add",
+                    tooltip: "Create Straight Street",
+                    value: Modes::CreateSimpleStreet as u8,
+                },
+                ToolbarButton {
+                    icon: "brush",
+                    tooltip: "Freestyle Add Street",
+                    value: Modes::CreateFreeformStreet as u8,
+                },
+                ToolbarButton {
+                    icon: "delete",
+                    tooltip: "Delete Street",
+                    value: Modes::DeleteStreet as u8,
+                },
+            ],
+        };
+        add_toolbar(e.clone(), street_toolbar2, ToolbarPosition::Left);
+
+        add_mode(e.clone(), Modes::CreateSimpleStreet as u8, vec![Box::new(CreateStreetSystem::new())]);
+        add_mode(e.clone(), Modes::CreateFreeformStreet as u8, vec![Box::new(CreateFreeFormStreetSystem::new())]);
+        add_mode(e.clone(), Modes::DeleteStreet as u8, vec![Box::new(DeleteStreetSystem::new())]);
 
 
+        launch(e.clone());
+    });
 
     Ok(())
 }

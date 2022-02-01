@@ -96,7 +96,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
             self.brush_active = true;
         }
 
-        log!("{}", button);
+        
     }
 
     fn mouse_move(

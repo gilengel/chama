@@ -24,8 +24,6 @@
 </script>
 
 <header>
-  <div id="num-clicks"></div>
-  <button id="green-square">CLICK ME</button>
 </header>
 
 <main id="main" bind:this={main} />

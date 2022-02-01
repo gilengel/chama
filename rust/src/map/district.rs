@@ -2,16 +2,23 @@ use geo::{
     prelude::{Centroid, Contains},
     Coordinate, LineString, Polygon,
 };
-use rust_editor::{style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, gizmo::Id, InformationLayer, renderer::PrimitiveRenderer};
+use rust_editor::gizmo::SetId;
+use rust_editor::{
+    gizmo::Id,
+    interactive_element::{InteractiveElement, InteractiveElementState},
+    renderer::PrimitiveRenderer,
+    style::{InteractiveElementStyle, Style},
+    InformationLayer,
+};
+use rust_macro::ElementId;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
-use web_sys::CanvasRenderingContext2d;
-use rust_editor::gizmo::{SetId}; // TODO
+use web_sys::CanvasRenderingContext2d; // TODO
 
-use crate::map::intersection::Side;
-use crate::map::house::generate_houses;
 use super::map::Map;
+use crate::map::house::generate_houses;
+use crate::map::intersection::Side;
 
 #[derive(Serialize, Deserialize, ElementId)]
 pub struct District {

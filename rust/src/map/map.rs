@@ -1,11 +1,11 @@
 use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
-use rust_editor::InformationLayer;
-use rust_editor::actions::{MultiAction, Action, Redo, Undo};
-use rust_editor::camera::{Renderer, Camera};
+use rust_editor::actions::{Action, MultiAction, Redo, Undo};
+use rust_editor::camera::{Camera, Renderer};
 use rust_editor::gizmo::{GetPosition, Id, SetId, SetPosition};
-use rust_editor::interactive_element::{InteractiveElementState, InteractiveElement};
+use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
+use rust_editor::InformationLayer;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,15 +13,12 @@ use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
-
-
-use wasm_bindgen::{JsValue};
+use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use super::district::District;
-use super::intersection::{Intersection};
+use super::intersection::Intersection;
 use super::street::Street;
-
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {
@@ -32,7 +29,7 @@ pub struct Map {
     intersections: HashMap<Uuid, Intersection>,
     districts: HashMap<Uuid, District>,
 
-    bounding_box: Rect<f64>, 
+    bounding_box: Rect<f64>,
 }
 
 impl Default for Map {
@@ -44,7 +41,7 @@ impl Default for Map {
             intersections: HashMap::new(),
             districts: HashMap::new(),
 
-            bounding_box: Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. }),            
+            bounding_box: Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. }),
         }
     }
 }
@@ -122,10 +119,7 @@ impl CreateStreet {
 
 impl Undo<Map> for CreateStreet {
     fn undo(&mut self, map: &mut Map) {
-        
         map.remove_street(&self.street_id);
-        
-
     }
 }
 
@@ -208,25 +202,27 @@ impl SplitStreet {
 
 impl Undo<Map> for SplitStreet {
     fn undo(&mut self, map: &mut Map) {
-
         if map.street(&self.new_street_id).is_none() {
             return;
         }
-        
+
         let end = map.street(&self.new_street_id).unwrap().end;
         let start = map.street(&self.new_street_id).unwrap().start;
-        map.intersection_mut(&end).unwrap().add_incoming_street(&self.street_id);
-        map.intersection_mut(&start).unwrap().remove_connected_street(&self.street_id);
+        map.intersection_mut(&end)
+            .unwrap()
+            .add_incoming_street(&self.street_id);
+        map.intersection_mut(&start)
+            .unwrap()
+            .remove_connected_street(&self.street_id);
         map.remove_street(&self.new_street_id);
-
 
         let end = map.intersection(&end).unwrap().clone();
         map.street_mut(&self.street_id).unwrap().set_end(&end);
 
         let end = map.street(&self.street_id).unwrap().end;
-        let start = map.street(&self.street_id).unwrap().start;    
-        map.update_intersection(&end);    
-        map.update_intersection(&start);    
+        let start = map.street(&self.street_id).unwrap().start;
+        map.update_intersection(&end);
+        map.update_intersection(&start);
     }
 }
 
@@ -251,7 +247,7 @@ impl Redo<Map> for SplitStreet {
 
         // The street from new intersection to the old end
         let mut new_street = Street::default();
-        
+
         new_street.set_id(self.new_street_id);
         new_street.set_start(&new_intersection);
         new_street.set_end(&map.intersection(&old_end).unwrap());
@@ -744,7 +740,7 @@ impl Map {
             if let Some(end) = self.intersections.get_mut(&street.end) {
                 end.remove_connected_street(id);
 
-                is_end_empty = end.get_connected_streets().is_empty();            
+                is_end_empty = end.get_connected_streets().is_empty();
                 end_id = end.id();
             }
 

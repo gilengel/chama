@@ -1,5 +1,11 @@
 use geo::Coordinate;
-use rust_editor::{gizmo::Id, InformationLayer, camera::{Camera, Renderer}, actions::Action, system::System};
+use rust_editor::{
+    actions::Action,
+    camera::{Camera, Renderer},
+    gizmo::Id,
+    system::System,
+    InformationLayer,
+};
 use uuid::Uuid;
 
 use crate::map::{district::create_district_for_street, map::Map};
@@ -25,16 +31,34 @@ impl Default for CreateDistrictSystem {
 }
 
 impl System<Map> for CreateDistrictSystem {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {}
+    fn mouse_down(
+        &mut self,
+        _mouse_pos: Coordinate<f64>,
+        _: u32,
+        _: &mut Map,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
+    }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_move(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        map: &mut Map,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         match map.get_nearest_street_to_position(&mouse_pos) {
             Some(street) => self.hovered_street = Some(street.id()),
             None => self.hovered_street = None,
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_up(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        _: u32,
+        map: &mut Map,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         if let Some(hovered_street_id) = self.hovered_street {
             let hovered_street = map.street(&hovered_street_id).unwrap();
             let side = hovered_street.get_side_of_position(&mouse_pos);
@@ -53,9 +77,9 @@ impl System<Map> for CreateDistrictSystem {
         &self,
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>, camera: &Camera
+        additional_information_layer: &Vec<InformationLayer>,
+        camera: &Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
-
         map.render(context, additional_information_layer, camera)?;
 
         Ok(())

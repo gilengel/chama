@@ -1,15 +1,17 @@
-
-
 use geo::{simplify::Simplify, Coordinate, LineString};
-use rust_editor::{style::Style, InformationLayer, camera::Camera, renderer::apply_style, actions::{MultiAction, Undo, Redo, Action}, system::System};
+use rust_editor::{
+    actions::{Action, MultiAction, Redo, Undo},
+    camera::Camera,
+    renderer::apply_style,
+    style::Style,
+    system::System,
+    InformationLayer,
+};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{
-    log,
-    map::map::Map,
-};
+use crate::map::map::Map;
 
 pub struct CreateFreeFormStreetSystem {
     raw_points: Vec<Coordinate<f64>>,
@@ -54,7 +56,6 @@ impl Undo<Map> for CreateFreeFormStreetAction {
 
 impl Redo<Map> for CreateFreeFormStreetAction {
     fn redo(&mut self, map: &mut Map) {
-
         let _intersections: Vec<Uuid> = vec![];
 
         let mut index_to_be_skipped = 0;
@@ -95,8 +96,6 @@ impl System<Map> for CreateFreeFormStreetSystem {
         if button == 0 {
             self.brush_active = true;
         }
-
-        
     }
 
     fn mouse_move(

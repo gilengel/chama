@@ -7,13 +7,21 @@ use geo::{
 };
 
 use rand::{thread_rng, Rng};
-use rust_editor::{gizmo::{SetId, SetPosition, Id, GetPosition}, InformationLayer, camera::Camera, actions::Action, system::System};
+use rust_editor::{
+    actions::Action,
+    camera::Camera,
+    gizmo::{GetPosition, Id, SetId, SetPosition},
+    system::System,
+    InformationLayer,
+};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{
-    map::{street::Street, intersection::{Intersection, Direction}, map::Map}, log,
+use crate::map::{
+    intersection::{Direction, Intersection},
+    map::Map,
+    street::Street,
 };
 
 pub struct CreateStreetSystem {
@@ -233,7 +241,13 @@ impl CreateStreetSystem {
 }
 
 impl<'a> System<Map> for CreateStreetSystem {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_down(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: u32,
+        map: &mut Map,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         // We only check for left click
         if button != 0 {
             return;
@@ -292,7 +306,12 @@ impl<'a> System<Map> for CreateStreetSystem {
         map.add_street(street);
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_move(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        map: &mut Map,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         if !self.mouse_pressed {
             return;
         }
@@ -301,16 +320,10 @@ impl<'a> System<Map> for CreateStreetSystem {
         let current_start = street.start;
         let current_end = street.end;
 
-        let current_start_pos: Point<f64> = map
-            .intersection(&current_end)
-            .unwrap()
-            .position()
-            .into();
-        let current_end_pos: Point<f64> = map
-            .intersection(&current_start)
-            .unwrap()
-            .position()
-            .into();
+        let current_start_pos: Point<f64> =
+            map.intersection(&current_end).unwrap().position().into();
+        let current_end_pos: Point<f64> =
+            map.intersection(&current_start).unwrap().position().into();
 
         // Only update the position of the temp end if it is to close to the temp start. This prevents
         // that the routine will set the temp end to the wrong intersection and result in visual issues.
@@ -336,7 +349,11 @@ impl<'a> System<Map> for CreateStreetSystem {
             None => {
                 match map.get_street_at_position(&mouse_pos, &vec![self.temp_street]) {
                     Some(hovered_street) => {
-                        let pos = self.project_point_onto_middle_of_street(mouse_pos, &hovered_street, map);
+                        let pos = self.project_point_onto_middle_of_street(
+                            mouse_pos,
+                            &hovered_street,
+                            map,
+                        );
 
                         if self.is_splitting_street_allowed(pos, &map) {
                             let new_intersection =
@@ -368,7 +385,13 @@ impl<'a> System<Map> for CreateStreetSystem {
         map.update_intersection(&start);
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_up(
+        &mut self,
+        _mouse_pos: Coordinate<f64>,
+        button: u32,
+        _map: &mut Map,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         // Cancel creation of street with right mouse button click
         if button == 2 {
             self.mouse_pressed = false;
@@ -390,7 +413,6 @@ impl<'a> System<Map> for CreateStreetSystem {
         _additional_information_layer: &Vec<InformationLayer>,
         _camera: &Camera,
     ) -> Result<(), JsValue> {
-
         Ok(())
     }
 

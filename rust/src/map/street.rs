@@ -8,7 +8,14 @@ use geo::{
     prelude::{Centroid, Contains, EuclideanDistance},
     Coordinate, Line, LineString, Point, Polygon,
 };
-use rust_editor::{gizmo::{GetPosition, Id, SetId}, style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, renderer::PrimitiveRenderer, InformationLayer};
+use rust_editor::{
+    gizmo::{GetPosition, Id, SetId},
+    interactive_element::{InteractiveElement, InteractiveElementState},
+    renderer::PrimitiveRenderer,
+    style::{InteractiveElementStyle, Style},
+    InformationLayer,
+};
+use rust_macro::ElementId;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;

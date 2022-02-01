@@ -8,7 +8,6 @@ use web_sys::{
     CanvasRenderingContext2d, HtmlElement, HtmlInputElement, HtmlLabelElement, HtmlSpanElement,
 };
 
-use crate::log;
 use crate::{
     actions::Action,
     camera::{Camera, Renderer},
@@ -175,12 +174,7 @@ where
     Ok(())
 }
 
-struct RenderLoop {
-    animation_id: Option<i32>,
-    pub closure: Option<Closure<dyn Fn()>>,
-}
-
-pub fn launch<T>(mut editor: Rc<RefCell<Editor<T>>>) -> Result<(), JsValue>
+pub fn launch<T>(editor: Rc<RefCell<Editor<T>>>) -> Result<(), JsValue>
 where
     T: Renderer + Default + 'static,
 {
@@ -195,13 +189,12 @@ where
     canvas.style().set_property("border", "solid")?;
     {
         let context = canvas
-        .get_context("2d")?
-        .unwrap()
-        .dyn_into::<web_sys::CanvasRenderingContext2d>()?;
-    
+            .get_context("2d")?
+            .unwrap()
+            .dyn_into::<web_sys::CanvasRenderingContext2d>()?;
+
         editor.borrow_mut().context = Some(context);
     }
-    
 
     {
         let editor = editor.clone();
@@ -241,16 +234,15 @@ where
     {
         let f = Rc::new(RefCell::new(None));
         let g = f.clone();
-    
+
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-            editor.borrow().render();
+            editor.borrow().render().expect("Error while rendering");
             // Schedule ourself for another requestAnimationFrame callback.
             request_animation_frame(f.borrow().as_ref().unwrap());
         }) as Box<dyn FnMut()>));
-    
+
         request_animation_frame(g.borrow().as_ref().unwrap());
     }
-
 
     // TODO forget leaks memory we need a more intelligent way to handle this
 

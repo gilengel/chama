@@ -1,7 +1,14 @@
 use std::{cmp::Ordering, collections::HashMap, f64::consts::PI};
 
 use geo::Coordinate;
-use rust_editor::{style::{InteractiveElementStyle, Style}, interactive_element::{InteractiveElementState, InteractiveElement}, gizmo::{SetPosition, GetPosition, Id, SetId}, renderer::apply_style, InformationLayer};
+use rust_editor::{
+    gizmo::{GetPosition, Id, SetId, SetPosition},
+    interactive_element::{InteractiveElement, InteractiveElementState},
+    renderer::apply_style,
+    style::{InteractiveElementStyle, Style},
+    InformationLayer,
+};
+use rust_macro::ElementId;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -29,7 +36,7 @@ pub struct Intersection {
 
     connected_streets: Vec<(Direction, Uuid)>,
 
-    style: InteractiveElementStyle, 
+    style: InteractiveElementStyle,
     state: InteractiveElementState,
 }
 
@@ -63,7 +70,6 @@ impl GetPosition for Intersection {
     }
 }
 
-
 impl Intersection {
     pub fn new(position: Coordinate<f64>) -> Intersection {
         Intersection {
@@ -77,15 +83,12 @@ impl Intersection {
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
-        
-
         context.begin_path();
         context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
 
-        
         apply_style(self.style(), context);
         context.fill();
-        
+
         let num = self.connected_streets.len();
         if additional_information_layer.contains(&InformationLayer::Debug) && num != 2 {
             context.set_fill_style(&"#FFFFFF".into());
@@ -233,17 +236,17 @@ impl Default for Intersection {
                 normal: Style {
                     border_width: 1,
                     border_color: "#1e88e5".to_string(),
-                    background_color: "#2A2A2B".to_string()
+                    background_color: "#2A2A2B".to_string(),
                 },
                 hover: Style {
                     border_width: 0,
                     border_color: "".to_string(),
-                    background_color: "#1e88e5".to_string()
+                    background_color: "#1e88e5".to_string(),
                 },
                 selected: Style {
                     border_width: 0,
                     border_color: "".to_string(),
-                    background_color: "#00FFCC".to_string()
+                    background_color: "#00FFCC".to_string(),
                 },
             },
             state: InteractiveElementState::Normal,

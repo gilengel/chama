@@ -1,8 +1,11 @@
-use rust_editor::{InformationLayer, camera::{Camera, Renderer}, system::System};
-
-use crate::{
-    map::map::Map,
+use rust_editor::{
+    camera::{Camera, Renderer},
+    editor::EditorPlugin,
+    system::System,
+    InformationLayer,
 };
+
+use crate::map::map::Map;
 
 pub struct MapRenderSystem {}
 
@@ -18,6 +21,7 @@ impl System<Map> for MapRenderSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
+        _plugins: &Vec<EditorPlugin<Map>>,
         camera: &Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
         map.render(context, additional_information_layer, camera)?;

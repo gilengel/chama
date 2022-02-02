@@ -1,12 +1,16 @@
-
-
 use geo::Coordinate;
-use rust_editor::{interactive_element::{InteractiveElementState, InteractiveElement}, gizmo::Id, InformationLayer, camera::{Camera, Renderer}, actions::Action, system::System};
+use rust_editor::{
+    actions::Action,
+    camera::{Camera, Renderer},
+    editor::EditorPlugin,
+    gizmo::Id,
+    interactive_element::{InteractiveElement, InteractiveElementState},
+    system::System,
+    InformationLayer,
+};
 use uuid::Uuid;
 
-use crate::{
-    map::{district::District, map::Map}
-};
+use crate::map::{district::District, map::Map};
 
 pub struct DeleteDistrictSystem {
     hovered_district: Option<Uuid>,
@@ -29,11 +33,26 @@ impl Default for DeleteDistrictSystem {
 }
 
 impl System<Map> for DeleteDistrictSystem {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {}
+    fn mouse_down(
+        &mut self,
+        _mouse_pos: Coordinate<f64>,
+        _: u32,
+        _: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
+    }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_move(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         if let Some(old_hovered_district) = self.hovered_district {
-            let old_hovered_district: &mut District = map.district_mut(&old_hovered_district).unwrap();
+            let old_hovered_district: &mut District =
+                map.district_mut(&old_hovered_district).unwrap();
             old_hovered_district.set_state(InteractiveElementState::Normal);
         }
 
@@ -44,7 +63,14 @@ impl System<Map> for DeleteDistrictSystem {
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_up(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        _: u32,
+        map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
             map.remove_district(&hovered_district);
             self.hovered_district = None
@@ -58,7 +84,10 @@ impl System<Map> for DeleteDistrictSystem {
     fn render(
         &self,
         map: &Map,
-        context: &web_sys::CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>, camera: &Camera
+        context: &web_sys::CanvasRenderingContext2d,
+        additional_information_layer: &Vec<InformationLayer>,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        camera: &Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
         map.render(&context, additional_information_layer, camera)?;
 

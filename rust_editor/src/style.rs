@@ -11,7 +11,7 @@ pub struct Style {
     pub border_color: String,
 
     /// The fill color for an element. Accepts all values in css format (RGB, RGBA, #000000, HSL etc.) see https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
-    pub background_color: String
+    pub background_color: String,
 }
 
 /// Defines multiple styles that can applied to an element based on the current state of it
@@ -19,7 +19,7 @@ pub struct Style {
 pub struct InteractiveElementStyle {
     pub normal: Style,
     pub hover: Style,
-    pub selected: Style
+    pub selected: Style,
 }
 
 impl Default for InteractiveElementStyle {
@@ -28,17 +28,17 @@ impl Default for InteractiveElementStyle {
             normal: Style {
                 border_width: 0,
                 border_color: "#FFFFFF".to_string(),
-                background_color: "#2A2A2B".to_string()
+                background_color: "#2A2A2B".to_string(),
             },
             hover: Style {
                 border_width: 0,
                 border_color: "".to_string(),
-                background_color: "#1e88e5".to_string()
+                background_color: "#1e88e5".to_string(),
             },
             selected: Style {
                 border_width: 0,
                 border_color: "".to_string(),
-                background_color: "hsl(0, 100%, 50%)".to_string()
+                background_color: "hsl(0, 100%, 50%)".to_string(),
             },
         }
     }

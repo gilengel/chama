@@ -27,7 +27,7 @@ impl Store {
         if let Ok(Some(value)) = self.local_storage.get_item(&self.name) {
             match serde_json::from_str::<T>(&value) {
                 Ok(value) => return Some(value),
-                Err(_) => {},
+                Err(_) => {}
             }
         }
 
@@ -40,7 +40,7 @@ impl Store {
             Ok(s) => {
                 return self.local_storage.set_item(&self.name, &s);
             }
-            Err(_) => {},
+            Err(_) => {}
         }
 
         Ok(())

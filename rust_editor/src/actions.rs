@@ -14,27 +14,25 @@ pub trait Undo<T> {
     }
 }
 
-
-pub trait Action<T> : Undo<T> + Redo<T> + Send + Sync{
+pub trait Action<T>: Undo<T> + Redo<T> + Send + Sync {
     fn execute(&mut self, map: &mut T) {
         self.redo(map);
     }
 }
 
 pub struct MultiAction<T> {
-    pub actions: Vec<Box<dyn Action<T>>>
+    pub actions: Vec<Box<dyn Action<T>>>,
 }
 
 impl<T> MultiAction<T> {
     pub fn new() -> Self {
         MultiAction {
-            actions: Vec::new()
+            actions: Vec::new(),
         }
     }
 }
 
 impl<T> Action<T> for MultiAction<T> {}
-
 
 impl<T> Redo<T> for MultiAction<T> {
     fn redo(&mut self, map: &mut T) {
@@ -51,5 +49,3 @@ impl<T> Undo<T> for MultiAction<T> {
         }
     }
 }
-
-

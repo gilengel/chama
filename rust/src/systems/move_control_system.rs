@@ -1,13 +1,18 @@
 use std::ops::Add;
 
 use geo::Coordinate;
-use rust_editor::{gizmo::{MoveGizmo, GetPosition, SetPosition, Gizmo, mouse_over}, interactive_element::{InteractiveElement, InteractiveElementState}, camera::Camera, InformationLayer, actions::Action, system::System};
+use rust_editor::{
+    actions::Action,
+    camera::Camera,
+    editor::EditorPlugin,
+    gizmo::{mouse_over, GetPosition, Gizmo, MoveGizmo, SetPosition},
+    interactive_element::{InteractiveElement, InteractiveElementState},
+    system::System,
+    InformationLayer,
+};
 use uuid::Uuid;
 
-use crate::{
-    map::map::Map,
-};
-
+use crate::map::map::Map;
 
 pub struct MoveControlSystem {
     hovered_control: Option<Uuid>,
@@ -51,10 +56,15 @@ impl MoveControlSystem {
     }
 }
 
-
-
 impl System<Map> for MoveControlSystem {
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_down(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: u32,
+        map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         self.gizmo.mouse_down(
             mouse_pos,
             button,
@@ -74,7 +84,13 @@ impl System<Map> for MoveControlSystem {
         }
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_move(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         self.center_gizmo(map);
 
         self.gizmo.mouse_move(
@@ -88,7 +104,14 @@ impl System<Map> for MoveControlSystem {
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_up(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: u32,
+        map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         if self.gizmo.is_active() {
             self.gizmo.mouse_up(
                 mouse_pos,
@@ -117,6 +140,7 @@ impl System<Map> for MoveControlSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
+        _plugins: &Vec<EditorPlugin<Map>>,
         camera: &Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
         self.gizmo.render(

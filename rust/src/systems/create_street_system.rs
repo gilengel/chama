@@ -10,6 +10,7 @@ use rand::{thread_rng, Rng};
 use rust_editor::{
     actions::Action,
     camera::Camera,
+    editor::EditorPlugin,
     gizmo::{GetPosition, Id, SetId, SetPosition},
     system::System,
     InformationLayer,
@@ -246,6 +247,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         mouse_pos: Coordinate<f64>,
         button: u32,
         map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         // We only check for left click
@@ -310,6 +312,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         if !self.mouse_pressed {
@@ -390,6 +393,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         _mouse_pos: Coordinate<f64>,
         button: u32,
         _map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         // Cancel creation of street with right mouse button click
@@ -411,6 +415,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         _map: &Map,
         _context: &CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
+        _plugins: &Vec<EditorPlugin<Map>>,
         _camera: &Camera,
     ) -> Result<(), JsValue> {
         Ok(())

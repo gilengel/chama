@@ -1,3 +1,4 @@
+pub mod box_select_system;
 pub mod create_district_system;
 pub mod create_freeform_district_system;
 pub mod create_freeform_street_system;
@@ -5,5 +6,4 @@ pub mod create_street_system;
 pub mod delete_district_system;
 pub mod delete_street_system;
 pub mod move_control_system;
-pub mod box_select_system;
 pub mod render_map_system;

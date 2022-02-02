@@ -1,7 +1,8 @@
 use std::f64::consts::PI;
 
 use geo::{
-    Coordinate, Line, LineString, MultiLineString, MultiPoint, Point, Polygon, Rect, Triangle, GeometryCollection, MultiPolygon,
+    Coordinate, GeometryCollection, Line, LineString, MultiLineString, MultiPoint, MultiPolygon,
+    Point, Polygon, Rect, Triangle,
 };
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -42,7 +43,7 @@ impl PrimitiveRenderer for Polygon<f64> {
 }
 
 impl PrimitiveRenderer for MultiPolygon<f64> {
-    fn render(&self, style: &Style, context: &CanvasRenderingContext2d)  -> Result<(), JsValue>{
+    fn render(&self, style: &Style, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         for polygon in self {
             polygon.render(style, context)?;
         }
@@ -143,7 +144,7 @@ impl PrimitiveRenderer for Triangle<f64> {
         context.begin_path();
         context.move_to(self.0.x, self.0.y);
         context.line_to(self.1.x, self.1.y);
-        context.line_to(self.2.x, self.2.y);   
+        context.line_to(self.2.x, self.2.y);
         context.close_path();
         apply_style(style, context);
 

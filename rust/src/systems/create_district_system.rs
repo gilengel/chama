@@ -2,6 +2,7 @@ use geo::Coordinate;
 use rust_editor::{
     actions::Action,
     camera::{Camera, Renderer},
+    editor::EditorPlugin,
     gizmo::Id,
     system::System,
     InformationLayer,
@@ -36,6 +37,7 @@ impl System<Map> for CreateDistrictSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
     }
@@ -44,6 +46,7 @@ impl System<Map> for CreateDistrictSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         match map.get_nearest_street_to_position(&mouse_pos) {
@@ -57,6 +60,7 @@ impl System<Map> for CreateDistrictSystem {
         mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         if let Some(hovered_street_id) = self.hovered_street {
@@ -78,6 +82,7 @@ impl System<Map> for CreateDistrictSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
+        _plugins: &Vec<EditorPlugin<Map>>,
         camera: &Camera,
     ) -> Result<(), wasm_bindgen::JsValue> {
         map.render(context, additional_information_layer, camera)?;

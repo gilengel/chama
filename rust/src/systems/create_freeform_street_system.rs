@@ -2,6 +2,7 @@ use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     camera::Camera,
+    editor::EditorPlugin,
     renderer::apply_style,
     style::Style,
     system::System,
@@ -91,6 +92,8 @@ impl System<Map> for CreateFreeFormStreetSystem {
         _: Coordinate<f64>,
         button: u32,
         _: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+
         _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         if button == 0 {
@@ -102,6 +105,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         if self.brush_active {
@@ -114,6 +118,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         _: Coordinate<f64>,
         button: u32,
         map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
         actions: &mut Vec<Box<dyn Action<Map>>>,
     ) {
         if button == 0 {
@@ -140,6 +145,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         _map: &Map,
         context: &CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
+        _plugins: &Vec<EditorPlugin<Map>>,
         camera: &Camera,
     ) -> Result<(), JsValue> {
         if self.brush_active && !self.raw_points.is_empty() {

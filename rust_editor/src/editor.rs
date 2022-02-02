@@ -8,6 +8,7 @@ use web_sys::{
     CanvasRenderingContext2d, HtmlElement, HtmlInputElement, HtmlLabelElement, HtmlSpanElement,
 };
 
+use crate::plugins::Plugin;
 use crate::{
     actions::Action,
     camera::{Camera, Renderer},
@@ -253,6 +254,8 @@ where
     Ok(())
 }
 
+pub type EditorPlugin<T> = Box<dyn Plugin<T>>;
+
 pub struct Editor<T>
 where
     T: Renderer,
@@ -262,6 +265,8 @@ where
 
     camera: Camera,
     data: T,
+
+    plugins: Vec<EditorPlugin<T>>,
 
     toolbars: HashMap<ToolbarPosition, Vec<Toolbar>>,
 
@@ -287,6 +292,8 @@ where
             context: None,
             additional_information_layers: vec![],
 
+            plugins: Vec::new(),
+
             active_mode: 0,
             camera: Camera::default(),
             data: T::default(),
@@ -307,6 +314,7 @@ where
                 &self.data,
                 &context,
                 &self.additional_information_layers,
+                &self.plugins,
                 &self.camera,
             )?;
 
@@ -335,7 +343,13 @@ where
 
         let mouse_pos = self.mouse_pos(x, y, &self.camera);
         for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
-            system.mouse_down(mouse_pos, button, &mut self.data, &mut self.undo_stack);
+            system.mouse_down(
+                mouse_pos,
+                button,
+                &mut self.data,
+                &self.plugins,
+                &mut self.undo_stack,
+            );
 
             if system.blocks_next_systems() {
                 break;
@@ -353,7 +367,13 @@ where
 
         let mouse_pos = self.mouse_pos(x, y, &self.camera);
         for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
-            system.mouse_up(mouse_pos, button, &mut self.data, &mut self.undo_stack);
+            system.mouse_up(
+                mouse_pos,
+                button,
+                &mut self.data,
+                &self.plugins,
+                &mut self.undo_stack,
+            );
 
             if system.blocks_next_systems() {
                 break;
@@ -371,7 +391,12 @@ where
 
         let mouse_pos = self.mouse_pos(x, y, &self.camera);
         for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
-            system.mouse_move(mouse_pos, &mut self.data, &mut self.undo_stack);
+            system.mouse_move(
+                mouse_pos,
+                &mut self.data,
+                &self.plugins,
+                &mut self.undo_stack,
+            );
 
             if system.blocks_next_systems() {
                 break;

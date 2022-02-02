@@ -1,10 +1,24 @@
-use geo::{Coordinate, Polygon, LineString, winding_order::Winding, Point, prelude::Centroid, coords_iter::CoordsIter, simplify::Simplify};
-use rust_editor::{style::Style, renderer::PrimitiveRenderer, camera::{Renderer, Camera}, InformationLayer, gizmo::{SetPosition, Id}, actions::Action, system::System};
+use geo::{
+    coords_iter::CoordsIter, prelude::Centroid, simplify::Simplify, winding_order::Winding,
+    Coordinate, LineString, Point, Polygon,
+};
+use rust_editor::{
+    actions::Action,
+    camera::{Camera, Renderer},
+    editor::EditorPlugin,
+    gizmo::{Id, SetPosition},
+    renderer::PrimitiveRenderer,
+    style::Style,
+    system::System,
+    InformationLayer,
+};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{map::{intersection::Intersection, map::Map, district::create_district_for_street, street::Street}};
+use crate::map::{
+    district::create_district_for_street, intersection::Intersection, map::Map, street::Street,
+};
 
 pub struct CreateFreeFormDistrictSystem {
     raw_points: Vec<Coordinate<f64>>,
@@ -12,7 +26,7 @@ pub struct CreateFreeFormDistrictSystem {
     raw_polygon: Polygon<f64>,
     raw_polygon_style: Style,
 
-    brush_active: bool
+    brush_active: bool,
 }
 
 impl Default for CreateFreeFormDistrictSystem {
@@ -22,7 +36,7 @@ impl Default for CreateFreeFormDistrictSystem {
             raw_point_style: Style {
                 border_width: 0,
                 border_color: "#FFFFFF".to_string(),
-                background_color: "#2A2A2B".to_string()
+                background_color: "#2A2A2B".to_string(),
             },
             raw_polygon: Polygon::new(LineString::from(Vec::<Coordinate<f64>>::new()), vec![]),
             raw_polygon_style: Style {
@@ -30,7 +44,7 @@ impl Default for CreateFreeFormDistrictSystem {
                 border_color: "#FFFFFF".to_string(),
                 background_color: "rgba(30, 136, 229, 0.4)".to_string(),
             },
-            brush_active: false
+            brush_active: false,
         }
     }
 }
@@ -38,7 +52,10 @@ impl Default for CreateFreeFormDistrictSystem {
 impl CreateFreeFormDistrictSystem {
     fn create_intersection(&self, pos: &Point<f64>) -> Intersection {
         let mut intersection = Intersection::default();
-        intersection.set_position(Coordinate { x: pos.x(), y: pos.y() });
+        intersection.set_position(Coordinate {
+            x: pos.x(),
+            y: pos.y(),
+        });
 
         intersection
     }
@@ -71,7 +88,7 @@ impl CreateFreeFormDistrictSystem {
                 if let Some(current_intersection) = map.intersection_mut(current_id) {
                     current_intersection.add_outgoing_street(&street_id);
                 }
-                
+
                 if let Some(next_intersection) = map.intersection_mut(next_id) {
                     next_intersection.add_incoming_street(&street_id);
                 }
@@ -85,16 +102,21 @@ impl CreateFreeFormDistrictSystem {
         let street = map.street(&street_id).unwrap();
         let side = street.get_side_of_position(&self.raw_polygon.centroid().unwrap().into());
 
-        
         if let Some(district) = create_district_for_street(side, street_id, map) {
             map.add_district(district);
-        }        
+        }
     }
 }
 
-
 impl System<Map> for CreateFreeFormDistrictSystem {
-    fn mouse_down(&mut self, _: Coordinate<f64>, button: u32, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_down(
+        &mut self,
+        _: Coordinate<f64>,
+        button: u32,
+        _: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         if button == 0 {
             self.raw_polygon.exterior_mut(|exterior| exterior.0.clear());
             self.raw_points.clear();
@@ -103,15 +125,29 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         }
     }
 
-    fn mouse_move(&mut self, mouse_pos: Coordinate<f64>, _: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_move(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        _: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
 
-            self.raw_polygon.exterior_mut(|exterior| exterior.0 = self.raw_points.clone());
+            self.raw_polygon
+                .exterior_mut(|exterior| exterior.0 = self.raw_points.clone());
         }
     }
 
-    fn mouse_up(&mut self, _: Coordinate<f64>, button: u32, map: &mut Map, _actions: &mut Vec<Box<dyn Action<Map>>>) {
+    fn mouse_up(
+        &mut self,
+        _: Coordinate<f64>,
+        button: u32,
+        map: &mut Map,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        _actions: &mut Vec<Box<dyn Action<Map>>>,
+    ) {
         if button == 0 {
             self.brush_active = false;
         }
@@ -121,7 +157,14 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         self.transform_polygon_into_streets(map);
     }
 
-    fn render(&self, map: &Map, context: &CanvasRenderingContext2d, additional_information_layer: &Vec<InformationLayer>, camera: &Camera) -> Result<(), JsValue> {
+    fn render(
+        &self,
+        map: &Map,
+        context: &CanvasRenderingContext2d,
+        additional_information_layer: &Vec<InformationLayer>,
+        _plugins: &Vec<EditorPlugin<Map>>,
+        camera: &Camera,
+    ) -> Result<(), JsValue> {
         map.render(context, additional_information_layer, camera)?;
 
         if self.brush_active {
@@ -132,11 +175,10 @@ impl System<Map> for CreateFreeFormDistrictSystem {
             }
         }
 
-
         Ok(())
     }
 
-    fn enter(&mut self, _: &mut Map) { }
+    fn enter(&mut self, _: &mut Map) {}
 
     fn exit(&self, _: &mut Map) {}
 }

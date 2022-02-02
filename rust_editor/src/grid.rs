@@ -15,7 +15,7 @@ impl Grid {
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
-    
+
     pub fn offset(&self) -> u32 {
         self.offset
     }

@@ -1,10 +1,10 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
-use geo::{Coordinate, Line, Triangle, prelude::EuclideanDistance};
+use geo::{prelude::EuclideanDistance, Coordinate, Line, Triangle};
 use uuid::Uuid;
 use wasm_bindgen::{JsValue, UnwrapThrowExt};
 
-use crate::{camera::Camera, style::Style, renderer::PrimitiveRenderer};
+use crate::{camera::Camera, renderer::PrimitiveRenderer, style::Style};
 
 pub enum Axis {
     X,
@@ -164,26 +164,29 @@ static LINE_LENGTH: f64 = 100.0;
 struct GizmoArrow {
     style: Style,
     line: Line<f64>,
-    arrow: Triangle<f64>
+    arrow: Triangle<f64>,
 }
 
 impl GizmoArrow {
     pub fn new(line_end: Coordinate<f64>, style: Style) -> Self {
-        let len = line_end.euclidean_distance(&Coordinate { x: 0., y: 0.});
-        let norm = Coordinate { x: line_end.x / len, y: line_end.y / len };
-        let perp = Coordinate { x: -norm.y, y: norm.x };
+        let len = line_end.euclidean_distance(&Coordinate { x: 0., y: 0. });
+        let norm = Coordinate {
+            x: line_end.x / len,
+            y: line_end.y / len,
+        };
+        let perp = Coordinate {
+            x: -norm.y,
+            y: norm.x,
+        };
 
         GizmoArrow {
-            line: Line::new(
-                Coordinate { x: 0., y: 0. },
-                line_end
-            ),
+            line: Line::new(Coordinate { x: 0., y: 0. }, line_end),
             style,
             arrow: Triangle(
                 norm * (len - ARROW_HEIGHT) - perp * ARROW_WIDTH / 2.,
                 line_end,
-                norm * (len - ARROW_HEIGHT) + perp * ARROW_WIDTH / 2.
-            ),            
+                norm * (len - ARROW_HEIGHT) + perp * ARROW_WIDTH / 2.,
+            ),
         }
     }
 
@@ -194,7 +197,6 @@ impl GizmoArrow {
         Ok(())
     }
 }
-
 
 pub struct MoveGizmo {
     position: Coordinate<f64>,
@@ -222,23 +224,29 @@ impl MoveGizmo {
 
             offsets: HashMap::new(),
 
-            x_handle: GizmoArrow::new(Coordinate {
-                x: 0.,
-                y: -LINE_LENGTH,
-            },Style {
-                border_width: 2,
-                border_color: "#C45D53".to_string(),
-                background_color: "#C45D53".to_string(),
-            }),
+            x_handle: GizmoArrow::new(
+                Coordinate {
+                    x: 0.,
+                    y: -LINE_LENGTH,
+                },
+                Style {
+                    border_width: 2,
+                    border_color: "#C45D53".to_string(),
+                    background_color: "#C45D53".to_string(),
+                },
+            ),
 
-            y_handle: GizmoArrow::new(Coordinate {
-                x: LINE_LENGTH,
-                y: 0.,
-            },Style {
-                border_width: 2,
-                border_color: "#C45D53".to_string(),
-                background_color: "#C45D53".to_string(),
-            }),
+            y_handle: GizmoArrow::new(
+                Coordinate {
+                    x: LINE_LENGTH,
+                    y: 0.,
+                },
+                Style {
+                    border_width: 2,
+                    border_color: "#C45D53".to_string(),
+                    background_color: "#C45D53".to_string(),
+                },
+            ),
         }
     }
 

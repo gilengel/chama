@@ -186,7 +186,6 @@ where
     document.body().unwrap().append_child(&canvas)?;
     canvas.set_width(1920);
     canvas.set_height(1080);
-    canvas.style().set_property("border", "solid")?;
     {
         let context = canvas
             .get_context("2d")?

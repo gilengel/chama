@@ -9,12 +9,11 @@ use geo::{
 use rand::{thread_rng, Rng};
 use rust_editor::{
     actions::Action,
-    camera::Camera,
-    editor::EditorPlugin,
     gizmo::{GetPosition, Id, SetId, SetPosition},
     system::System,
     InformationLayer,
 };
+use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -247,8 +246,9 @@ impl<'a> System<Map> for CreateStreetSystem {
         mouse_pos: Coordinate<f64>,
         button: u32,
         map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         // We only check for left click
         if button != 0 {
@@ -311,9 +311,9 @@ impl<'a> System<Map> for CreateStreetSystem {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if !self.mouse_pressed {
             return;
@@ -392,9 +392,9 @@ impl<'a> System<Map> for CreateStreetSystem {
         &mut self,
         _mouse_pos: Coordinate<f64>,
         button: u32,
-        _map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        _map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         // Cancel creation of street with right mouse button click
         if button == 2 {
@@ -415,15 +415,13 @@ impl<'a> System<Map> for CreateStreetSystem {
         _map: &Map,
         _context: &CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<Map>>,
-        _camera: &Camera,
+        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        
     ) -> Result<(), JsValue> {
         Ok(())
     }
 
-    fn enter(&mut self, _map: &mut Map) {}
-
-    fn exit(&self, map: &mut Map) {
+    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn Plugin<Map>>>) {
         if let Some(intersection) = map.intersection(&self.temp_end) {
             if intersection.get_connected_streets().is_empty() {
                 map.remove_intersection(&self.temp_end);

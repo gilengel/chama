@@ -3,20 +3,14 @@ use std::hash::Hash;
 use std::{cell::RefCell, collections::HashMap, panic, rc::Rc};
 
 use geo::Coordinate;
+use rust_internal::plugin::Plugin;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{
     CanvasRenderingContext2d, HtmlElement, HtmlInputElement, HtmlLabelElement, HtmlSpanElement,
 };
 
-use crate::plugins::Plugin;
-use crate::{
-    actions::Action,
-    camera::{Camera, Renderer},
-    html, html_impl,
-    macros::slugify,
-    system::System,
-    InformationLayer,
-};
+use crate::plugins::camera::{Renderer, Camera};
+use crate::{actions::Action, html, html_impl, macros::slugify, system::System, InformationLayer};
 
 pub trait EditorMode = Copy + Clone;
 
@@ -224,9 +218,12 @@ where
         let editor = editor.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
             // TODO reenable the movement difference
-            editor
-                .borrow_mut()
-                .mouse_move(event.client_x() as u32, event.client_y() as u32, 0, 0);
+            editor.borrow_mut().mouse_move(
+                event.client_x() as u32,
+                event.client_y() as u32,
+                event.movement_x() as i32,
+                event.movement_y() as i32,
+            );
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
         closure.forget();
@@ -254,7 +251,18 @@ where
     Ok(())
 }
 
-pub type EditorPlugin<T> = Box<dyn Plugin<T>>;
+pub fn get_plugin<T, S>(plugins: &Vec<Box<dyn Plugin<T>>>) -> Option<&S>
+where
+    S: 'static,
+{
+    for plugin in plugins {
+        if let Some(p) = plugin.as_ref().as_any().downcast_ref::<S>() {
+            return Some(p);
+        }
+    }
+
+    None
+}
 
 pub struct Editor<T>
 where
@@ -263,18 +271,17 @@ where
     context: Option<CanvasRenderingContext2d>,
     additional_information_layers: Vec<InformationLayer>,
 
-    camera: Camera,
     data: T,
 
-    plugins: Vec<EditorPlugin<T>>,
-
     toolbars: HashMap<ToolbarPosition, Vec<Toolbar>>,
+
+    plugins: Vec<Box<dyn Plugin<T>>>,
 
     active_mode: u8,
     modes: HashMap<u8, Vec<Box<dyn System<T> + Send + Sync + 'static>>>,
 
     undo_stack: Vec<Box<dyn Action<T>>>,
-    redo_stack: Vec<Box<dyn Action<T>>>,
+    //redo_stack: Vec<Box<dyn Action<T>>>,
 }
 
 impl<T> Editor<T>
@@ -291,17 +298,28 @@ where
         Editor {
             context: None,
             additional_information_layers: vec![],
-
-            plugins: Vec::new(),
-
             active_mode: 0,
-            camera: Camera::default(),
             data: T::default(),
             undo_stack: Vec::new(),
-            redo_stack: Vec::new(),
+            //redo_stack: Vec::new(),
             toolbars: HashMap::new(),
+            plugins: Vec::new(),
             modes: HashMap::new(),
         }
+    }
+
+    pub fn add_plugin<S>(&mut self, plugin: S)
+    where
+        S: Plugin<T> + 'static,
+    {
+        self.plugins.push(Box::new(plugin));
+    }
+
+    pub fn get_plugin<S>(&self) -> Option<&S>
+    where
+        S: 'static,
+    {
+        get_plugin::<T, S>(&self.plugins)
     }
 
     pub fn render(&self) -> Result<(), JsValue> {
@@ -315,7 +333,6 @@ where
                 &context,
                 &self.additional_information_layers,
                 &self.plugins,
-                &self.camera,
             )?;
 
             if system.blocks_next_systems() {
@@ -326,29 +343,34 @@ where
         Ok(())
     }
 
-    fn mouse_pos(&self, x: u32, y: u32, camera: &Camera) -> Coordinate<f64> {
+    fn mouse_pos(&self, x: u32, y: u32) -> Coordinate<f64> {
+        let offset = match self.get_plugin::<Camera>() {
+            Some(x) => Coordinate { x: x.x(), y: x.y() },
+            None => Coordinate { x: 0., y: 0. },
+        };
+        
+
         return Coordinate {
-            x: (x as i32 - camera.x).into(),
-            y: (y as i32 - camera.y).into(),
+            x: x as f64 - offset.x,
+            y: y as f64 - offset.y,
         };
     }
 
     pub fn mouse_down(&mut self, x: u32, y: u32, button: u32) {
-        // Camera control via the middle mouse button
-        if button == 1 {
-            self.camera.active = true;
+        let mouse_pos = self.mouse_pos(x, y);
 
-            return;
+        for plugin in &mut self.plugins {
+            plugin.mouse_down(mouse_pos, button, &mut self.data);
         }
 
-        let mouse_pos = self.mouse_pos(x, y, &self.camera);
-        for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
+        let active_mode = self.modes.get_mut(&self.active_mode).unwrap();
+        for system in active_mode.iter_mut() {
             system.mouse_down(
                 mouse_pos,
                 button,
                 &mut self.data,
-                &self.plugins,
                 &mut self.undo_stack,
+                &mut self.plugins,
             );
 
             if system.blocks_next_systems() {
@@ -358,21 +380,19 @@ where
     }
 
     pub fn mouse_up(&mut self, x: u32, y: u32, button: u32) {
-        // Camera control via the middle mouse button
-        if button == 1 {
-            self.camera.active = false;
+        let mouse_pos = self.mouse_pos(x, y);
 
-            return;
+        for plugin in &mut self.plugins {
+            plugin.mouse_up(mouse_pos, button, &mut self.data);
         }
 
-        let mouse_pos = self.mouse_pos(x, y, &self.camera);
         for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
             system.mouse_up(
                 mouse_pos,
                 button,
                 &mut self.data,
-                &self.plugins,
                 &mut self.undo_stack,
+                &mut self.plugins,
             );
 
             if system.blocks_next_systems() {
@@ -382,20 +402,22 @@ where
     }
 
     pub fn mouse_move(&mut self, x: u32, y: u32, dx: i32, dy: i32) {
-        if self.camera.active {
-            self.camera.x += dx;
-            self.camera.y += dy;
+        let mouse_pos = self.mouse_pos(x, y);
+        let mouse_diff = Coordinate {
+            x: dx as f64,
+            y: dy as f64,
+        };
 
-            return;
+        for plugin in &mut self.plugins {
+            plugin.mouse_move(mouse_pos, mouse_diff, &mut self.data);
         }
 
-        let mouse_pos = self.mouse_pos(x, y, &self.camera);
         for system in self.modes.get_mut(&self.active_mode).unwrap().iter_mut() {
             system.mouse_move(
                 mouse_pos,
                 &mut self.data,
-                &self.plugins,
                 &mut self.undo_stack,
+                &mut self.plugins,
             );
 
             if system.blocks_next_systems() {

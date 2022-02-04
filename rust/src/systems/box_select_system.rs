@@ -1,14 +1,13 @@
 use geo::{Coordinate, Rect};
 use rust_editor::{
     actions::Action,
-    camera::Camera,
-    editor::EditorPlugin,
     interactive_element::{InteractiveElement, InteractiveElementState},
     renderer::PrimitiveRenderer,
     style::Style,
     system::System,
     InformationLayer,
 };
+use rust_internal::plugin::Plugin;
 
 use crate::map::map::Map;
 
@@ -20,12 +19,6 @@ pub struct BoxSelectSystem {
     selection_min: Coordinate<f64>,
     selection_max: Coordinate<f64>,
     active: bool,
-}
-
-impl BoxSelectSystem {
-    pub fn new() -> Self {
-        BoxSelectSystem::default()
-    }
 }
 
 impl Default for BoxSelectSystem {
@@ -44,8 +37,8 @@ impl System<Map> for BoxSelectSystem {
         mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.selection_min = mouse_pos;
         self.active = true;
@@ -55,8 +48,8 @@ impl System<Map> for BoxSelectSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.selection_max = mouse_pos;
     }
@@ -66,8 +59,8 @@ impl System<Map> for BoxSelectSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         for intersection in map
             .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
@@ -80,17 +73,12 @@ impl System<Map> for BoxSelectSystem {
         self.active = false;
     }
 
-    fn enter(&mut self, _: &mut Map) {}
-
-    fn exit(&self, _: &mut Map) {}
-
     fn render(
         &self,
         _map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<Map>>,
-        _camera: &Camera,
+        _plugins: &Vec<Box<dyn Plugin<Map>>>
     ) -> Result<(), wasm_bindgen::JsValue> {
         if self.active {
             Rect::new(self.selection_min, self.selection_max).render(

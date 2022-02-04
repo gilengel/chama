@@ -1,12 +1,12 @@
 use geo::Coordinate;
 use rust_editor::{
     actions::Action,
-    camera::{Camera, Renderer},
-    editor::EditorPlugin,
     interactive_element::{InteractiveElement, InteractiveElementState},
+    plugins::camera::Renderer,
     system::System,
     InformationLayer,
 };
+use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 
 use crate::map::{intersection::Side, map::Map, street::Street};
@@ -105,17 +105,18 @@ impl System<Map> for DeleteStreetSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
     }
 
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.clean_hovered_street_state(map);
 
@@ -134,9 +135,9 @@ impl System<Map> for DeleteStreetSystem {
         &mut self,
         _mouse_pos: Coordinate<f64>,
         _: u32,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if let Some(hovered_streets) = &self.hovered_streets {
             for street in hovered_streets {
@@ -145,9 +146,7 @@ impl System<Map> for DeleteStreetSystem {
         }
     }
 
-    fn enter(&mut self, _map: &mut Map) {}
-
-    fn exit(&self, map: &mut Map) {
+    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn Plugin<Map>>>) {
         self.clean_hovered_street_state(map);
     }
 
@@ -156,10 +155,10 @@ impl System<Map> for DeleteStreetSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<Map>>,
-        camera: &Camera,
+        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(context, additional_information_layer, camera)?;
+        map.render(context, additional_information_layer)?;
 
         Ok(())
     }

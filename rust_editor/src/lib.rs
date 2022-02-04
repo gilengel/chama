@@ -1,7 +1,7 @@
 #![feature(trait_alias)]
+#![feature(box_patterns)]
 
 pub mod actions;
-pub mod camera;
 pub mod editor;
 pub mod gizmo;
 pub mod grid;

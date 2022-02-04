@@ -1,13 +1,9 @@
 use geo::Coordinate;
+use rust_internal::plugin::Plugin;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{
-    actions::Action,
-    camera::{Camera, Renderer},
-    editor::EditorPlugin,
-    InformationLayer,
-};
+use crate::{actions::Action, plugins::camera::Renderer, InformationLayer};
 
 /// Editing functionality is encapsuled into different states. Each state is responsible to render the map and all additional information needed.
 /// A state receives all input events that happen on the canvas element which are cursor down, up and move, key down and up.
@@ -15,6 +11,8 @@ use crate::{
 /// Sometimes it is needed to create temporarily data to fullfill certain functionality while the state is active. Use the enter function to
 /// prepare your state and the exit function to clean temporarily created data. Always ensure that the map is clean at the end of the exit function
 /// and not necessary data is removed from the map.
+
+#[allow(unused_variables)]
 pub trait System<T>
 where
     T: Renderer,
@@ -30,8 +28,9 @@ where
         _mouse_pos: Coordinate<f64>,
         _button: u32,
         _data: &mut T,
-        _plugins: &Vec<EditorPlugin<T>>,
         _actions: &mut Vec<Box<dyn Action<T>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<T>>>
+        
     ) {
     }
 
@@ -44,8 +43,8 @@ where
         &mut self,
         _mouse_pos: Coordinate<f64>,
         _data: &mut T,
-        _plugins: &Vec<EditorPlugin<T>>,
         _actions: &mut Vec<Box<dyn Action<T>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<T>>>
     ) {
     }
 
@@ -60,8 +59,8 @@ where
         _mouse_pos: Coordinate<f64>,
         _button: u32,
         _data: &mut T,
-        _plugins: &Vec<EditorPlugin<T>>,
         _actions: &mut Vec<Box<dyn Action<T>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<T>>>
     ) {
     }
 
@@ -70,10 +69,9 @@ where
         data: &T,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<T>>,
-        camera: &Camera,
+        plugins: &Vec<Box<dyn Plugin<T>>>
     ) -> Result<(), JsValue> {
-        data.render(context, additional_information_layer, camera)?;
+        data.render(context, additional_information_layer)?;
 
         Ok(())
     }
@@ -85,9 +83,9 @@ where
 
     /// Called every time the state is activated by the state maschine. Use it to
     /// initialize values for the state.
-    fn enter(&mut self, _data: &mut T) {}
+    fn enter(&mut self, _data: &mut T, _plugins: &mut Vec<Box<dyn Plugin<T>>>) {}
 
     /// Called every time the state is deactivated by the state maschine. Use it to
     /// clean up values in the state.
-    fn exit(&self, _data: &mut T) {}
+    fn exit(&self, _data: &mut T, _plugins: &mut Vec<Box<dyn Plugin<T>>>) {}
 }

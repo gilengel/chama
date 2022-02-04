@@ -3,13 +3,12 @@ use std::ops::Add;
 use geo::Coordinate;
 use rust_editor::{
     actions::Action,
-    camera::Camera,
-    editor::EditorPlugin,
     gizmo::{mouse_over, GetPosition, Gizmo, MoveGizmo, SetPosition},
     interactive_element::{InteractiveElement, InteractiveElementState},
     system::System,
     InformationLayer,
 };
+use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 
 use crate::map::map::Map;
@@ -20,14 +19,6 @@ pub struct MoveControlSystem {
 }
 
 impl MoveControlSystem {
-    pub fn new() -> Self {
-        MoveControlSystem {
-            hovered_control: None,
-
-            gizmo: MoveGizmo::new(),
-        }
-    }
-
     fn clean_hovered_control_state(&self, map: &mut Map) {
         if let Some(hovered_control) = self.hovered_control {
             map.intersection_mut(&hovered_control)
@@ -62,8 +53,9 @@ impl System<Map> for MoveControlSystem {
         mouse_pos: Coordinate<f64>,
         button: u32,
         map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.gizmo.mouse_down(
             mouse_pos,
@@ -87,9 +79,9 @@ impl System<Map> for MoveControlSystem {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.center_gizmo(map);
 
@@ -108,9 +100,9 @@ impl System<Map> for MoveControlSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         button: u32,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if self.gizmo.is_active() {
             self.gizmo.mouse_up(
@@ -127,11 +119,11 @@ impl System<Map> for MoveControlSystem {
         self.gizmo.is_active()
     }
 
-    fn enter(&mut self, map: &mut Map) {
+    fn enter(&mut self, map: &mut Map, _plugins: &mut Vec<Box<dyn Plugin<Map>>>) {
         self.center_gizmo(map);
     }
 
-    fn exit(&self, map: &mut Map) {
+    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn Plugin<Map>>>) {
         self.clean_hovered_control_state(map);
     }
 
@@ -140,12 +132,11 @@ impl System<Map> for MoveControlSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<Map>>,
-        camera: &Camera,
+        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        
     ) -> Result<(), wasm_bindgen::JsValue> {
         self.gizmo.render(
             context,
-            camera,
             map.intersections_with_state(InteractiveElementState::Selected),
         )?;
 

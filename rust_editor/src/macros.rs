@@ -1,13 +1,11 @@
 use std::sync::Mutex;
 
 use js_sys::Array;
+use rust_internal::plugin::Plugin;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{Document, HtmlElement, HtmlInputElement};
 
-use crate::{
-    camera::Renderer,
-    editor::{Editor, EditorMode},
-};
+use crate::{editor::Editor, plugins::camera::Renderer};
 
 pub fn get_element(document: &Document, id: Option<String>) -> HtmlElement {
     match id {
@@ -80,11 +78,8 @@ pub fn set_onchange<F, T, M>(stack: &mut Vec<HtmlElement>, _callback: F)
 where
     F: Fn(Mutex<Editor<T>>) -> () + 'static,
     T: Renderer,
-    M: EditorMode,
+    M: Plugin<T> + std::cmp::Eq + std::hash::Hash + 'static,
 {
-    let window = web_sys::window().expect("should have a window in this context");
-    let document = window.document().expect("window should have a document");
-
     let a = Closure::wrap(Box::new(move || {
         //callback();
     }) as Box<dyn FnMut()>);
@@ -125,7 +120,7 @@ macro_rules! log {
 #[macro_export]
 macro_rules! error {
     ( $( $t:tt )* ) => {
-        web_sys::console::error_1(&format!( $( $t )* ).into())
+        unsafe { web_sys::console::error_1(&format!( $( $t )* ).into()) }
     }
 }
 

@@ -4,14 +4,14 @@ use geo::{
 };
 use rust_editor::{
     actions::Action,
-    camera::{Camera, Renderer},
-    editor::EditorPlugin,
     gizmo::{Id, SetPosition},
+    plugins::camera::Renderer,
     renderer::PrimitiveRenderer,
     style::Style,
     system::System,
     InformationLayer,
 };
+use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -114,8 +114,9 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         _: Coordinate<f64>,
         button: u32,
         _: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if button == 0 {
             self.raw_polygon.exterior_mut(|exterior| exterior.0.clear());
@@ -128,9 +129,9 @@ impl System<Map> for CreateFreeFormDistrictSystem {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        _: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        _: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
@@ -144,9 +145,9 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         &mut self,
         _: Coordinate<f64>,
         button: u32,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if button == 0 {
             self.brush_active = false;
@@ -162,10 +163,10 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         map: &Map,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<Map>>,
-        camera: &Camera,
+        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        
     ) -> Result<(), JsValue> {
-        map.render(context, additional_information_layer, camera)?;
+        map.render(context, additional_information_layer)?;
 
         if self.brush_active {
             self.raw_polygon.render(&self.raw_polygon_style, &context)?;
@@ -177,8 +178,4 @@ impl System<Map> for CreateFreeFormDistrictSystem {
 
         Ok(())
     }
-
-    fn enter(&mut self, _: &mut Map) {}
-
-    fn exit(&self, _: &mut Map) {}
 }

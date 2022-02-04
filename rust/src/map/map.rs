@@ -2,9 +2,9 @@ use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
 use rust_editor::actions::{Action, MultiAction, Redo, Undo};
-use rust_editor::camera::{Camera, Renderer};
 use rust_editor::gizmo::{GetPosition, Id, SetId, SetPosition};
 use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
+use rust_editor::plugins::camera::Renderer;
 use rust_editor::InformationLayer;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -51,9 +51,8 @@ impl Renderer for Map {
         &self,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        camera: &Camera,
     ) -> Result<(), JsValue> {
-        context.translate(camera.x as f64, camera.y as f64)?;
+        //context.translate(camera.x as f64, camera.y as f64)?;
 
         for (_, district) in &self.districts {
             district.render(&context, additional_information_layer)?;
@@ -67,7 +66,7 @@ impl Renderer for Map {
             intersection.render(&context, additional_information_layer)?;
         }
 
-        context.set_transform(1., 0., 0., 1., 0., 0.)?;
+        //context.set_transform(1., 0., 0., 1., 0., 0.)?;
 
         Ok(())
     }

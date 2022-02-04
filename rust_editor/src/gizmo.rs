@@ -4,7 +4,7 @@ use geo::{prelude::EuclideanDistance, Coordinate, Line, Triangle};
 use uuid::Uuid;
 use wasm_bindgen::{JsValue, UnwrapThrowExt};
 
-use crate::{camera::Camera, renderer::PrimitiveRenderer, style::Style};
+use crate::{renderer::PrimitiveRenderer, style::Style};
 
 pub enum Axis {
     X,
@@ -48,7 +48,6 @@ where
     fn render(
         &self,
         context: &web_sys::CanvasRenderingContext2d,
-        camera: &Camera,
         elements: impl Iterator<Item = &'a T>,
     ) -> Result<(), JsValue>;
 }
@@ -140,12 +139,11 @@ impl<'a, T: GetPosition + SetPosition + Id + 'a> Gizmo<'a, T> for MoveGizmo {
     fn render(
         &self,
         context: &web_sys::CanvasRenderingContext2d,
-        camera: &Camera,
         elements: impl Iterator<Item = &'a T>,
     ) -> Result<(), JsValue> {
         if elements.peekable().peek().is_some() {
             let position = self.position();
-            context.translate(position.x + camera.x as f64, position.y + camera.y as f64)?;
+            context.translate(position.x, position.y)?;
 
             self.x_handle.render(&context)?;
             self.y_handle.render(&context)?;

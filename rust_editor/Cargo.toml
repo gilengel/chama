@@ -3,8 +3,6 @@ name = "rust_editor"
 version = "0.1.0"
 edition = "2021"
 
-
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -17,7 +15,9 @@ uuid = { version = "0.8.2", features = ["v4", "wasm-bindgen", "serde"] }
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
 gloo = "0.6.0"
+enum-as-inner = "0.3.3"
 rust_macro = { path = "../rust_macro" }
+rust_internal = { path = "../rust_internal" }
 
 [dependencies.web-sys]
 version = "0.3.4"

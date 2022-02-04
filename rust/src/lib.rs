@@ -1,8 +1,13 @@
 use std::{cell::RefCell, rc::Rc};
+use std::hash::Hash;
 
 use map::map::Map;
-use rust_editor::editor::{
-    add_mode, add_toolbar, launch, Editor, Toolbar, ToolbarButton, ToolbarPosition,
+use rust_editor::{
+    editor::{
+        add_mode, add_toolbar, launch, Editor, Toolbar, ToolbarButton,
+        ToolbarPosition,
+    },
+    plugins::camera::Camera,
 };
 use systems::{
     create_freeform_street_system::CreateFreeFormStreetSystem,
@@ -14,8 +19,6 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 mod map;
 mod systems;
 
-#[macro_use]
-extern crate rust_macro;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum Modes {
@@ -36,7 +39,12 @@ macro_rules! add_mode {
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
+    
+
+
     EDITOR.with(|e| {
+        e.borrow_mut().add_plugin(Camera::default());
+
         let street_toolbar = Toolbar {
             buttons: vec![
                 ToolbarButton {
@@ -79,12 +87,13 @@ pub fn main() -> Result<(), JsValue> {
         };
         add_toolbar(e.clone(), street_toolbar2, ToolbarPosition::Left).expect("couldn't add toolbar to editor. Make sure that the editor instance is correctly created.");
 
-        add_mode!(e, Modes::CreateSimpleStreet, vec![Box::new(CreateStreetSystem::new())]);
+        add_mode!(e, Modes::CreateSimpleStreet, vec![Box::new(MapRenderSystem::new()), Box::new(CreateStreetSystem::new())]);
         add_mode!(e, Modes::CreateFreeformStreet, vec![Box::new(MapRenderSystem::new()), Box::new(CreateFreeFormStreetSystem::new())]);
-        add_mode!(e, Modes::DeleteStreet, vec![Box::new(DeleteStreetSystem::new())]);
+        add_mode!(e, Modes::DeleteStreet, vec![Box::new(MapRenderSystem::new()), Box::new(DeleteStreetSystem::new())]);
 
         launch(e.clone()).expect("Could not launch the editor. Make sure that an active html document exist");
     });
 
     Ok(())
 }
+

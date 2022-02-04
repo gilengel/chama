@@ -1,9 +1,10 @@
 use rust_editor::{
-    camera::{Camera, Renderer},
-    editor::EditorPlugin,
+    editor::get_plugin,
+    plugins::camera::{Camera, Renderer},
     system::System,
     InformationLayer,
 };
+use rust_internal::plugin::Plugin;
 
 use crate::map::map::Map;
 
@@ -11,7 +12,7 @@ pub struct MapRenderSystem {}
 
 impl MapRenderSystem {
     pub fn new() -> Self {
-        MapRenderSystem {}
+        MapRenderSystem { }
     }
 }
 
@@ -21,10 +22,15 @@ impl System<Map> for MapRenderSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<Map>>,
-        camera: &Camera,
+        plugins: &Vec<Box<dyn Plugin<Map>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(context, additional_information_layer, camera)?;
+        if let Some(camera) = get_plugin::<Map, Camera>(plugins) {
+            context.translate(camera.x() as f64, camera.y() as f64)?;
+        }
+
+        map.render(context, additional_information_layer)?;
+
+        context.set_transform(1., 0., 0., 1., 0., 0.)?;
 
         Ok(())
     }

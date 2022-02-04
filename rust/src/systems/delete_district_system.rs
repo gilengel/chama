@@ -1,27 +1,19 @@
 use geo::Coordinate;
 use rust_editor::{
     actions::Action,
-    camera::{Camera, Renderer},
-    editor::EditorPlugin,
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
+    plugins::camera::Renderer,
     system::System,
     InformationLayer,
 };
+use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 
 use crate::map::{district::District, map::Map};
 
 pub struct DeleteDistrictSystem {
     hovered_district: Option<Uuid>,
-}
-
-impl DeleteDistrictSystem {
-    pub fn new() -> Self {
-        DeleteDistrictSystem {
-            hovered_district: None,
-        }
-    }
 }
 
 impl Default for DeleteDistrictSystem {
@@ -38,17 +30,18 @@ impl System<Map> for DeleteDistrictSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
     }
 
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if let Some(old_hovered_district) = self.hovered_district {
             let old_hovered_district: &mut District =
@@ -67,9 +60,9 @@ impl System<Map> for DeleteDistrictSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: u32,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
             map.remove_district(&hovered_district);
@@ -77,19 +70,15 @@ impl System<Map> for DeleteDistrictSystem {
         }
     }
 
-    fn enter(&mut self, _map: &mut Map) {}
-
-    fn exit(&self, _map: &mut Map) {}
-
     fn render(
         &self,
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<Map>>,
-        camera: &Camera,
+        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(&context, additional_information_layer, camera)?;
+        map.render(&context, additional_information_layer)?;
 
         context.set_fill_style(&"#FFFFFF".into());
         context.fill_text(

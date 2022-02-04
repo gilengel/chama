@@ -1,3 +1,6 @@
+use geo::Coordinate;
+use rust_internal::plugin::Plugin;
+use rust_macro::Plugin;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
@@ -8,23 +11,80 @@ pub trait Renderer {
         &self,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        camera: &Camera,
     ) -> Result<(), JsValue>;
 }
 
+#[derive(Plugin)]
 pub struct Camera {
-    pub x: i32,
-    pub y: i32,
+    position: Coordinate<f64>,
 
-    pub active: bool,
+    active: bool,
 }
 
 impl Default for Camera {
     fn default() -> Camera {
         Camera {
-            x: 0,
-            y: 0,
+            position: Coordinate { x: 0., y: 0. },
             active: false,
         }
+    }
+}
+
+impl Camera {
+    pub fn x(&self) -> f64 {
+        self.position.x
+    }
+
+    pub fn set_x(&mut self, x: f64) {
+        self.position.x = x;
+    }
+
+    pub fn y(&self) -> f64 {
+        self.position.y
+    }
+
+    pub fn set_y(&mut self, y: f64) {
+        self.position.y = y;
+    }
+
+    pub fn position(&self) -> Coordinate<f64> {
+        self.position
+    }
+
+    pub fn active(&self) -> bool {
+        self.active
+    }
+
+    pub fn set_active(&mut self, active: bool) {
+        self.active = active;
+    }
+}
+
+impl<T> Plugin<T> for Camera {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut T) {
+        self.active = button == 1;
+    }
+
+    fn mouse_move(
+        &mut self,
+        _mouse_pos: Coordinate<f64>,
+        mouse_movement: Coordinate<f64>,
+        _data: &mut T,
+    ) {
+        if !self.active {
+            return;
+        }
+
+        self.position = self.position + mouse_movement;
+    }
+
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut T) {
+        if self.active && button == 1 {
+            self.active = false;
+        }
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }

@@ -1,13 +1,12 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    camera::Camera,
-    editor::EditorPlugin,
     renderer::apply_style,
     style::Style,
     system::System,
-    InformationLayer,
+    InformationLayer, editor::get_plugin, plugins::camera::Camera,
 };
+use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -91,10 +90,9 @@ impl System<Map> for CreateFreeFormStreetSystem {
         &mut self,
         _: Coordinate<f64>,
         button: u32,
-        _: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
-
+        _: &mut Map,    
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if button == 0 {
             self.brush_active = true;
@@ -104,9 +102,9 @@ impl System<Map> for CreateFreeFormStreetSystem {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        _: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        _: &mut Map,        
         _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
@@ -117,13 +115,16 @@ impl System<Map> for CreateFreeFormStreetSystem {
         &mut self,
         _: Coordinate<f64>,
         button: u32,
-        map: &mut Map,
-        _plugins: &Vec<EditorPlugin<Map>>,
+        map: &mut Map,        
         actions: &mut Vec<Box<dyn Action<Map>>>,
+        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
-        if button == 0 {
-            self.brush_active = false;
+        // Only proceed if the left button was released
+        if button != 0 {
+            return
         }
+
+        self.brush_active = false;
 
         let line_string = LineString(self.raw_points.clone());
         let points = line_string.simplify(&4.0).into_points();
@@ -145,29 +146,32 @@ impl System<Map> for CreateFreeFormStreetSystem {
         _map: &Map,
         context: &CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<EditorPlugin<Map>>,
-        camera: &Camera,
+        plugins: &Vec<Box<dyn Plugin<Map>>>
+        
     ) -> Result<(), JsValue> {
         if self.brush_active && !self.raw_points.is_empty() {
+            let offset = match get_plugin::<Map, Camera>(plugins) {
+                Some(x) => Coordinate { x: x.x(), y: x.y() },
+                None => Coordinate { x: 0., y: 0. },
+            };
+            
+            
             context.begin_path();
             context.move_to(
-                self.raw_points[0].x + camera.x as f64,
-                self.raw_points[0].y + camera.y as f64,
+                self.raw_points[0].x + offset.x,
+                self.raw_points[0].y + offset.y,
             );
 
             for point in self.raw_points.iter().skip(1) {
-                context.line_to(point.x + camera.x as f64, point.y + camera.y as f64);
+                context.line_to(point.x + offset.x, point.y + offset.y);
                 context.stroke();
-                context.move_to(point.x + camera.x as f64, point.y + camera.y as f64)
+                context.move_to(point.x + offset.x, point.y + offset.y);
             }
-            //context.close_path();
+
+            context.close_path();
             apply_style(&self.raw_point_style, &context);
         }
 
         Ok(())
     }
-
-    fn enter(&mut self, _: &mut Map) {}
-
-    fn exit(&self, _: &mut Map) {}
 }

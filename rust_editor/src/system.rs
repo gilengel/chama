@@ -3,7 +3,7 @@ use rust_internal::plugin::Plugin;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{actions::Action, plugins::camera::Renderer, InformationLayer};
+use crate::{plugins::camera::Renderer, InformationLayer};
 
 /// Editing functionality is encapsuled into different states. Each state is responsible to render the map and all additional information needed.
 /// A state receives all input events that happen on the canvas element which are cursor down, up and move, key down and up.
@@ -28,7 +28,6 @@ where
         _mouse_pos: Coordinate<f64>,
         _button: u32,
         _data: &mut T,
-        _actions: &mut Vec<Box<dyn Action<T>>>,
         _plugins: &mut Vec<Box<dyn Plugin<T>>>
         
     ) {
@@ -43,7 +42,6 @@ where
         &mut self,
         _mouse_pos: Coordinate<f64>,
         _data: &mut T,
-        _actions: &mut Vec<Box<dyn Action<T>>>,
         _plugins: &mut Vec<Box<dyn Plugin<T>>>
     ) {
     }
@@ -59,7 +57,6 @@ where
         _mouse_pos: Coordinate<f64>,
         _button: u32,
         _data: &mut T,
-        _actions: &mut Vec<Box<dyn Action<T>>>,
         _plugins: &mut Vec<Box<dyn Plugin<T>>>
     ) {
     }

@@ -10,7 +10,7 @@ use web_sys::{
 };
 
 use crate::plugins::camera::{Renderer, Camera};
-use crate::{actions::Action, html, html_impl, macros::slugify, system::System, InformationLayer};
+use crate::{html, html_impl, macros::slugify, system::System, InformationLayer};
 
 pub trait EditorMode = Copy + Clone;
 
@@ -264,6 +264,19 @@ where
     None
 }
 
+pub fn get_plugin_mut<T, S>(plugins: &mut Vec<Box<dyn Plugin<T>>>) -> Option<&mut S>
+where
+    S: 'static,
+{
+    for plugin in plugins {
+        if let Some(p) = plugin.as_any_mut().downcast_mut::<S>() {
+            return Some(p);
+        }
+    }
+
+    None
+}
+
 pub struct Editor<T>
 where
     T: Renderer,
@@ -280,7 +293,7 @@ where
     active_mode: u8,
     modes: HashMap<u8, Vec<Box<dyn System<T> + Send + Sync + 'static>>>,
 
-    undo_stack: Vec<Box<dyn Action<T>>>,
+    //undo_stack: Vec<Box<dyn Action<T>>>,
     //redo_stack: Vec<Box<dyn Action<T>>>,
 }
 
@@ -300,7 +313,6 @@ where
             additional_information_layers: vec![],
             active_mode: 0,
             data: T::default(),
-            undo_stack: Vec::new(),
             //redo_stack: Vec::new(),
             toolbars: HashMap::new(),
             plugins: Vec::new(),
@@ -369,7 +381,6 @@ where
                 mouse_pos,
                 button,
                 &mut self.data,
-                &mut self.undo_stack,
                 &mut self.plugins,
             );
 
@@ -391,7 +402,6 @@ where
                 mouse_pos,
                 button,
                 &mut self.data,
-                &mut self.undo_stack,
                 &mut self.plugins,
             );
 
@@ -416,7 +426,6 @@ where
             system.mouse_move(
                 mouse_pos,
                 &mut self.data,
-                &mut self.undo_stack,
                 &mut self.plugins,
             );
 

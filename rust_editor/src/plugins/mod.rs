@@ -1,5 +1,2 @@
 pub mod camera;
-
-pub trait XPlugins {
-
-}
+pub mod undo;

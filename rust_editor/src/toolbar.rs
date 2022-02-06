@@ -1,11 +1,13 @@
 use std::{cell::RefCell, rc::Rc};
 
-use uuid::Uuid;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
-use web_sys::{HtmlElement, HtmlInputElement, HtmlLabelElement, HtmlSpanElement};
+use web_sys::{
+    HtmlButtonElement, HtmlElement, HtmlInputElement, HtmlLabelElement, HtmlSpanElement,
+};
 
 use crate::{
     editor::{document, slugify, Editor},
+    log,
     plugins::{self, camera::Renderer},
 };
 
@@ -21,22 +23,25 @@ pub struct Toolbar<T>
 where
     T: Renderer + 'static,
 {
-    pub buttons: Vec<ToolbarButton<T>>,
+    pub buttons: Vec<Box<dyn ToolbarButton<T>>>,
     pub position: ToolbarPosition,
 
-    id: String,
+    pub id: String,
 }
 
 impl<T> Toolbar<T>
 where
     T: Renderer + 'static,
 {
-    pub fn new(buttons: Vec<ToolbarButton<T>>, position: ToolbarPosition) -> Self {
+    pub fn new(
+        buttons: Vec<Box<dyn ToolbarButton<T>>>,
+        position: ToolbarPosition,
+        id: String,
+    ) -> Self {
         Toolbar {
             buttons,
             position,
-
-            id: Uuid::new_v4().to_string(),
+            id,
         }
     }
     pub fn render(&self, editor: Rc<RefCell<Editor<T>>>) -> Result<(), JsValue>
@@ -57,6 +62,7 @@ where
             .dyn_into::<HtmlElement>()
             .unwrap();
 
+        log!("{}", self.id);
         ul.set_id(&self.id);
         ul.set_class_name("toolbar");
         ul.set_attribute("role", "radiogroup")?;
@@ -83,7 +89,12 @@ where
         Ok(())
     }
 
-    pub fn add_button(&mut self, button: ToolbarButton<T>, editor: Rc<RefCell<Editor<T>>>) -> Result<(), JsValue> {
+    pub fn add_button(
+        &mut self,
+        button: Box<dyn ToolbarButton<T>>,
+        editor: Rc<RefCell<Editor<T>>>,
+    ) -> Result<(), JsValue> {
+        log!("{}", self.id);
         let ul = document().get_element_by_id(&self.id).unwrap();
 
         ul.append_child(&button.render(editor).unwrap())?;
@@ -94,7 +105,100 @@ where
     }
 }
 
-pub struct ToolbarButton<T>
+pub trait ToolbarButton<T>
+where
+    T: Renderer + 'static,
+{
+    fn render(&self, editor: Rc<RefCell<Editor<T>>>) -> Result<HtmlElement, JsValue>;
+}
+
+pub struct ToolbarClickButton<T>
+where
+    T: Renderer + 'static,
+{
+    pub icon: &'static str,
+    pub tooltip: &'static str,
+    pub callback: fn(Rc<RefCell<Editor<T>>>),
+}
+
+impl<T> ToolbarClickButton<T>
+where
+    T: Renderer + 'static,
+{
+    pub fn new(
+        icon: &'static str,
+        tooltip: &'static str,
+        callback: fn(Rc<RefCell<Editor<T>>>),
+    ) -> Self {
+        ToolbarClickButton {
+            icon,
+            tooltip,
+            callback,
+        }
+    }
+}
+
+impl<T> ToolbarButton<T> for ToolbarClickButton<T>
+where
+    T: Renderer,
+{
+    fn render(&self, editor: Rc<RefCell<Editor<T>>>) -> Result<HtmlElement, JsValue> {
+        let document = document();
+
+        let id = slugify(&self.tooltip);
+
+        let li = document
+            .create_element("li")
+            .unwrap()
+            .dyn_into::<HtmlElement>()
+            .unwrap();
+        let button = document
+            .create_element("button")
+            .unwrap()
+            .dyn_into::<HtmlButtonElement>()
+            .unwrap();
+        button.set_id(&id);
+
+        let span = document
+            .create_element("span")
+            .unwrap()
+            .dyn_into::<HtmlSpanElement>()
+            .unwrap();
+        span.set_class_name("material-icons");
+        span.set_text_content(Some(&self.icon));
+        button.append_child(&span)?;
+
+        let func = self.callback.clone();
+        // Callback
+        let a = Closure::wrap(Box::new(move |_: web_sys::Event| {
+            func(editor.clone());
+        }) as Box<dyn FnMut(_)>);
+        button.set_onclick(Some(a.as_ref().unchecked_ref()));
+        a.forget();
+
+        li.append_child(&button)?;
+
+        let label = document
+            .create_element("label")
+            .unwrap()
+            .dyn_into::<HtmlLabelElement>()
+            .unwrap();
+        label.set_html_for(&slugify(&self.tooltip));
+
+        let span_tooltip = document
+            .create_element("span")
+            .unwrap()
+            .dyn_into::<HtmlSpanElement>()
+            .unwrap();
+        span_tooltip.set_class_name("tooltip");
+        span_tooltip.set_text_content(Some(&self.tooltip));
+        li.append_child(&span_tooltip)?;
+
+        Ok(li)
+    }
+}
+
+pub struct ToolbarRadioButton<T>
 where
     T: Renderer + 'static,
 {
@@ -105,7 +209,7 @@ where
     pub callback: fn(Rc<RefCell<Editor<T>>>),
 }
 
-impl<T> ToolbarButton<T>
+impl<T> ToolbarRadioButton<T>
 where
     T: Renderer,
 {
@@ -115,16 +219,20 @@ where
         value: u8,
         callback: fn(Rc<RefCell<Editor<T>>>),
     ) -> Self {
-        ToolbarButton {
+        ToolbarRadioButton {
             icon,
             tooltip,
             value,
             callback,
         }
     }
+}
 
-    pub fn render(&self, editor: Rc<RefCell<Editor<T>>>) -> Result<HtmlElement, JsValue>
-    {
+impl<T> ToolbarButton<T> for ToolbarRadioButton<T>
+where
+    T: Renderer,
+{
+    fn render(&self, editor: Rc<RefCell<Editor<T>>>) -> Result<HtmlElement, JsValue> {
         let document = document();
 
         let id = slugify(&self.tooltip);
@@ -146,9 +254,8 @@ where
 
         let func = self.callback.clone();
         // Callback
-        let a = Closure::wrap(Box::new(move |evt: web_sys::Event| {
+        let a = Closure::wrap(Box::new(move |_: web_sys::Event| {
             func(editor.clone());
-
         }) as Box<dyn FnMut(_)>);
         input.set_onchange(Some(a.as_ref().unchecked_ref()));
         a.forget();

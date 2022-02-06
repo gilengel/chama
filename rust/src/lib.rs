@@ -3,14 +3,14 @@ use std::{cell::RefCell, rc::Rc};
 
 use map::map::Map;
 use rust_editor::editor::add_plugin;
+use rust_editor::launch;
 use rust_editor::plugins::redo::Redo;
 use rust_editor::plugins::undo::Undo;
-use rust_editor::toolbar::{Toolbar, ToolbarButton, ToolbarPosition};
+use rust_editor::toolbar::{Toolbar, ToolbarRadioButton, ToolbarPosition};
 use rust_editor::{
     editor::{add_mode, Editor},
     plugins::camera::Camera,
 };
-use rust_editor::{launch, log};
 use systems::{
     create_freeform_street_system::CreateFreeFormStreetSystem,
     create_street_system::CreateStreetSystem, delete_street_system::DeleteStreetSystem,
@@ -43,10 +43,16 @@ pub fn main() -> Result<(), JsValue> {
     EDITOR.with(|e| {
         let top_toolbar = Toolbar::new(
             vec![
-                ToolbarButton::new("add", "Create Straight Street", 0, |e|{ e.borrow_mut().switch_mode(Modes::CreateSimpleStreet as u8) }),
-                ToolbarButton::new("add", "Muh muh", 1, |e|{ e.borrow_mut().switch_mode(Modes::CreateFreeformStreet as u8) }),
+                Box::new(ToolbarRadioButton::new("add", "Create Straight Street", 0, |e| {
+                    e.borrow_mut().switch_mode(Modes::CreateSimpleStreet as u8)
+                })),
+                Box::new(ToolbarRadioButton::new("add", "Muh muh", 1, |e| {
+                    e.borrow_mut()
+                        .switch_mode(Modes::CreateFreeformStreet as u8)
+                })),
             ],
             ToolbarPosition::Top,
+            "main_toolbar".to_string()
         );
 
         top_toolbar

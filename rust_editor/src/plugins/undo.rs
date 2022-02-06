@@ -1,6 +1,10 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 
-use crate::{actions::Action, log, toolbar::ToolbarButton, editor::{Editor, get_plugin}};
+use crate::{
+    actions::Action,
+    editor::{Editor, document},
+    toolbar::{Toolbar, ToolbarPosition, ToolbarClickButton},
+};
 
 use super::{camera::Renderer, plugin::Plugin, redo::Redo};
 
@@ -14,7 +18,10 @@ impl<T> Default for Undo<T> {
     }
 }
 
-impl<T> Undo<T> where T: Renderer {
+impl<T> Undo<T>
+where
+    T: Renderer,
+{
     pub fn push(&mut self, action: Box<dyn Action<T>>) {
         self.stack.push(action);
     }
@@ -29,7 +36,7 @@ where
     }
 
     fn execute(&mut self, editor: &mut Editor<T>) {
-        if let Some(action) = self.stack.last_mut() {                        
+        if let Some(action) = self.stack.last_mut() {
             (**action).undo(editor.data_mut());
         }
 
@@ -50,12 +57,19 @@ where
 
     fn mouse_up(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut T) {}
 
-    fn toolbar_buttons(&self) -> Vec<ToolbarButton<T>> {
-        vec![
-            ToolbarButton::new("undo", "Undo Last Action", 0, |e: Rc<RefCell<Editor<T>>>| {
-                  e.as_ref().borrow_mut().execute_plugin::<Undo<T>>();
-            }),
-        ]
+    fn toolbars(&self) -> Vec<Toolbar<T>> {
+        vec![Toolbar::new(
+            vec![Box::new(ToolbarClickButton::new(
+                "undo",
+                "Undo Last Action",
+                
+                |e: Rc<RefCell<Editor<T>>>| {
+                    e.as_ref().borrow_mut().execute_plugin::<Undo<T>>();
+                },
+            ))],
+            ToolbarPosition::Top,
+            "plugins.toolbars.undo_redo".to_string(),
+        )]
     }
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {

@@ -92,7 +92,7 @@ impl<T> Plugin<T> for Camera {
         self
     }
 
-    fn execute(&mut self, editor: &mut crate::editor::Editor<T>) where T: Renderer {
+    fn execute(&mut self, _editor: &mut crate::editor::Editor<T>) where T: Renderer {
         todo!()
     }
 }

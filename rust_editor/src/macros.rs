@@ -260,7 +260,7 @@ macro_rules! html {
 #[macro_export]
 macro_rules! toolbar_button {
     ($icon:literal,$tooltip:literal,$value:literal) => {
-        ToolbarButton {
+        ToolbarRadioButton {
             icon: $icon.to_string(),
             tooltip: $tooltip.to_string(),
             value: $value,

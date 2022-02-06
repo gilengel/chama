@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::{cell::RefCell, collections::HashMap, panic, rc::Rc};
 
 use geo::Coordinate;
@@ -99,22 +98,35 @@ where
     S: Plugin<T> + 'static,
     T: Renderer + Default + 'static,
 {
-    let additional_buttons = plugin.toolbar_buttons();
+    let additional_toolbars = plugin.toolbars();
 
-    if !additional_buttons.is_empty() {
+    if !additional_toolbars.is_empty() {
         let mut e = editor.as_ref().borrow_mut();
 
-        let toolbar = e
-            .toolbars
-            .get_mut(&ToolbarPosition::Top)
-            .unwrap()
-            .first_mut()
-            .unwrap();
+        let toolbars = e.toolbars.get_mut(&ToolbarPosition::Top).unwrap();
 
-        for button in additional_buttons {
-            toolbar
-                .add_button(button, editor.clone())
-                .expect("editor.rs[133]: Could not add button dynamically to toolbar :(");
+        for additional_toolbar in additional_toolbars {
+            // In case the toolbar already exists, add the additional buttons to it
+            if let Some(toolbar) = toolbars
+                .iter_mut()
+                .find(|toolbar| toolbar.id == additional_toolbar.id)
+            {
+                for additional_button in additional_toolbar.buttons {
+                    toolbar
+                        .add_button(additional_button, editor.clone())
+                        .expect("Could not add button to existing toolbar");
+                }
+
+                continue;
+            }
+
+            // Add it to the DOM
+            additional_toolbar
+                .render(editor.clone())
+                .expect("could not add toolbar");
+
+            // Add the new toolbar
+            toolbars.push(additional_toolbar);
         }
     }
 
@@ -166,26 +178,21 @@ where
         get_plugin::<T, S>(&self.plugins)
     }
 
-    fn insert_plugin(&mut self, plugin: Box<(dyn Plugin<T> + 'static)>) {
-        self.plugins.push(plugin);
-    }
-
     pub fn execute_plugin<S>(&mut self)
     where
         S: Plugin<T> + 'static,
     {
         let position = self
-        .plugins
-        .iter_mut()
-        .position(|plugin| plugin.as_any_mut().downcast_mut::<S>().is_some());
+            .plugins
+            .iter_mut()
+            .position(|plugin| plugin.as_any_mut().downcast_mut::<S>().is_some());
 
         if position.is_none() {
-            return
+            return;
         }
-      
+
         let mut plugin = self.plugins.remove(position.unwrap());
         plugin.execute(self);
-        
 
         self.plugins.insert(position.unwrap(), plugin);
     }

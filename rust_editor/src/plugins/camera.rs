@@ -1,10 +1,10 @@
 use geo::Coordinate;
-use rust_internal::plugin::Plugin;
-use rust_macro::Plugin;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::InformationLayer;
+
+use super::plugin::Plugin;
 
 pub trait Renderer {
     fn render(
@@ -14,7 +14,7 @@ pub trait Renderer {
     ) -> Result<(), JsValue>;
 }
 
-#[derive(Plugin)]
+
 pub struct Camera {
     position: Coordinate<f64>,
 
@@ -90,5 +90,9 @@ impl<T> Plugin<T> for Camera {
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
+    }
+
+    fn execute(&mut self, editor: &mut crate::editor::Editor<T>) where T: Renderer {
+        todo!()
     }
 }

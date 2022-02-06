@@ -1,26 +1,26 @@
 use std::{rc::Rc, cell::RefCell};
 
-use crate::{actions::Action, log, toolbar::ToolbarButton, editor::{Editor, get_plugin}};
+use crate::{actions::Action, log, toolbar::ToolbarButton, editor::Editor};
 
-use super::{camera::Renderer, plugin::Plugin, redo::Redo};
+use super::{camera::Renderer, plugin::Plugin, undo::Undo};
 
-pub struct Undo<T> {
+pub struct Redo<T> {
     pub stack: Vec<Box<dyn Action<T>>>,
 }
 
-impl<T> Default for Undo<T> {
+impl<T> Default for Redo<T> {
     fn default() -> Self {
-        Undo { stack: Vec::new() }
+        Redo { stack: Vec::new() }
     }
 }
 
-impl<T> Undo<T> where T: Renderer {
+impl<T> Redo<T> where T: Renderer {
     pub fn push(&mut self, action: Box<dyn Action<T>>) {
         self.stack.push(action);
     }
 }
 
-impl<T> Plugin<T> for Undo<T>
+impl<T> Plugin<T> for Redo<T>
 where
     T: Renderer + Default + 'static,
 {
@@ -30,11 +30,11 @@ where
 
     fn execute(&mut self, editor: &mut Editor<T>) {
         if let Some(action) = self.stack.last_mut() {                        
-            (**action).undo(editor.data_mut());
+            (**action).redo(editor.data_mut());
         }
 
-        if let Some(redo) = editor.get_plugin_mut::<Redo<T>>() {
-            redo.stack.push(self.stack.pop().unwrap());
+        if let Some(undo) = editor.get_plugin_mut::<Undo<T>>() {
+            undo.stack.push(self.stack.pop().unwrap());
         }
     }
 
@@ -52,8 +52,8 @@ where
 
     fn toolbar_buttons(&self) -> Vec<ToolbarButton<T>> {
         vec![
-            ToolbarButton::new("undo", "Undo Last Action", 0, |e: Rc<RefCell<Editor<T>>>| {
-                  e.as_ref().borrow_mut().execute_plugin::<Undo<T>>();
+            ToolbarButton::new("redo", "Redo Last Action", 1, |e| {
+                e.as_ref().borrow_mut().execute_plugin::<Redo<T>>();
             }),
         ]
     }

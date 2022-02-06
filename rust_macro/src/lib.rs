@@ -10,7 +10,7 @@ use syn::parse::Parser;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Data, DeriveInput, Error, Fields};
 
-
+/*
 #[proc_macro_derive(Plugin)]
 pub fn plugin(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as DeriveInput);
@@ -29,6 +29,7 @@ pub fn plugin(tokens: TokenStream) -> TokenStream {
     };
     TokenStream::from(modified)
 }
+*/
 
 
 #[proc_macro_derive(ElementId)]

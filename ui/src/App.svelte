@@ -64,6 +64,28 @@
       margin-top: $padding;
       margin-right: $padding;
     }
+
+    #top_primary_toolbar {
+      position: absolute;
+      left: 0;
+      top: 0;
+
+      margin-top: $padding;
+      margin-left: $padding;
+
+      .toolbar {
+        flex-direction: row;
+        width: auto;
+
+        li {
+          .tooltip {
+            bottom: calc(-100% - $padding);
+            left: 0;
+            transform: translate(-50%);
+          }
+        }
+      }
+    }
   }
 
   .toolbar:not(:last-child) {

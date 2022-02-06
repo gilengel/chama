@@ -1,10 +1,9 @@
 use rust_editor::{
     editor::get_plugin,
-    plugins::camera::{Camera, Renderer},
+    plugins::{camera::{Camera, Renderer}, plugin::Plugin},
     system::System,
     InformationLayer,
 };
-use rust_internal::plugin::Plugin;
 
 use crate::map::map::Map;
 

@@ -2,13 +2,11 @@ use std::ops::Add;
 
 use geo::Coordinate;
 use rust_editor::{
-    actions::Action,
     gizmo::{mouse_over, GetPosition, Gizmo, MoveGizmo, SetPosition},
     interactive_element::{InteractiveElement, InteractiveElementState},
     system::System,
-    InformationLayer,
+    InformationLayer, plugins::plugin::Plugin,
 };
-use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 
 use crate::map::map::Map;
@@ -54,7 +52,7 @@ impl System<Map> for MoveControlSystem {
         button: u32,
         map: &mut Map,
         
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.gizmo.mouse_down(
@@ -80,7 +78,7 @@ impl System<Map> for MoveControlSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.center_gizmo(map);
@@ -101,7 +99,7 @@ impl System<Map> for MoveControlSystem {
         mouse_pos: Coordinate<f64>,
         button: u32,
         map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if self.gizmo.is_active() {

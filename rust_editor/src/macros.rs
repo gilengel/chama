@@ -1,11 +1,10 @@
 use std::sync::Mutex;
 
 use js_sys::Array;
-use rust_internal::plugin::Plugin;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{Document, HtmlElement, HtmlInputElement};
 
-use crate::{editor::Editor, plugins::camera::Renderer};
+use crate::{editor::Editor, plugins::{camera::Renderer, plugin::Plugin}};
 
 pub fn get_element(document: &Document, id: Option<String>) -> HtmlElement {
     match id {
@@ -77,7 +76,7 @@ pub fn set_type(stack: &mut Vec<HtmlElement>, input_type: &str) {
 pub fn set_onchange<F, T, M>(stack: &mut Vec<HtmlElement>, _callback: F)
 where
     F: Fn(Mutex<Editor<T>>) -> () + 'static,
-    T: Renderer,
+    T: Renderer + 'static,
     M: Plugin<T> + std::cmp::Eq + std::hash::Hash + 'static,
 {
     let a = Closure::wrap(Box::new(move || {
@@ -98,17 +97,7 @@ pub fn set_text_content(stack: &mut Vec<HtmlElement>, content: &str) {
     stack.last().unwrap().set_text_content(Some(text));
 }
 
-pub fn slugify(text: &str) -> String {
-    let a: String = text
-        .chars()
-        .map(|x| match x {
-            '!' | '?' | ',' | '.' | ';' | ' ' => '-',
-            _ => x,
-        })
-        .collect();
 
-    a.to_ascii_lowercase()
-}
 
 #[macro_export]
 macro_rules! log {

@@ -1,13 +1,11 @@
 use geo::Coordinate;
 use rust_editor::{
-    actions::Action,
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::camera::Renderer,
+    plugins::{camera::Renderer, plugin::Plugin},
     system::System,
     InformationLayer,
 };
-use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 
 use crate::map::{district::District, map::Map};
@@ -31,7 +29,7 @@ impl System<Map> for DeleteDistrictSystem {
         _: u32,
         _: &mut Map,
         
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
     }
@@ -40,7 +38,7 @@ impl System<Map> for DeleteDistrictSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if let Some(old_hovered_district) = self.hovered_district {
@@ -61,7 +59,7 @@ impl System<Map> for DeleteDistrictSystem {
         mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {

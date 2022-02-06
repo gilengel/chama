@@ -8,12 +8,10 @@ use geo::{
 
 use rand::{thread_rng, Rng};
 use rust_editor::{
-    actions::Action,
     gizmo::{GetPosition, Id, SetId, SetPosition},
     system::System,
-    InformationLayer,
+    InformationLayer, plugins::plugin::Plugin,
 };
-use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -247,7 +245,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         button: u32,
         map: &mut Map,
         
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         // We only check for left click
@@ -312,7 +310,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if !self.mouse_pressed {
@@ -393,7 +391,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         _mouse_pos: Coordinate<f64>,
         button: u32,
         _map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         // Cancel creation of street with right mouse button click

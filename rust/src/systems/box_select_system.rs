@@ -1,13 +1,11 @@
 use geo::{Coordinate, Rect};
 use rust_editor::{
-    actions::Action,
     interactive_element::{InteractiveElement, InteractiveElementState},
     renderer::PrimitiveRenderer,
     style::Style,
     system::System,
-    InformationLayer,
+    InformationLayer, plugins::plugin::Plugin,
 };
-use rust_internal::plugin::Plugin;
 
 use crate::map::map::Map;
 
@@ -37,7 +35,6 @@ impl System<Map> for BoxSelectSystem {
         mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.selection_min = mouse_pos;
@@ -48,7 +45,6 @@ impl System<Map> for BoxSelectSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.selection_max = mouse_pos;
@@ -59,7 +55,6 @@ impl System<Map> for BoxSelectSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         for intersection in map

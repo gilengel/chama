@@ -7,3 +7,36 @@ edition = "2021"
 
 [dependencies]
 geo = "0.18.0"
+wasm-bindgen = "0.2.78"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  'CanvasRenderingContext2d',
+  'CssStyleDeclaration',
+  'Document',
+  'Element',
+  'EventTarget',
+  'HtmlCanvasElement',
+  'HtmlElement',
+  'HtmlInputElement',
+  'HtmlAnchorElement',
+  'HtmlButtonElement',
+  'HtmlParagraphElement',
+  'HtmlLabelElement',
+  'HtmlSpanElement',
+  'HtmlSelectElement',
+  'MouseEvent',
+  'Node',
+  'Window',
+  'console',
+  'Storage',
+  'DragEvent',
+  'DataTransfer',
+  'FileList',
+  'File',
+  'DomRect',
+  'DomTokenList',
+  'EventListener'
+]
+

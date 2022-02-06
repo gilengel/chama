@@ -3,15 +3,13 @@ use geo::{
     Coordinate, LineString, Point, Polygon,
 };
 use rust_editor::{
-    actions::Action,
     gizmo::{Id, SetPosition},
-    plugins::camera::Renderer,
+    plugins::{camera::Renderer, plugin::Plugin},
     renderer::PrimitiveRenderer,
     style::Style,
     system::System,
     InformationLayer,
 };
-use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -113,9 +111,7 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         &mut self,
         _: Coordinate<f64>,
         button: u32,
-        _: &mut Map,
-        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+        _: &mut Map,        
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if button == 0 {
@@ -130,7 +126,6 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if self.brush_active {
@@ -146,7 +141,7 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         _: Coordinate<f64>,
         button: u32,
         map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if button == 0 {

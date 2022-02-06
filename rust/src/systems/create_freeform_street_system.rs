@@ -1,12 +1,11 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
-    actions::{Action, MultiAction, Redo, Undo},
+    actions::{Action, MultiAction, Undo, Redo},
     renderer::apply_style,
     style::Style,
     system::System,
-    InformationLayer, editor::get_plugin, plugins::camera::Camera,
+    InformationLayer, editor::{get_plugin, get_plugin_mut}, plugins::{camera::Camera, plugin::Plugin}
 };
-use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
@@ -91,7 +90,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         _: Coordinate<f64>,
         button: u32,
         _: &mut Map,    
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if button == 0 {
@@ -103,7 +102,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if self.brush_active {
@@ -116,8 +115,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         _: Coordinate<f64>,
         button: u32,
         map: &mut Map,        
-        actions: &mut Vec<Box<dyn Action<Map>>>,
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         // Only proceed if the left button was released
         if button != 0 {
@@ -136,7 +134,12 @@ impl System<Map> for CreateFreeFormStreetSystem {
                 .collect(),
         );
         action.execute(map);
-        actions.push(Box::new(action));
+
+        // If an undo plugin is registered store the action into it to make in undoable
+        if let Some(undo) = get_plugin_mut::<Map, rust_editor::plugins::undo::Undo<Map>>(plugins) {
+            undo.push(Box::new(action));
+        }
+
 
         self.raw_points.clear();
     }

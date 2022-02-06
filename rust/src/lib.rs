@@ -1,14 +1,16 @@
-use std::{cell::RefCell, rc::Rc};
 use std::hash::Hash;
+use std::{cell::RefCell, rc::Rc};
 
 use map::map::Map;
+use rust_editor::editor::add_plugin;
+use rust_editor::plugins::redo::Redo;
+use rust_editor::plugins::undo::Undo;
+use rust_editor::toolbar::{Toolbar, ToolbarButton, ToolbarPosition};
 use rust_editor::{
-    editor::{
-        add_mode, add_toolbar, launch, Editor, Toolbar, ToolbarButton,
-        ToolbarPosition,
-    },
+    editor::{add_mode, Editor},
     plugins::camera::Camera,
 };
+use rust_editor::{launch, log};
 use systems::{
     create_freeform_street_system::CreateFreeFormStreetSystem,
     create_street_system::CreateStreetSystem, delete_street_system::DeleteStreetSystem,
@@ -18,7 +20,6 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 mod map;
 mod systems;
-
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum Modes {
@@ -39,61 +40,52 @@ macro_rules! add_mode {
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
-    
-
-
     EDITOR.with(|e| {
-        e.borrow_mut().add_plugin(Camera::default());
-
-        let street_toolbar = Toolbar {
-            buttons: vec![
-                ToolbarButton {
-                    icon: "add",
-                    tooltip: "Create Straight Street",
-                    value: Modes::CreateSimpleStreet as u8,
-                },
-                ToolbarButton {
-                    icon: "brush",
-                    tooltip: "Freestyle Add Street",
-                    value: Modes::CreateFreeformStreet as u8,
-                },
-                ToolbarButton {
-                    icon: "delete",
-                    tooltip: "Delete Street",
-                    value: Modes::DeleteStreet as u8,
-                },
+        let top_toolbar = Toolbar::new(
+            vec![
+                ToolbarButton::new("add", "Create Straight Street", 0, |e|{ e.borrow_mut().switch_mode(Modes::CreateSimpleStreet as u8) }),
+                ToolbarButton::new("add", "Muh muh", 1, |e|{ e.borrow_mut().switch_mode(Modes::CreateFreeformStreet as u8) }),
             ],
-        };
-        add_toolbar(e.clone(), street_toolbar, ToolbarPosition::Left).expect("couldn't add toolbar to editor. Make sure that the editor instance is correctly created.");
+            ToolbarPosition::Top,
+        );
 
-        let street_toolbar2 = Toolbar {
-            buttons: vec![
-                ToolbarButton {
-                    icon: "add",
-                    tooltip: "Create Straight Street",
-                    value: Modes::CreateSimpleStreet as u8,
-                },
-                ToolbarButton {
-                    icon: "brush",
-                    tooltip: "Freestyle Add Street",
-                    value: Modes::CreateFreeformStreet as u8,
-                },
-                ToolbarButton {
-                    icon: "delete",
-                    tooltip: "Delete Street",
-                    value: Modes::DeleteStreet as u8,
-                },
-            ],
-        };
-        add_toolbar(e.clone(), street_toolbar2, ToolbarPosition::Left).expect("couldn't add toolbar to editor. Make sure that the editor instance is correctly created.");
+        top_toolbar
+            .render(e.clone())
+            .expect("Couldn't render top toolbar");
+        e.borrow_mut().add_toolbar(top_toolbar);
 
-        add_mode!(e, Modes::CreateSimpleStreet, vec![Box::new(MapRenderSystem::new()), Box::new(CreateStreetSystem::new())]);
-        add_mode!(e, Modes::CreateFreeformStreet, vec![Box::new(MapRenderSystem::new()), Box::new(CreateFreeFormStreetSystem::new())]);
-        add_mode!(e, Modes::DeleteStreet, vec![Box::new(MapRenderSystem::new()), Box::new(DeleteStreetSystem::new())]);
+        add_plugin(e.clone(), Camera::default());
+        add_plugin(e.clone(), Undo::default());
+        add_plugin(e.clone(), Redo::default());
 
-        launch(e.clone()).expect("Could not launch the editor. Make sure that an active html document exist");
+        add_mode!(
+            e,
+            Modes::CreateSimpleStreet,
+            vec![
+                Box::new(MapRenderSystem::new()),
+                Box::new(CreateStreetSystem::new())
+            ]
+        );
+        add_mode!(
+            e,
+            Modes::CreateFreeformStreet,
+            vec![
+                Box::new(MapRenderSystem::new()),
+                Box::new(CreateFreeFormStreetSystem::new())
+            ]
+        );
+        add_mode!(
+            e,
+            Modes::DeleteStreet,
+            vec![
+                Box::new(MapRenderSystem::new()),
+                Box::new(DeleteStreetSystem::new())
+            ]
+        );
+
+        launch(e.clone())
+            .expect("Could not launch the editor. Make sure that an active html document exist");
     });
 
     Ok(())
 }
-

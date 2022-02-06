@@ -1,12 +1,10 @@
 use geo::Coordinate;
 use rust_editor::{
-    actions::Action,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::camera::Renderer,
+    plugins::{camera::Renderer, plugin::Plugin},
     system::System,
     InformationLayer,
 };
-use rust_internal::plugin::Plugin;
 use uuid::Uuid;
 
 use crate::map::{intersection::Side, map::Map, street::Street};
@@ -106,7 +104,7 @@ impl System<Map> for DeleteStreetSystem {
         _: u32,
         _: &mut Map,
         
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
     }
@@ -115,7 +113,7 @@ impl System<Map> for DeleteStreetSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         self.clean_hovered_street_state(map);
@@ -136,7 +134,7 @@ impl System<Map> for DeleteStreetSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,        
-        _actions: &mut Vec<Box<dyn Action<Map>>>,
+
         _plugins: &mut Vec<Box<dyn Plugin<Map>>>
     ) {
         if let Some(hovered_streets) = &self.hovered_streets {

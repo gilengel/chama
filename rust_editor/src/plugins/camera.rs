@@ -60,7 +60,7 @@ impl Camera {
     }
 }
 
-impl<T> Plugin<T> for Camera {
+impl<T> Plugin<T> for Camera where T: Renderer + 'static{
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut T) {
         self.active = button == 1;
     }

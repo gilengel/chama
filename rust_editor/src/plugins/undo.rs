@@ -2,8 +2,8 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     actions::Action,
-    editor::{Editor, document},
-    toolbar::{Toolbar, ToolbarPosition, ToolbarClickButton},
+    editor::Editor,
+    toolbar::{Toolbar, ToolbarClickButton, ToolbarPosition},
 };
 
 use super::{camera::Renderer, plugin::Plugin, redo::Redo};
@@ -62,7 +62,6 @@ where
             vec![Box::new(ToolbarClickButton::new(
                 "undo",
                 "Undo Last Action",
-                
                 |e: Rc<RefCell<Editor<T>>>| {
                     e.as_ref().borrow_mut().execute_plugin::<Undo<T>>();
                 },

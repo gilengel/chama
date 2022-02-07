@@ -1,7 +1,7 @@
 use crate::{
     actions::Action,
     editor::Editor,
-    toolbar::{Toolbar, ToolbarPosition, ToolbarRadioButton, ToolbarClickButton},
+    toolbar::{Toolbar, ToolbarPosition, ToolbarClickButton},
 };
 
 use super::{camera::Renderer, plugin::Plugin, undo::Undo};

@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, rc::Rc, cell::RefCell};
 
 use geo::Coordinate;
 
@@ -6,7 +6,7 @@ use crate::{editor::Editor, toolbar::Toolbar};
 
 use super::camera::Renderer;
 
-pub trait Plugin<T> {
+pub trait Plugin<T> where T: Renderer + 'static{
     /// Is used to implement behaviour of the state if the user clicked inside the specified
     /// html element by the statemachine.
     ///
@@ -49,6 +49,9 @@ pub trait Plugin<T> {
     fn execute(&mut self, editor: &mut Editor<T>)
     where
         T: Renderer;
+
+
+    fn on_startup(&mut self, editor: Rc<RefCell<Editor<T>>>){}
 
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;

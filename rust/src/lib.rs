@@ -5,8 +5,9 @@ use map::map::Map;
 use rust_editor::editor::add_plugin;
 use rust_editor::launch;
 use rust_editor::plugins::redo::Redo;
+use rust_editor::plugins::toolbar::ToolbarPlugin;
 use rust_editor::plugins::undo::Undo;
-use rust_editor::toolbar::{Toolbar, ToolbarRadioButton, ToolbarPosition};
+use rust_editor::toolbar::{Toolbar, ToolbarPosition, ToolbarRadioButton};
 use rust_editor::{
     editor::{add_mode, Editor},
     plugins::camera::Camera,
@@ -33,33 +34,15 @@ thread_local! {
 }
 
 macro_rules! add_mode {
-    ($editor:ident, $id:expr, $systems:expr) => {
-        add_mode($editor.clone(), $id as u8, $systems);
+    ($editor:ident, $id:expr, $systems:expr, $icon:expr, $tooltip:expr) => {
+        add_mode($editor.clone(), $id as u8, $systems, $icon, $tooltip);
     };
 }
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     EDITOR.with(|e| {
-        let top_toolbar = Toolbar::new(
-            vec![
-                Box::new(ToolbarRadioButton::new("add", "Create Straight Street", 0, |e| {
-                    e.borrow_mut().switch_mode(Modes::CreateSimpleStreet as u8)
-                })),
-                Box::new(ToolbarRadioButton::new("add", "Muh muh", 1, |e| {
-                    e.borrow_mut()
-                        .switch_mode(Modes::CreateFreeformStreet as u8)
-                })),
-            ],
-            ToolbarPosition::Top,
-            "main_toolbar".to_string()
-        );
-
-        top_toolbar
-            .render(e.clone())
-            .expect("Couldn't render top toolbar");
-        e.borrow_mut().add_toolbar(top_toolbar);
-
+        add_plugin(e.clone(), ToolbarPlugin::default());
         add_plugin(e.clone(), Camera::default());
         add_plugin(e.clone(), Undo::default());
         add_plugin(e.clone(), Redo::default());
@@ -70,7 +53,9 @@ pub fn main() -> Result<(), JsValue> {
             vec![
                 Box::new(MapRenderSystem::new()),
                 Box::new(CreateStreetSystem::new())
-            ]
+            ],
+            "add",
+            "Add Straight Street"
         );
         add_mode!(
             e,
@@ -78,7 +63,9 @@ pub fn main() -> Result<(), JsValue> {
             vec![
                 Box::new(MapRenderSystem::new()),
                 Box::new(CreateFreeFormStreetSystem::new())
-            ]
+            ],
+            "add",
+            "Add Freeform Street"
         );
         add_mode!(
             e,
@@ -86,7 +73,9 @@ pub fn main() -> Result<(), JsValue> {
             vec![
                 Box::new(MapRenderSystem::new()),
                 Box::new(DeleteStreetSystem::new())
-            ]
+            ],
+            "delete",
+            "Delete Street"
         );
 
         launch(e.clone())

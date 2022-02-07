@@ -138,6 +138,16 @@ where
     }
 }
 
+pub trait Component: Sized + 'static {
+    type Message: 'static;
+
+    fn create() -> Self;
+
+    fn update(&mut self);
+}
+
+
+
 impl<T> ToolbarButton<T> for ToolbarClickButton<T>
 where
     T: Renderer,

@@ -7,7 +7,8 @@ use web_sys::CanvasRenderingContext2d;
 use crate::plugins::camera::{Camera, Renderer};
 use crate::plugins::plugin::Plugin;
 
-use crate::toolbar::{Toolbar, ToolbarPosition};
+use crate::plugins::toolbar::ToolbarPlugin;
+use crate::toolbar::{Toolbar, ToolbarPosition, ToolbarRadioButton};
 use crate::{system::System, InformationLayer};
 
 pub fn window() -> web_sys::Window {
@@ -36,6 +37,8 @@ pub fn add_mode<T>(
     editor: Rc<RefCell<Editor<T>>>,
     mode: u8,
     systems: Vec<Box<dyn System<T> + Send + Sync>>,
+    icon: &'static str,
+    tooltip: &'static str,
 ) where
     T: Renderer + Default + 'static,
 {
@@ -49,11 +52,38 @@ pub fn add_mode<T>(
         .borrow_mut()
         .modes
         .insert(mode as u8, systems);
+
+    if let Some(toolbar_plugin) = get_plugin::<T, ToolbarPlugin<T>>(editor.borrow().plugins()) {
+        let button = Box::new(ToolbarRadioButton::new(
+            icon,
+            tooltip,
+            0,
+            |e| {
+                //e.clone().borrow_mut().switch_mode(mode.clone())
+            },
+        ));
+
+        let toolbar = match toolbar_plugin
+            .toolbars()
+            .iter_mut()
+            .find(|x| x.id == "modes.toolbar")
+        {
+            Some(e) => { e.add_button(button, editor.clone()); },
+            None => {
+                let toolbar =
+                    Toolbar::<T>::new(vec![button], ToolbarPosition::Top, "modes.toolbar".to_string());
+
+                //toolbar_plugin.toolbars.get_mut(&ToolbarPosition::Top).unwrap().push(toolbar);    
+                toolbar.render(editor.clone());            
+            }
+        };
+    }
 }
 
 pub fn get_plugin<T, S>(plugins: &Vec<Box<dyn Plugin<T>>>) -> Option<&S>
 where
     S: 'static,
+    T: Renderer + 'static,
 {
     for plugin in plugins {
         if let Some(p) = plugin.as_ref().as_any().downcast_ref::<S>() {
@@ -67,6 +97,7 @@ where
 pub fn get_plugin_mut<T, S>(plugins: &mut Vec<Box<dyn Plugin<T>>>) -> Option<&mut S>
 where
     S: 'static,
+    T: Renderer + 'static,
 {
     for plugin in plugins {
         if let Some(p) = plugin.as_any_mut().downcast_mut::<S>() {
@@ -90,43 +121,49 @@ where
 
     active_mode: u8,
     modes: HashMap<u8, Vec<Box<dyn System<T> + Send + Sync + 'static>>>,
-    toolbars: HashMap<ToolbarPosition, Vec<Toolbar<T>>>,
 }
 
-pub fn add_plugin<T, S>(editor: Rc<RefCell<Editor<T>>>, plugin: S)
+pub fn add_plugin<T, S>(editor: Rc<RefCell<Editor<T>>>, mut plugin: S)
 where
     S: Plugin<T> + 'static,
     T: Renderer + Default + 'static,
 {
+    plugin.on_startup(editor.clone());
+
     let additional_toolbars = plugin.toolbars();
 
     if !additional_toolbars.is_empty() {
         let mut e = editor.as_ref().borrow_mut();
 
-        let toolbars = e.toolbars.get_mut(&ToolbarPosition::Top).unwrap();
+        if let Some(toolbar_plugin) = get_plugin_mut::<T, ToolbarPlugin<T>>(e.plugins_mut()) {
+            let toolbars = toolbar_plugin
+                .toolbars
+                .get_mut(&ToolbarPosition::Top)
+                .unwrap();
 
-        for additional_toolbar in additional_toolbars {
-            // In case the toolbar already exists, add the additional buttons to it
-            if let Some(toolbar) = toolbars
-                .iter_mut()
-                .find(|toolbar| toolbar.id == additional_toolbar.id)
-            {
-                for additional_button in additional_toolbar.buttons {
-                    toolbar
-                        .add_button(additional_button, editor.clone())
-                        .expect("Could not add button to existing toolbar");
+            for additional_toolbar in additional_toolbars {
+                // In case the toolbar already exists, add the additional buttons to it
+                if let Some(toolbar) = toolbars
+                    .iter_mut()
+                    .find(|toolbar| toolbar.id == additional_toolbar.id)
+                {
+                    for additional_button in additional_toolbar.buttons {
+                        toolbar
+                            .add_button(additional_button, editor.clone())
+                            .expect("Could not add button to existing toolbar");
+                    }
+
+                    continue;
                 }
 
-                continue;
+                // Add it to the DOM
+                additional_toolbar
+                    .render(editor.clone())
+                    .expect("could not add toolbar");
+
+                // Add the new toolbar
+                toolbars.push(additional_toolbar);
             }
-
-            // Add it to the DOM
-            additional_toolbar
-                .render(editor.clone())
-                .expect("could not add toolbar");
-
-            // Add the new toolbar
-            toolbars.push(additional_toolbar);
         }
     }
 
@@ -147,7 +184,6 @@ where
             data: T::default(),
             plugins: Vec::new(),
             modes: HashMap::new(),
-            toolbars: HashMap::new(),
         }
     }
 
@@ -157,10 +193,6 @@ where
 
     pub fn data_mut(&mut self) -> &mut T {
         &mut self.data
-    }
-
-    pub fn toolbars_mut(&mut self) -> &HashMap<ToolbarPosition, Vec<Toolbar<T>>> {
-        &self.toolbars
     }
 
     pub fn plugins(&self) -> &Vec<Box<dyn Plugin<T>>> {
@@ -208,6 +240,7 @@ where
         self.active_mode = new_active_mode;
     }
 
+    /*
     pub fn add_toolbar(&mut self, toolbar: Toolbar<T>) {
         if !self.toolbars.contains_key(&toolbar.position) {
             self.toolbars.insert(toolbar.position, vec![]);
@@ -216,6 +249,7 @@ where
         let position = toolbar.position.clone();
         self.toolbars.get_mut(&position).unwrap().push(toolbar);
     }
+    */
 
     pub fn render(&self) -> Result<(), JsValue> {
         let context = self.context.as_ref().unwrap();

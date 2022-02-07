@@ -73,9 +73,13 @@
       margin-top: $padding;
       margin-left: $padding;
 
+      display: flex;
+
       .toolbar {
         flex-direction: row;
         width: auto;
+        
+        height: $padding * 4 + $icon-size;;
 
         li {
           .tooltip {
@@ -84,6 +88,10 @@
             transform: translate(-50%);
           }
         }
+      }
+
+      .toolbar:not(:last-child) {
+        margin-right: $padding;
       }
     }
   }
@@ -138,6 +146,24 @@
       .tooltip {
         visibility: visible;
       }
+    }
+
+    button {
+      color: white;
+      background-color: transparent;
+      border: none;
+
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: $padding;
+    }
+
+    button:hover{
+      color: $primary;
+    }
+    button:disabled {
+      color:#424242;
     }
     
     input {

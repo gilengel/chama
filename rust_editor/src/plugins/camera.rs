@@ -91,8 +91,4 @@ impl<T> Plugin<T> for Camera where T: Renderer + 'static{
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
-
-    fn execute(&mut self, _editor: &mut crate::editor::Editor<T>) where T: Renderer {
-        todo!()
-    }
 }

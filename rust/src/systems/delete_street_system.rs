@@ -1,7 +1,7 @@
 use geo::Coordinate;
 use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::{camera::Renderer, plugin::Plugin},
+    plugins::{plugin::Plugin},
     system::System,
     InformationLayer,
 };
@@ -150,13 +150,12 @@ impl System<Map> for DeleteStreetSystem {
 
     fn render(
         &self,
-        map: &Map,
-        context: &web_sys::CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
+        _map: &Map,
+        _context: &web_sys::CanvasRenderingContext2d,
+        _additional_information_layer: &Vec<InformationLayer>,
         _plugins: &Vec<Box<dyn Plugin<Map>>>
         
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(context, additional_information_layer)?;
 
         Ok(())
     }

@@ -73,7 +73,7 @@ export default {
 
       wasmPackPath: "~/.cargo/bin/wasm-pack",
 
-      searchPatterns: ["src/**", "../rust_editor/src/**", "../rust_macro/src/**"]
+      watchPatterns: ["src/**", "../rust_editor/src/**", "../rust_macro/src/**"]
     }),
 
     // In dev mode, call `npm run start` once

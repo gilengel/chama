@@ -5,10 +5,10 @@ use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::{log, InformationLayer};
+use crate::InformationLayer;
 use geo::Coordinate;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
-use yew::{html, AppHandle, Callback, Component, Context, Html, NodeRef, Properties};
+use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use std::hash::Hash;
 
@@ -92,7 +92,7 @@ where
                 .expect("Converting into context 2d failed"),
         );
 
-        if first_render {            
+        if first_render {
             let handle = {
                 let link = ctx.link().clone();
                 request_animation_frame(move |time| link.send_message(EditorMessages::Render(time)))
@@ -106,9 +106,7 @@ where
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            EditorMessages::AddPlugin(mut e) => {
-                let plugin = e.as_mut();
-                //plugin.
+            EditorMessages::AddPlugin(e) => {
                 self.plugins.push(e);
             }
             EditorMessages::AddMode((index, mode, button)) => {
@@ -199,6 +197,11 @@ where
                 }
             }
             EditorMessages::Render(_) => {
+                let context = self.context.as_ref().unwrap();
+                for plugin in &mut self.plugins {
+                    plugin.render(context);
+                }
+
                 self.render(ctx.link());
             }
         }
@@ -278,6 +281,10 @@ where
 
         context.clear_rect(0.0, 0.0, 2000.0, 2000.0);
 
+        for plugin in &mut self.plugins {
+            plugin.render(context);
+        }
+
         let (active_mode, _) = self
             .modes
             .get_mut(&self.active_mode.as_ref().unwrap())
@@ -344,7 +351,8 @@ where
     }
 
     pub fn activate_mode(&mut self, mode: S) {
-        self.app_handle.send_message(EditorMessages::SwitchMode(mode));
+        self.app_handle
+            .send_message(EditorMessages::SwitchMode(mode));
     }
 }
 

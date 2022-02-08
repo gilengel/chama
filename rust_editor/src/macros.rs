@@ -1,10 +1,6 @@
-use std::sync::Mutex;
-
 use js_sys::Array;
-use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{Document, HtmlElement, HtmlInputElement};
-
-use crate::{editor::Editor, plugins::{camera::Renderer, plugin::Plugin}};
 
 pub fn get_element(document: &Document, id: Option<String>) -> HtmlElement {
     match id {
@@ -73,31 +69,11 @@ pub fn set_type(stack: &mut Vec<HtmlElement>, input_type: &str) {
     stack.push(element.into());
 }
 
-pub fn set_onchange<F, T, M>(stack: &mut Vec<HtmlElement>, _callback: F)
-where
-    F: Fn(Mutex<Editor<T>>) -> () + 'static,
-    T: Renderer + 'static,
-    M: Plugin<T> + std::cmp::Eq + std::hash::Hash + 'static,
-{
-    let a = Closure::wrap(Box::new(move || {
-        //callback();
-    }) as Box<dyn FnMut()>);
-    let element = stack.pop().unwrap();
-    element.set_onclick(Some(a.as_ref().unchecked_ref()));
-
-    // See comments in `setup_clock` above for why we use `a.forget()`.
-    a.forget();
-
-    stack.push(element);
-}
-
 pub fn set_text_content(stack: &mut Vec<HtmlElement>, content: &str) {
     let mut text = content;
     text = &text[1..text.len() - 1];
     stack.last().unwrap().set_text_content(Some(text));
 }
-
-
 
 #[macro_export]
 macro_rules! log {

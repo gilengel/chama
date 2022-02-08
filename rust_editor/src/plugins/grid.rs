@@ -1,5 +1,8 @@
-use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
+
+use crate::log;
+
+use super::{plugin::Plugin, camera::Renderer};
 
 pub struct Grid {
     offset: u32,
@@ -7,40 +10,16 @@ pub struct Grid {
     enabled: bool,
 }
 
-impl Grid {
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-    }
-
-    pub fn offset(&self) -> u32 {
-        self.offset
-    }
-
-    pub fn set_offset(&mut self, offset: u32) {
-        self.offset = offset;
-    }
-
-    pub fn subdivisions(&self) -> u8 {
-        self.subdivisions
-    }
-
-    pub fn set_subdivisions(&mut self, subdivisions: u8) {
-        self.subdivisions = subdivisions;
-    }
-
-    pub fn render(
-        &self,
-        context: &CanvasRenderingContext2d,
-        width: u32,
-        height: u32,
-    ) -> Result<(), JsValue> {
+impl<T> Plugin<T> for Grid where T: Renderer + 'static{
+    fn render(&self, context: &CanvasRenderingContext2d){
+        
         if self.offset == 0 {
-            return Ok(());
+            return;
         }
+
+        // TODO make this dynamic
+        let width = 2000.0;
+        let height = 2000.0;
 
         context.save();
         context.set_line_width(2.0);
@@ -95,9 +74,41 @@ impl Grid {
             context.stroke();
         }
 
-        context.restore();
+        context.restore();       
+    }
 
-        Ok(())
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+}
+
+impl Grid {
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+    }
+
+    pub fn offset(&self) -> u32 {
+        self.offset
+    }
+
+    pub fn set_offset(&mut self, offset: u32) {
+        self.offset = offset;
+    }
+
+    pub fn subdivisions(&self) -> u8 {
+        self.subdivisions
+    }
+
+    pub fn set_subdivisions(&mut self, subdivisions: u8) {
+        self.subdivisions = subdivisions;
     }
 }
 

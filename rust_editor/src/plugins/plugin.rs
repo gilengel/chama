@@ -1,12 +1,14 @@
-use std::{any::Any, rc::Rc, cell::RefCell};
+use std::any::Any;
 
 use geo::Coordinate;
-
-use crate::{editor::Editor, toolbar::Toolbar};
+use web_sys::CanvasRenderingContext2d;
 
 use super::camera::Renderer;
 
-pub trait Plugin<T> where T: Renderer + 'static{
+pub trait Plugin<T>
+where
+    T: Renderer + 'static,
+{
     /// Is used to implement behaviour of the state if the user clicked inside the specified
     /// html element by the statemachine.
     ///
@@ -28,6 +30,8 @@ pub trait Plugin<T> where T: Renderer + 'static{
     ) {
     }
 
+    fn render(&self, _context: &CanvasRenderingContext2d){}
+
     /// Is used to implement behaviour of the state if the user released a pressed mouse button
     /// inside the specified html element by the statemachine.
     ///
@@ -35,23 +39,6 @@ pub trait Plugin<T> where T: Renderer + 'static{
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _data: &mut T) {}
-
-    /// List of all toolbars that are added by the plugin to the editor. In case the one or multiple toolbars already exists, only the buttons are added
-    ///
-    /// Per default plugin do not add toolbars. Implement it in your plugin to do so.
-    fn toolbars(&self) -> Vec<Toolbar<T>>
-    where
-        T: Renderer,
-    {
-        vec![]
-    }
-
-    fn execute(&mut self, editor: &mut Editor<T>)
-    where
-        T: Renderer;
-
-
-    fn on_startup(&mut self, editor: Rc<RefCell<Editor<T>>>){}
 
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;

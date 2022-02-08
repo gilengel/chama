@@ -1,8 +1,9 @@
 use std::hash::Hash;
 
 use map::map::Map;
+use rust_editor::plugins::camera::Camera;
+use rust_editor::plugins::grid::Grid;
 use rust_editor::plugins::redo::Redo;
-use rust_editor::plugins::toolbar::ToolbarPlugin;
 use rust_editor::plugins::undo::Undo;
 use rust_editor::ui::app::{x_launch, ModeProps};
 use systems::{
@@ -27,9 +28,10 @@ enum Modes {
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     let mut editor = x_launch::<Modes, Map>();
-    editor.add_plugin::<ToolbarPlugin<Map>>();
+    editor.add_plugin::<Camera>();
     editor.add_plugin::<Undo<Map>>();
     editor.add_plugin::<Redo<Map>>();
+    editor.add_plugin::<Grid>();
 
     editor.add_mode(
         Modes::CreateSimpleStreet,

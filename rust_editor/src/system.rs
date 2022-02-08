@@ -4,6 +4,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{plugins::{camera::Renderer, plugin::Plugin}, InformationLayer};
 
+
 /// Editing functionality is encapsuled into different states. Each state is responsible to render the map and all additional information needed.
 /// A state receives all input events that happen on the canvas element which are cursor down, up and move, key down and up.
 ///

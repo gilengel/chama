@@ -18,6 +18,7 @@ gloo = "0.6.0"
 enum-as-inner = "0.3.3"
 rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }
+yew = { git = "https://github.com/yewstack/yew", branch = "master" }
 
 [dependencies.web-sys]
 version = "0.3.4"

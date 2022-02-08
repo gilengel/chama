@@ -47,6 +47,10 @@
   $padding: 4px;
 
   main {
+    canvas {
+      position: absolute;
+    }
+    
     #left_primary_toolbar {
       position: absolute;
       left: 0;

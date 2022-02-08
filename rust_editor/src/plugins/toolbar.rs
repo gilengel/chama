@@ -2,7 +2,6 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     editor::Editor,
-    log,
     toolbar::{Toolbar, ToolbarPosition},
 };
 

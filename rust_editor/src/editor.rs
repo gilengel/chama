@@ -58,7 +58,7 @@ pub fn add_mode<T>(
             icon,
             tooltip,
             0,
-            |e| {
+            |_| {
                 //e.clone().borrow_mut().switch_mode(mode.clone())
             },
         ));

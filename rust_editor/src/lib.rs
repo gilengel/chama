@@ -16,6 +16,7 @@ pub mod store;
 pub mod style;
 pub mod system;
 pub mod toolbar;
+pub mod ui;
 
 #[derive(PartialEq)]
 pub enum InformationLayer {

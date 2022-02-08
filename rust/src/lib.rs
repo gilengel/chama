@@ -65,5 +65,7 @@ pub fn main() -> Result<(), JsValue> {
         }),
     );
 
+    editor.activate_mode(Modes::CreateFreeformStreet);
+
     Ok(())
 }

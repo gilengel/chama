@@ -1,3 +1,5 @@
+use rust_internal::PluginOptions;
+
 use crate::{
     actions::Action,
 };
@@ -47,4 +49,5 @@ where
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+    fn as_component(&self) -> &dyn PluginOptions { todo!() }
 }

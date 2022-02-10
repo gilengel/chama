@@ -91,4 +91,8 @@ impl<T> Plugin<T> for Camera where T: Renderer + 'static{
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+
+    fn as_component(&self) -> &dyn rust_internal::PluginOptions {
+        todo!()
+    }
 }

@@ -10,6 +10,7 @@
     "smui-theme-dark": "smui-theme compile public/build/smui-dark.css -i src/theme/dark"
   },
   "devDependencies": {
+    "@material/textfield": "^13.0.0",
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-node-resolve": "^11.0.0",
     "@smui/button": "^6.0.0-beta.13",

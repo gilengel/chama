@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use geo::Coordinate;
+use rust_internal::PluginOptions;
 use web_sys::CanvasRenderingContext2d;
 
 use super::camera::Renderer;
@@ -30,7 +31,7 @@ where
     ) {
     }
 
-    fn render(&self, _context: &CanvasRenderingContext2d){}
+    fn render(&self, _context: &CanvasRenderingContext2d) {}
 
     /// Is used to implement behaviour of the state if the user released a pressed mouse button
     /// inside the specified html element by the statemachine.
@@ -42,4 +43,8 @@ where
 
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
+
+    fn as_component(&self) -> &dyn PluginOptions;
 }
+
+pub trait MuuPlugin<T> = Plugin<T> + PluginOptions where T: Renderer + 'static;

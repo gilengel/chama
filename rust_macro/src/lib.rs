@@ -1,14 +1,227 @@
 extern crate proc_macro;
 
+use colored::Colorize;
 use convert_case::{Case, Casing};
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro2::{Ident, Span};
-use proc_macro_error::{proc_macro_error, ResultExt};
+use proc_macro_error::{abort, proc_macro_error, ResultExt};
 use quote::{format_ident, quote, quote_spanned};
+use rust_internal::{PluginAttributes, Attribute, NumberAttribute};
 use syn::parse::Parser;
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, Data, DeriveInput, Error, Fields};
+use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, Type, Lit};
+
+extern crate syn;
+extern crate quote;
+extern crate proc_macro2;
+
+use syn::{DataStruct, Meta};
+
+mod generate;
+
+
+fn attribute_type(ty: &Type) -> String {
+    match ty {
+        Type::Path(path) => {
+            let ty = &path.path.segments.first().unwrap().ident;
+            
+            ty.to_string()
+        },
+        _ => todo!()
+    }
+}
+
+
+
+#[proc_macro_derive(Plugin, attributes(get, with_prefix, option))]
+#[proc_macro_error]
+pub fn plugin(input: TokenStream) -> TokenStream {
+    // Parse the string representation
+    let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
+
+    let number_types: Vec<&str>  = vec!["i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "f32", "f64"];
+
+    let mut attrs: Vec<PluginAttributes> = Vec::new();
+    match &ast.data {
+        Data::Struct(s) => {
+            match &s.fields {
+                Fields::Named(n) => {
+                    
+                    for named in &n.named { // Field
+                        let name = named.ident.as_ref().unwrap();
+                        let ty = attribute_type(&named.ty);
+                        
+                        let is_number = number_types.contains(&&ty[..]);
+                        
+                        for attribute in &named.attrs {                            
+                            if !attribute.path.is_ident("option") {
+                                panic!("attribute {} has no option annotation.", name.to_string());
+                            }
+
+                            let metas = parse_attr(attribute);
+                            let label = get_mandatory_meta_value_as_string(&metas, "label").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "label".red(), name));
+                            let description = get_mandatory_meta_value_as_string(&metas, "description").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "description".red(), name));
+
+                            if is_number {                                
+                                //let default = get_mandatory_meta_value_as_isize(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
+                                let min = get_mandatory_meta_value_as_isize(&metas, "min").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "min".red(), name));
+                                let max = get_mandatory_meta_value_as_isize(&metas, "max").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "max".red(), name));
+
+
+                                attrs.push(PluginAttributes::Number((Attribute { label, description }, NumberAttribute { default: 0, min, max })))
+                            }
+                        }                        
+                    }
+                },
+                _ => panic!("Only works on named attributes")
+            }
+        },
+        _ => panic!("Derive macro \"Plugin\" can only applied to a structs. Use it like this:\n\n#[derive(Plugin)]\nstruct MyPlugin{{}};")
+    }
+
+    for attr in &ast.attrs {
+        panic!("{:?}", attr);
+    }
+
+    // Build the impl
+    let gen = produce(&ast, attrs);
+
+    // Return the generated impl
+    gen.into()
+}
+
+fn get_mandatory_meta_value<'a>(meta_attrs: &'a Vec<Meta>, identifier: &str) -> Option<&'a Lit> {
+    if let Some(default_meta) = meta_attrs.iter().find(|meta| {
+        meta.path().is_ident(identifier)
+    }) {
+        if let Meta::NameValue(e) = &default_meta {
+            return Some(&e.lit);
+        }
+    }
+    
+    None
+}
+
+fn get_mandatory_meta_value_as_f64(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<f64> {
+    if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
+        if let Lit::Float(e) = lit {
+            return Some(e.base10_parse::<f64>().unwrap_or_abort());
+        }
+    }
+
+    None
+}
+
+fn get_mandatory_meta_value_as_isize(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<i128> {
+    if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
+        if let Lit::Int(e) = lit {            
+            return Some(e.base10_parse::<i128>().unwrap_or_abort());
+        }
+    }
+
+    None
+}
+
+fn get_mandatory_meta_value_as_string(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<String> {
+    if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
+        if let Lit::Str(e) = lit {
+            return Some(e.value())
+        }
+    }
+
+    None
+}
+
+
+fn parse_attr(attr: &syn::Attribute) -> Vec<Meta> {
+    use syn::{punctuated::Punctuated, Token};
+
+    if attr.path.is_ident("option") {
+        let last= attr
+            .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+            .unwrap_or_abort()
+            .into_iter()
+            .inspect(|meta| {
+                if !(meta.path().is_ident("default")
+                    || meta.path().is_ident("min")
+                    || meta.path().is_ident("max")
+                    || meta.path().is_ident("label")
+                    || meta.path().is_ident("description"))
+                {
+                    abort!(meta.path().span(), "unknown parameter")
+                }
+            })
+            .fold(vec![], |mut last, meta| {               
+                last.push(meta);
+                
+                last
+            });
+
+        return last;
+    }
+
+    vec![]
+}
+
+fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
+    let name = &ast.ident;
+    let generics = &ast.generics;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    // Is it a struct?
+    if let syn::Data::Struct(DataStruct { ref fields, .. }) = ast.data {
+        //let generated = fields.iter().map(|f| generate::implement(f, params));
+        //let default = fields.iter().map(|f| generate::default(f, params));
+
+        let attr_elements = attrs.iter().map(|attr| {
+            match attr {
+                PluginAttributes::Number((attr, number_attr)) => {
+                    quote! {
+                        html! {
+                            <div>
+                                <label>{"#attr.label"}</label>
+                                <input min="#number_attr.min" max="#number_attr.max" />
+                            </div>
+                        }
+                    }                    
+                },
+                PluginAttributes::Text(_) => todo!(),
+            }
+
+        });
+
+        quote! {
+            
+            use yew::{Component, Context};
+            impl Component for #name {
+                type Message = ();
+                type Properties = ();
+
+                fn create(_ctx: &Context<Self>) -> Self {
+                    Self {
+                        offset: 10,
+                        subdivisions: 2,
+                        enabled: true
+                        //#(#default)*
+                    }
+                }
+
+                fn view(&self, ctx: &Context<Self>) -> Html {
+                    html! {
+                        <div>
+                            //#(#attr_elements)*
+                        </div>
+                    }
+                }
+            }
+        }
+    } else {
+        quote! {}
+        // Nope. This is an Enum. We cannot handle these!
+        // abort_call_site!("#[derive(Getters)] is only defined for structs, not for enums!");
+    }
+}
 
 /*
 #[proc_macro_derive(Plugin)]
@@ -30,7 +243,6 @@ pub fn plugin(tokens: TokenStream) -> TokenStream {
     TokenStream::from(modified)
 }
 */
-
 
 #[proc_macro_derive(ElementId)]
 pub fn derive_id_trait_functions(tokens: TokenStream) -> TokenStream {
@@ -62,7 +274,6 @@ macro_rules! derive_error {
     };
 }
 
-
 #[proc_macro_derive(IsVariant)]
 pub fn derive_is_variant(input: TokenStream) -> TokenStream {
     // See https://doc.servo.org/syn/derive/struct.DeriveInput.html
@@ -79,7 +290,6 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
     match data {
         // Only if data is an enum, we do parsing
         Data::Enum(data_enum) => {
-
             // data_enum is of type syn::DataEnum
             // https://doc.servo.org/syn/struct.DataEnum.html
 
@@ -91,11 +301,10 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
             // https://doc.servo.org/syn/punctuated/struct.Punctuated.html
             // https://doc.servo.org/syn/struct.Variant.html
             for variant in &data_enum.variants {
-
                 // Variant's name
                 let ref variant_name = variant.ident;
-               
-                 if let Fields::Unnamed(e) = &variant.fields {
+
+                if let Fields::Unnamed(e) = &variant.fields {
                     if let syn::Type::Path(e) = &e.unnamed[0].ty {
                         let return_type = &e.path.segments.first().unwrap().ident;
 
@@ -105,11 +314,11 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
                         let mut get_as_func_name =
                             format_ident!("get_{}", variant_name.to_string().to_case(Case::Snake));
                         get_as_func_name.set_span(variant_name.span());
-        
+
                         // Here we construct the function for the current variant
                         variant_checker_functions.extend(quote_spanned! {variant.span()=>
-        
-                            
+
+
                             #[allow(dead_code)]
                             fn #get_as_func_name(&self) -> Option<&#return_type> {
                                 match self {
@@ -117,16 +326,10 @@ pub fn derive_is_variant(input: TokenStream) -> TokenStream {
                                     _ => None,
                                 }
                             }
-                            
+
                         });
                     }
                 }
-                    
-
-   
-
-               
-
 
                 // Above we are making a TokenStream using extend()
                 // This is because TokenStream is an Iterator,

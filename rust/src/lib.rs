@@ -23,15 +23,17 @@ enum Modes {
     DeleteStreet,
 }
 
-
-
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     let mut editor = x_launch::<Modes, Map>();
+    /*
     editor.add_plugin::<Camera>();
     editor.add_plugin::<Undo<Map>>();
     editor.add_plugin::<Redo<Map>>();
     editor.add_plugin::<Grid>();
+    */
+
+    editor.add_plugin(Grid::default());
 
     editor.add_mode(
         Modes::CreateSimpleStreet,

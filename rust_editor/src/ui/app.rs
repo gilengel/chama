@@ -1,4 +1,5 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
+use rust_internal::PluginOptions;
 use std::collections::HashMap;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
@@ -34,7 +35,7 @@ where
 
 pub struct App<S, T>
 where
-    T: Default + 'static,
+    T: Renderer + Default + 'static,
     S: Clone + std::cmp::PartialEq,
 {
     data: T,
@@ -50,13 +51,7 @@ where
 }
 
 #[derive(Properties, PartialEq, Default)]
-pub struct EditorProps
-//where
-//    S: PartialEq + Eq + Hash + 'static,
-{
-    //#[prop_or_default]
-//pub toolbars: DynChildren,
-}
+pub struct EditorProps {}
 
 impl<S, T> Component for App<S, T>
 where
@@ -64,7 +59,7 @@ where
     S: Clone + PartialEq + Eq + Hash + 'static,
 {
     type Message = EditorMessages<S, T>;
-    type Properties = EditorProps; //<S>;
+    type Properties = EditorProps;
 
     fn create(_ctx: &yew::Context<Self>) -> Self {
         App {
@@ -216,14 +211,23 @@ where
         html! {
         <main>
             <canvas ref={self.canvas_ref.clone()} width="1920" height="1080" {onmousedown} {onmouseup} {onmousemove}></canvas>
-            <Toolbar>
-            { for self.modes.iter().filter(|(_, (_, button))| button.is_some()).map(|(id, (_, button))| {
 
-                html!{
-                    self.view_mode_button(ctx, id, button)
-                }
-            })
-        }
+            /*
+            {
+                for self.plugins.iter().map(|plugin| {
+                    //html!{ plugin.as_any().downcast_ref::<dyn Plugin<T>>() }
+                })
+            }
+            */
+
+            <Toolbar>
+            {
+                for self.modes.iter().filter(|(_, (_, button))| button.is_some()).map(|(id, (_, button))| {
+                    html!{
+                        self.view_mode_button(ctx, id, button)
+                    }
+                })
+            }
             </Toolbar>
         </main>
         }
@@ -332,13 +336,14 @@ where
     T: Renderer + Default + 'static,
     S: Clone + PartialEq + Eq + Hash + 'static,
 {
-    pub fn add_plugin<P>(&mut self)
+    pub fn add_plugin<P>(&mut self, plugin: P)
     where
-        P: Plugin<T> + Default + 'static,
+        P: Plugin<T> + PluginOptions + 'static,
     {
         self.app_handle
-            .send_message(EditorMessages::AddPlugin(Box::new(P::default())));
+        .send_message(EditorMessages::AddPlugin(Box::new(plugin)));
     }
+
 
     pub fn add_mode(
         &mut self,

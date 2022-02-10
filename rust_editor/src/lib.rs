@@ -1,3 +1,5 @@
+#![feature(trait_alias)]
+
 use plugins::{plugin::Plugin, camera::Renderer};
 
 pub mod actions;

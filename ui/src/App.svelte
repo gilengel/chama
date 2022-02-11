@@ -23,8 +23,7 @@
   let editor;
 </script>
 
-<header>
-</header>
+<header />
 
 <main id="main" bind:this={main} />
 
@@ -46,11 +45,76 @@
 
   $padding: 4px;
 
+  body {
+    font-family: 'Heebo', sans-serif;
+  }
+
   main {
+    .options {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+
+      transform: translate(-50%, -50%);
+
+      max-width: 800px;
+      border-radius: $border-radius;
+
+      background-color: lighten($background, 5%);
+      padding: $padding * 6;
+
+      display: flex;
+      flex-direction: column;
+
+      div:first-child {
+        h2 {
+          margin-top: 0;
+        }
+      }
+
+      div {
+
+        h2 {
+          margin-top: 1em;
+        }
+        div {
+          padding-top: $padding;
+          padding-bottom: $padding;
+          display: flex;
+          justify-content: space-between;
+
+          line-height: 2em;
+
+          label {
+            padding-right: 1em;
+            font-size: 1em;
+          }
+
+          input[type="number"],
+          input[type="text"] {
+            -moz-appearance: textfield;
+
+            background-color: $background;
+            border: none;
+            border-radius: calc($border-radius / 2);
+            color: $text;
+            padding-left: $padding;
+
+            font-size: 1em;
+          }
+
+          input[type="number"]::-webkit-inner-spin-button,
+          input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+        }
+      }
+    }
     canvas {
       position: absolute;
     }
-    
+
     #left_primary_toolbar {
       position: absolute;
       left: 0;
@@ -82,8 +146,8 @@
       .toolbar {
         flex-direction: row;
         width: auto;
-        
-        height: $padding * 4 + $icon-size;;
+
+        height: $padding * 4 + $icon-size;
 
         li {
           .tooltip {
@@ -163,13 +227,13 @@
       padding: $padding;
     }
 
-    button:hover{
+    button:hover {
       color: $primary;
     }
     button:disabled {
-      color:#424242;
+      color: #424242;
     }
-    
+
     input {
       position: absolute;
       visibility: collapse;

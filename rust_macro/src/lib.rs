@@ -61,7 +61,7 @@ pub fn plugin(input: TokenStream) -> TokenStream {
                         let ty = attribute_type(&named.ty);
                         
                         let is_number = number_types.contains(&&ty[..]);
-                        
+
                         for attribute in &named.attrs {                            
                             if !attribute.path.is_ident("option") {
                                 panic!("attribute {} has no option annotation.", name.to_string());
@@ -198,6 +198,7 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
 
+    let name_str = name.to_string();
 
     // Is it a struct?
     if let syn::Data::Struct(DataStruct { ref fields, .. }) = ast.data {
@@ -209,9 +210,7 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
         let mut inner = TokenStream2::new();
         let mut muus: Vec<TokenStream2> = vec![
             quote! { <div> },
-
-    
-            
+            quote! { <h2>{#name_str}</h2> },
         ];
         
         for attr in attrs {
@@ -245,7 +244,10 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
         
 
         let gen = quote! {           
-            impl<T> PluginWithOptions<T> for Grid where T: Renderer + 'static {
+            use yew::{html, Html};
+            impl<T> PluginWithOptions<T> for #name where T: Renderer + 'static {
+                
+
                 fn view_options(&self) -> Html {
                     #t
                 }

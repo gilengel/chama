@@ -1,6 +1,8 @@
 use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
+use rust_macro::Plugin;
+
 
 use crate::InformationLayer;
 
@@ -14,11 +16,13 @@ pub trait Renderer {
     ) -> Result<(), JsValue>;
 }
 
-
+#[derive(Plugin)]
 pub struct Camera {
     position: Coordinate<f64>,
 
+    #[option(default=true, label="Camera Enabled", description="Enables / Disables the grid")]
     active: bool,
+
 }
 
 impl Default for Camera {
@@ -92,8 +96,4 @@ impl<T> Plugin<T> for Camera where T: Renderer + 'static {
         self
     }
 }
-impl<T> PluginWithOptions<T> for Camera where T: Renderer + 'static{
-    fn view_options(&self) -> yew::Html {
-        todo!()
-    }
-}
+

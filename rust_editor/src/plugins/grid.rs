@@ -3,7 +3,7 @@
 
 use rust_macro::Plugin;
 use web_sys::CanvasRenderingContext2d;
-use yew::{Html, html};
+
 
 use super::{plugin::{Plugin, PluginWithOptions}, camera::Renderer};
 

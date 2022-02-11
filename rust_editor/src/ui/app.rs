@@ -210,11 +210,13 @@ where
             <canvas ref={self.canvas_ref.clone()} width="1920" height="1080" {onmousedown} {onmouseup} {onmousemove}></canvas>
 
 
+            <div class="options">
             {
                 for self.plugins.iter().map(|plugin| {
                     plugin.view_options()
                 })
             }
+            </div>
 
 
             <Toolbar>

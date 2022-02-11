@@ -37,11 +37,11 @@ pub fn main() -> Result<(), JsValue> {
     world.add_component_to_entity(entity, Camera::default());
 
 
+    
+    editor.add_plugin(Camera::default());
     /*
-    editor.add_plugin::<Camera>();
     editor.add_plugin::<Undo<Map>>();
     editor.add_plugin::<Redo<Map>>();
-    editor.add_plugin::<Grid>();
     */
 
     editor.add_plugin(Grid::default());

@@ -1,5 +1,5 @@
 use rust_editor::{
-    plugins::{camera::{Renderer, Camera}, plugin::Plugin},
+    plugins::{camera::{Renderer, Camera}, plugin::{Plugin, PluginWithOptions}},
     system::System,
     InformationLayer, get_plugin,
 };
@@ -20,7 +20,7 @@ impl System<Map> for MapRenderSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        plugins: &Vec<Box<dyn Plugin<Map>>>,
+        plugins: &Vec<Box<dyn PluginWithOptions<Map>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
         
         if let Some(camera) = get_plugin::<Map, Camera>(plugins) {

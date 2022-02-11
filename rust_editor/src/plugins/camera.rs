@@ -4,7 +4,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::InformationLayer;
 
-use super::plugin::Plugin;
+use super::plugin::{Plugin, PluginWithOptions};
 
 pub trait Renderer {
     fn render(
@@ -60,7 +60,7 @@ impl Camera {
     }
 }
 
-impl<T> Plugin<T> for Camera where T: Renderer + 'static{
+impl<T> Plugin<T> for Camera where T: Renderer + 'static {
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut T) {
         self.active = button == 1;
     }
@@ -91,8 +91,9 @@ impl<T> Plugin<T> for Camera where T: Renderer + 'static{
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
-
-    fn as_component(&self) -> &dyn rust_internal::PluginOptions {
+}
+impl<T> PluginWithOptions<T> for Camera where T: Renderer + 'static{
+    fn view_options(&self) -> yew::Html {
         todo!()
     }
 }

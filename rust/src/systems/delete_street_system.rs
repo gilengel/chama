@@ -1,7 +1,7 @@
 use geo::Coordinate;
 use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::{plugin::Plugin},
+    plugins::{plugin::{Plugin, PluginWithOptions}},
     system::System,
     InformationLayer,
 };
@@ -105,7 +105,7 @@ impl System<Map> for DeleteStreetSystem {
         _: &mut Map,
         
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
     }
 
@@ -114,7 +114,7 @@ impl System<Map> for DeleteStreetSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         self.clean_hovered_street_state(map);
 
@@ -135,7 +135,7 @@ impl System<Map> for DeleteStreetSystem {
         _: u32,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if let Some(hovered_streets) = &self.hovered_streets {
             for street in hovered_streets {
@@ -144,7 +144,7 @@ impl System<Map> for DeleteStreetSystem {
         }
     }
 
-    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn Plugin<Map>>>) {
+    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>) {
         self.clean_hovered_street_state(map);
     }
 
@@ -153,7 +153,7 @@ impl System<Map> for DeleteStreetSystem {
         _map: &Map,
         _context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
         
     ) -> Result<(), wasm_bindgen::JsValue> {
 

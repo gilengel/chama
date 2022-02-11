@@ -1,22 +1,29 @@
+#![allow(warnings)]
+#![feature(extend_one)]
+
 extern crate proc_macro;
 
 use colored::Colorize;
 use convert_case::{Case, Casing};
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{TokenStream as TokenStream2, TokenTree, Punct, Spacing, Group, };
 use proc_macro2::{Ident, Span};
+use proc_macro2::Delimiter;
 use proc_macro_error::{abort, proc_macro_error, ResultExt};
-use quote::{format_ident, quote, quote_spanned};
-use rust_internal::{PluginAttributes, Attribute, NumberAttribute};
+use quote::{format_ident, quote, quote_spanned, ToTokens, TokenStreamExt};
+use rust_internal::{PluginAttributes, Attribute, NumberAttribute, BoolAttribute, TextAttribute};
 use syn::parse::Parser;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, Type, Lit};
+
 
 extern crate syn;
 extern crate quote;
 extern crate proc_macro2;
 
 use syn::{DataStruct, Meta};
+use yew::{Html, html};
+use yew::virtual_dom::VNode;
 
 mod generate;
 
@@ -37,6 +44,7 @@ fn attribute_type(ty: &Type) -> String {
 #[proc_macro_derive(Plugin, attributes(get, with_prefix, option))]
 #[proc_macro_error]
 pub fn plugin(input: TokenStream) -> TokenStream {
+    
     // Parse the string representation
     let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
 
@@ -67,9 +75,15 @@ pub fn plugin(input: TokenStream) -> TokenStream {
                                 //let default = get_mandatory_meta_value_as_isize(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
                                 let min = get_mandatory_meta_value_as_isize(&metas, "min").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "min".red(), name));
                                 let max = get_mandatory_meta_value_as_isize(&metas, "max").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "max".red(), name));
+                                let default = get_mandatory_meta_value_as_isize(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
 
-
-                                attrs.push(PluginAttributes::Number((Attribute { label, description }, NumberAttribute { default: 0, min, max })))
+                                attrs.push(PluginAttributes::Number((Attribute { label, description }, NumberAttribute { default, min, max })))
+                            } else if ty == "bool" {
+                                let default = get_mandatory_meta_value_as_bool(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
+                                attrs.push(PluginAttributes::Bool((Attribute { label, description }, BoolAttribute { default })))
+                            } else if ty == "String" {
+                                let default = get_mandatory_meta_value_as_string(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
+                                attrs.push(PluginAttributes::Text((Attribute { label, description }, TextAttribute { default })))
                             }
                         }                        
                     }
@@ -86,6 +100,8 @@ pub fn plugin(input: TokenStream) -> TokenStream {
 
     // Build the impl
     let gen = produce(&ast, attrs);
+    
+
 
     // Return the generated impl
     gen.into()
@@ -133,6 +149,16 @@ fn get_mandatory_meta_value_as_string(meta_attrs: &Vec<Meta>, identifier: &str) 
     None
 }
 
+fn get_mandatory_meta_value_as_bool(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<bool> {
+    if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
+        if let Lit::Bool(e) = lit {
+            return Some(e.value())
+        }
+    }
+
+    None
+}
+
 
 fn parse_attr(attr: &syn::Attribute) -> Vec<Meta> {
     use syn::{punctuated::Punctuated, Token};
@@ -165,61 +191,71 @@ fn parse_attr(attr: &syn::Attribute) -> Vec<Meta> {
 }
 
 fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
+    use yew::html;
+
     let name = &ast.ident;
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
+
+
     // Is it a struct?
     if let syn::Data::Struct(DataStruct { ref fields, .. }) = ast.data {
-        //let generated = fields.iter().map(|f| generate::implement(f, params));
-        //let default = fields.iter().map(|f| generate::default(f, params));
+        let mut t = TokenStream2::new();
+        t.extend_one(TokenTree::Ident(Ident::new("html",  Span::call_site())));
+        t.extend_one(TokenTree::Punct(Punct::new('!', Spacing::Alone)));
+        //
+    
+        let mut inner = TokenStream2::new();
+        let mut muus: Vec<TokenStream2> = vec![
+            quote! { <div> },
 
-        let attr_elements = attrs.iter().map(|attr| {
+    
+            
+        ];
+        
+        for attr in attrs {
             match attr {
                 PluginAttributes::Number((attr, number_attr)) => {
-                    quote! {
-                        html! {
-                            <div>
-                                <label>{"#attr.label"}</label>
-                                <input min="#number_attr.min" max="#number_attr.max" />
-                            </div>
-                        }
-                    }                    
+                    let min = number_attr.min;
+                    let max = number_attr.max;
+                    let label = attr.label;
+                    let default = number_attr.default;
+                        
+                    muus.push(quote!{<div><label>{#label}</label><input type="number" min=#min max=#max value=#default /></div>});            
                 },
-                PluginAttributes::Text(_) => todo!(),
-            }
-
-        });
-
-        quote! {
-            
-            use yew::{Component, Context};
-            impl Component for #name {
-                type Message = ();
-                type Properties = ();
-
-                fn create(_ctx: &Context<Self>) -> Self {
-                    Self {
-                        offset: 10,
-                        subdivisions: 2,
-                        enabled: true
-                        //#(#default)*
-                    }
-                }
-
-                fn view(&self, ctx: &Context<Self>) -> Html {
-                    html! {
-                        <div>
-                            //#(#attr_elements)*
-                        </div>
-                    }
-                }
+                PluginAttributes::Text((attr, str_attr)) => {
+                    let label = attr.label;
+                    let default = str_attr.default;
+                    muus.push(quote!{<div><label>{#label}</label><input type="text" value=#default /></div>});
+                },
+                PluginAttributes::Bool((attr, bool_attr)) => {
+                    let label = attr.label;
+                    let default = bool_attr.default;
+                    muus.push(quote!{<div><label>{#label}</label><input type="checkbox" checked=#default /></div>})
+                },
             }
         }
+
+        
+        
+        muus.push(quote!{</div>});
+        inner.append_all(muus);
+        t.extend_one(TokenTree::Group(Group::new(Delimiter::Brace, inner)));
+        
+
+        let gen = quote! {           
+            impl<T> PluginWithOptions<T> for Grid where T: Renderer + 'static {
+                fn view_options(&self) -> Html {
+                    #t
+                }
+            }            
+        };
+
+        gen
+
     } else {
         quote! {}
-        // Nope. This is an Enum. We cannot handle these!
-        // abort_call_site!("#[derive(Getters)] is only defined for structs, not for enums!");
     }
 }
 

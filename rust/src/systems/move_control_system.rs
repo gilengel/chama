@@ -5,7 +5,7 @@ use rust_editor::{
     gizmo::{mouse_over, GetPosition, Gizmo, MoveGizmo, SetPosition},
     interactive_element::{InteractiveElement, InteractiveElementState},
     system::System,
-    InformationLayer, plugins::plugin::Plugin,
+    InformationLayer, plugins::plugin::{Plugin, PluginWithOptions},
 };
 use uuid::Uuid;
 
@@ -53,7 +53,7 @@ impl System<Map> for MoveControlSystem {
         map: &mut Map,
         
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         self.gizmo.mouse_down(
             mouse_pos,
@@ -79,7 +79,7 @@ impl System<Map> for MoveControlSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         self.center_gizmo(map);
 
@@ -100,7 +100,7 @@ impl System<Map> for MoveControlSystem {
         button: u32,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if self.gizmo.is_active() {
             self.gizmo.mouse_up(
@@ -117,11 +117,11 @@ impl System<Map> for MoveControlSystem {
         self.gizmo.is_active()
     }
 
-    fn enter(&mut self, map: &mut Map, _plugins: &mut Vec<Box<dyn Plugin<Map>>>) {
+    fn enter(&mut self, map: &mut Map, _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>) {
         self.center_gizmo(map);
     }
 
-    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn Plugin<Map>>>) {
+    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>) {
         self.clean_hovered_control_state(map);
     }
 
@@ -130,7 +130,7 @@ impl System<Map> for MoveControlSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
         
     ) -> Result<(), wasm_bindgen::JsValue> {
         self.gizmo.render(

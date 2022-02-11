@@ -2,7 +2,7 @@ use geo::Coordinate;
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::{camera::Renderer, plugin::Plugin},
+    plugins::{camera::Renderer, plugin::{Plugin, PluginWithOptions}},
     system::System,
     InformationLayer,
 };
@@ -30,7 +30,7 @@ impl System<Map> for DeleteDistrictSystem {
         _: &mut Map,
         
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
     }
 
@@ -39,7 +39,7 @@ impl System<Map> for DeleteDistrictSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if let Some(old_hovered_district) = self.hovered_district {
             let old_hovered_district: &mut District =
@@ -60,7 +60,7 @@ impl System<Map> for DeleteDistrictSystem {
         _: u32,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
             map.remove_district(&hovered_district);
@@ -73,7 +73,7 @@ impl System<Map> for DeleteDistrictSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
         
     ) -> Result<(), wasm_bindgen::JsValue> {
         map.render(&context, additional_information_layer)?;

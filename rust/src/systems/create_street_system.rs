@@ -10,7 +10,7 @@ use rand::{thread_rng, Rng};
 use rust_editor::{
     gizmo::{GetPosition, Id, SetId, SetPosition},
     system::System,
-    InformationLayer, plugins::plugin::Plugin,
+    InformationLayer, plugins::plugin::{Plugin, PluginWithOptions},
 };
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -246,7 +246,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         map: &mut Map,
         
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         // We only check for left click
         if button != 0 {
@@ -311,7 +311,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if !self.mouse_pressed {
             return;
@@ -392,7 +392,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         button: u32,
         _map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         // Cancel creation of street with right mouse button click
         if button == 2 {
@@ -413,13 +413,13 @@ impl<'a> System<Map> for CreateStreetSystem {
         _map: &Map,
         _context: &CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
         
     ) -> Result<(), JsValue> {
         Ok(())
     }
 
-    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn Plugin<Map>>>) {
+    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>) {
         if let Some(intersection) = map.intersection(&self.temp_end) {
             if intersection.get_connected_streets().is_empty() {
                 map.remove_intersection(&self.temp_end);

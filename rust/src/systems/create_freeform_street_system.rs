@@ -1,7 +1,7 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    plugins::{plugin::Plugin, camera::Camera},
+    plugins::{plugin::{Plugin, PluginWithOptions}, camera::Camera},
     renderer::apply_style,
     style::Style,
     system::System,
@@ -92,7 +92,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         button: u32,
         _: &mut Map,
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>,
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>,
     ) {
         if button == 0 {
             self.brush_active = true;
@@ -104,7 +104,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>,
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>,
     ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
@@ -116,7 +116,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         _: Coordinate<f64>,
         button: u32,
         map: &mut Map,
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>,
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>,
     ) {
         // Only proceed if the left button was released
         if button != 0 {
@@ -151,7 +151,7 @@ impl System<Map> for CreateFreeFormStreetSystem {
         _map: &Map,
         context: &CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        plugins: &Vec<Box<dyn Plugin<Map>>>,
+        plugins: &Vec<Box<dyn PluginWithOptions<Map>>>,
     ) -> Result<(), JsValue> {
         if self.brush_active && !self.raw_points.is_empty() {
             

@@ -1,7 +1,7 @@
 use geo::Coordinate;
 use rust_editor::{
     gizmo::Id,
-    plugins::{camera::Renderer, plugin::Plugin},
+    plugins::{camera::Renderer, plugin::{Plugin, PluginWithOptions}},
     system::System,
     InformationLayer,
 };
@@ -27,7 +27,7 @@ impl System<Map> for CreateDistrictSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
     }
 
@@ -35,7 +35,7 @@ impl System<Map> for CreateDistrictSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         match map.get_nearest_street_to_position(&mouse_pos) {
             Some(street) => self.hovered_street = Some(street.id()),
@@ -48,7 +48,7 @@ impl System<Map> for CreateDistrictSystem {
         mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if let Some(hovered_street_id) = self.hovered_street {
             let hovered_street = map.street(&hovered_street_id).unwrap();
@@ -65,7 +65,7 @@ impl System<Map> for CreateDistrictSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
         
     ) -> Result<(), wasm_bindgen::JsValue> {
         map.render(context, additional_information_layer)?;

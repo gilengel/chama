@@ -4,7 +4,7 @@ use geo::{
 };
 use rust_editor::{
     gizmo::{Id, SetPosition},
-    plugins::{camera::Renderer, plugin::Plugin},
+    plugins::{camera::Renderer, plugin::{Plugin, PluginWithOptions}},
     renderer::PrimitiveRenderer,
     style::Style,
     system::System,
@@ -112,7 +112,7 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         _: Coordinate<f64>,
         button: u32,
         _: &mut Map,        
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if button == 0 {
             self.raw_polygon.exterior_mut(|exterior| exterior.0.clear());
@@ -126,7 +126,7 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,        
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
@@ -142,7 +142,7 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         button: u32,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn Plugin<Map>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
     ) {
         if button == 0 {
             self.brush_active = false;
@@ -158,7 +158,7 @@ impl System<Map> for CreateFreeFormDistrictSystem {
         map: &Map,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn Plugin<Map>>>
+        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
         
     ) -> Result<(), JsValue> {
         map.render(context, additional_information_layer)?;

@@ -2,7 +2,7 @@ use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{plugins::{camera::Renderer, plugin::Plugin}, InformationLayer};
+use crate::{plugins::{camera::Renderer, plugin::PluginWithOptions}, InformationLayer};
 
 
 /// Editing functionality is encapsuled into different states. Each state is responsible to render the map and all additional information needed.
@@ -28,7 +28,7 @@ where
         _mouse_pos: Coordinate<f64>,
         _button: u32,
         _data: &mut T,
-        _plugins: &mut Vec<Box<dyn Plugin<T>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<T>>>
         
     ) {
     }
@@ -42,7 +42,7 @@ where
         &mut self,
         _mouse_pos: Coordinate<f64>,
         _data: &mut T,
-        _plugins: &mut Vec<Box<dyn Plugin<T>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<T>>>
     ) {
     }
 
@@ -57,7 +57,7 @@ where
         _mouse_pos: Coordinate<f64>,
         _button: u32,
         _data: &mut T,
-        _plugins: &mut Vec<Box<dyn Plugin<T>>>
+        _plugins: &mut Vec<Box<dyn PluginWithOptions<T>>>
     ) {
     }
 
@@ -66,7 +66,7 @@ where
         data: &T,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        plugins: &Vec<Box<dyn Plugin<T>>>
+        plugins: &Vec<Box<dyn PluginWithOptions<T>>>
     ) -> Result<(), JsValue> {
         data.render(context, additional_information_layer)?;
 
@@ -80,9 +80,9 @@ where
 
     /// Called every time the state is activated by the state maschine. Use it to
     /// initialize values for the state.
-    fn enter(&mut self, _data: &mut T, _plugins: &mut Vec<Box<dyn Plugin<T>>>) {}
+    fn enter(&mut self, _data: &mut T, _plugins: &mut Vec<Box<dyn PluginWithOptions<T>>>) {}
 
     /// Called every time the state is deactivated by the state maschine. Use it to
     /// clean up values in the state.
-    fn exit(&self, _data: &mut T, _plugins: &mut Vec<Box<dyn Plugin<T>>>) {}
+    fn exit(&self, _data: &mut T, _plugins: &mut Vec<Box<dyn PluginWithOptions<T>>>) {}
 }

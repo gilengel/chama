@@ -1,21 +1,26 @@
-use rust_internal::PluginOptions;
+#![allow(warnings)]
+
+
 use rust_macro::Plugin;
 use web_sys::CanvasRenderingContext2d;
 use yew::{Html, html};
 
-use super::{plugin::Plugin, camera::Renderer};
+use super::{plugin::{Plugin, PluginWithOptions}, camera::Renderer};
 
 
 #[derive(Plugin)]
 pub struct Grid {
-    #[option(default=10.0, min=0, max=2000, label="Offset", description="Blub blub")]
+    #[option(default=10, min=0, max=2000, label="Offset", description="Blub blub")]
     offset: u32,
 
     #[option(default=2, min=0, max=100, label="Subdivisions", description="Subdivisions between offset")]
     subdivisions: u8,
 
     #[option(default=true, label="Grid Enabled", description="Enables / Disables the grid")]
-    enabled: bool
+    enabled: bool,
+
+    #[option(default="Ferne Welt", label="Grid Enabled", description="Enables / Disables the grid")]
+    muu: String
 }
 
 /*
@@ -101,24 +106,6 @@ impl<T> Plugin<T> for Grid where T: Renderer + 'static{
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
-
-    fn as_component(&self) -> &dyn PluginOptions {
-        todo!()
-    }
-}
-
-impl PluginOptions for Grid {
-    fn view_options(&self) -> Html {
-        html! {
-            // #[option(default=10, min=0, max=2000, label="Offset", description="Blub blub")]
-            // offset: u32,
-            <div>
-                <label>{ "Blub blub" }</label>
-                <input type="number" min="0" max="2000" value="19" />
-            </div>
-        }
-    }
-
 }
 
 impl Grid {
@@ -153,6 +140,7 @@ impl Default for Grid {
             offset: 200,
             subdivisions: 4,
             enabled: true,
+            muu: "mUU".to_string()
         }
     }
 }

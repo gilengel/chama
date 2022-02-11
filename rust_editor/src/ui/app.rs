@@ -1,10 +1,10 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
-use rust_internal::PluginOptions;
 use std::collections::HashMap;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
+use crate::plugins::plugin::PluginWithOptions;
 use crate::ui::toolbar_button::ToolbarButton;
 use crate::InformationLayer;
 use geo::Coordinate;
@@ -14,16 +14,13 @@ use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 use std::hash::Hash;
 
 use crate::ui::toolbar::Toolbar;
-use crate::{
-    plugins::{camera::Renderer, plugin::Plugin},
-    system::System,
-};
+use crate::{plugins::camera::Renderer, system::System};
 
 pub enum EditorMessages<S, T>
 where
     S: Clone + std::cmp::PartialEq,
 {
-    AddPlugin(Box<dyn Plugin<T>>),
+    AddPlugin(Box<dyn PluginWithOptions<T>>),
     AddMode((S, Vec<Box<dyn System<T>>>, Option<ModeProps>)),
     SwitchMode(S),
 
@@ -44,7 +41,7 @@ where
     active_mode: Option<S>,
     modes: HashMap<S, (Vec<Box<dyn System<T>>>, Option<ModeProps>)>,
 
-    plugins: Vec<Box<dyn Plugin<T>>>,
+    plugins: Vec<Box<dyn PluginWithOptions<T>>>,
     _render_loop: Option<AnimationFrame>,
     canvas_ref: NodeRef,
     context: Option<CanvasRenderingContext2d>,
@@ -212,13 +209,13 @@ where
         <main>
             <canvas ref={self.canvas_ref.clone()} width="1920" height="1080" {onmousedown} {onmouseup} {onmousemove}></canvas>
 
-            /*
+
             {
                 for self.plugins.iter().map(|plugin| {
-                    //html!{ plugin.as_any().downcast_ref::<dyn Plugin<T>>() }
+                    plugin.view_options()
                 })
             }
-            */
+
 
             <Toolbar>
             {
@@ -256,7 +253,7 @@ where
 
     pub fn get_plugin<P>(&self) -> Option<&P>
     where
-        P: Plugin<T> + 'static,
+        P: PluginWithOptions<T> + 'static,
         T: Renderer + 'static,
     {
         for plugin in &self.plugins {
@@ -338,12 +335,11 @@ where
 {
     pub fn add_plugin<P>(&mut self, plugin: P)
     where
-        P: Plugin<T> + PluginOptions + 'static,
+        P: PluginWithOptions<T> + 'static,
     {
         self.app_handle
-        .send_message(EditorMessages::AddPlugin(Box::new(plugin)));
+            .send_message(EditorMessages::AddPlugin(Box::new(plugin)));
     }
-
 
     pub fn add_mode(
         &mut self,

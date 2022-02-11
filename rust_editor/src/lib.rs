@@ -1,6 +1,7 @@
-#![feature(trait_alias)]
+#![allow(warnings)]
 
-use plugins::{plugin::Plugin, camera::Renderer};
+
+use plugins::{plugin::{Plugin, PluginWithOptions}, camera::Renderer};
 
 pub mod actions;
 pub mod gizmo;
@@ -18,7 +19,7 @@ pub enum InformationLayer {
     Debug,
 }
 
-pub fn get_plugin<T, S>(plugins: &Vec<Box<dyn Plugin<T>>>) -> Option<&S>
+pub fn get_plugin<T, S>(plugins: &Vec<Box<dyn PluginWithOptions<T>>>) -> Option<&S>
 where
     S: 'static,
     T: Renderer + 'static,
@@ -32,7 +33,7 @@ where
     None
 }
 
-pub fn get_plugin_mut<T, S>(plugins: &mut Vec<Box<dyn Plugin<T>>>) -> Option<&mut S>
+pub fn get_plugin_mut<T, S>(plugins: &mut Vec<Box<dyn PluginWithOptions<T>>>) -> Option<&mut S>
 where
     S: 'static,
     T: Renderer + 'static,

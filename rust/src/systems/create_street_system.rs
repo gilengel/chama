@@ -1,5 +1,7 @@
 extern crate alloc;
 
+use std::collections::HashMap;
+
 use geo::{
     line_intersection::{line_intersection, LineIntersection},
     prelude::EuclideanDistance,
@@ -16,11 +18,11 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::map::{
+use crate::{map::{
     intersection::{Direction, Intersection},
     map::Map,
     street::Street,
-};
+}, Modes};
 
 pub struct CreateStreetSystem {
     mouse_pressed: bool,
@@ -238,7 +240,7 @@ impl CreateStreetSystem {
     }
 }
 
-impl<'a> System<Map> for CreateStreetSystem {
+impl<'a> System<Map, Modes> for CreateStreetSystem {
     fn mouse_down(
         &mut self,
         mouse_pos: Coordinate<f64>,
@@ -246,7 +248,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         map: &mut Map,
         
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         // We only check for left click
         if button != 0 {
@@ -311,7 +313,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if !self.mouse_pressed {
             return;
@@ -392,7 +394,7 @@ impl<'a> System<Map> for CreateStreetSystem {
         button: u32,
         _map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         // Cancel creation of street with right mouse button click
         if button == 2 {
@@ -413,16 +415,16 @@ impl<'a> System<Map> for CreateStreetSystem {
         _map: &Map,
         _context: &CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
+        plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
         
     ) -> Result<(), JsValue> {
         Ok(())
     }
 
-    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>) {
-        if let Some(intersection) = map.intersection(&self.temp_end) {
+    fn exit(&self, data: &mut Map, _plugins: HashMap<&'static str, &mut Box<dyn PluginWithOptions<Map, Modes>>>) {
+        if let Some(intersection) = data.intersection(&self.temp_end) {
             if intersection.get_connected_streets().is_empty() {
-                map.remove_intersection(&self.temp_end);
+                data.remove_intersection(&self.temp_end);
             }
         }
     }

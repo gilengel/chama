@@ -8,7 +8,7 @@ use std::fmt::Debug;
 use wasm_bindgen::JsCast;
 use web_sys::{console, EventTarget, HtmlInputElement, KeyboardEvent};
 use yew::events::Event;
-use yew::{classes, function_component, html, use_context, use_mut_ref, use_state, Callback, Html};
+use yew::{classes, function_component, html, use_context, use_mut_ref, use_state, Callback, Html, InputEvent};
 
 use yew::Properties;
 
@@ -17,6 +17,9 @@ pub struct NumberBoxProps<T>
 where
     T: PartialEq + Default,
 {
+    pub plugin: &'static str,
+    pub attribute: &'static str,
+
     pub min: T,
     pub max: T,
 
@@ -24,7 +27,7 @@ where
     pub default: T,
 
     pub value: T,
-    pub on_value_change: Callback<T>,
+    pub on_value_change: Callback<(&'static str, &'static str, T)>,
 }
 
 #[function_component]
@@ -42,12 +45,15 @@ where
 
     let callback = props.on_value_change.clone();
 
-    let onkeyup = Callback::from(move |e: KeyboardEvent| {
+    let plugin = props.plugin;
+    let attribute = props.attribute;
+
+    let oninput = Callback::from(move |e: InputEvent| {
         let target: EventTarget = e
             .target()
             .expect("Event should have a target when dispatched");
 
-        let value = target.unchecked_into::<HtmlInputElement>().value();
+        let mut value = target.unchecked_into::<HtmlInputElement>().value();
 
         let range = *range_handle;
         match value.clone().parse::<T>() {
@@ -57,12 +63,18 @@ where
 
         value_handle.set(value.clone());
 
-        callback.emit(value.parse::<T>().unwrap());
+        match value.parse::<T>() {
+            Ok(e) => { callback.emit((plugin, attribute, e)); },
+            Err(_) => {}
+        }
+        
     });
+
+
 
     html! {
         <div class="textbox">
-            <input class={classes!(error.then(|| Some("error")))} type="text" {onkeyup} value={value} />
+            <input class={classes!(error.then(|| Some("error")))} type="text" {oninput} value={value} />
 
             if error {
                 <label class="info">{format!{"Only values from {} till {} are valid", props.min, props.max}}</label>

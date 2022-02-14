@@ -30,7 +30,7 @@ enum Modes {
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
-    let mut editor = x_launch::<Modes, Map>();
+    let mut editor = x_launch::<Map, Modes>();
 
     let mut world = World::new();
     let entity = world.new_entity();

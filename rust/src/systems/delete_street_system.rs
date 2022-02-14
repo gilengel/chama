@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use geo::Coordinate;
 use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
@@ -7,7 +9,7 @@ use rust_editor::{
 };
 use uuid::Uuid;
 
-use crate::map::{intersection::Side, map::Map, street::Street};
+use crate::{map::{intersection::Side, map::Map, street::Street}, Modes};
 
 pub struct DeleteStreetSystem {
     hovered_streets: Option<Vec<Uuid>>,
@@ -97,7 +99,7 @@ impl Default for DeleteStreetSystem {
     }
 }
 
-impl System<Map> for DeleteStreetSystem {
+impl System<Map, Modes> for DeleteStreetSystem {
     fn mouse_down(
         &mut self,
         _mouse_pos: Coordinate<f64>,
@@ -105,7 +107,7 @@ impl System<Map> for DeleteStreetSystem {
         _: &mut Map,
         
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
     }
 
@@ -114,7 +116,7 @@ impl System<Map> for DeleteStreetSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         self.clean_hovered_street_state(map);
 
@@ -135,7 +137,7 @@ impl System<Map> for DeleteStreetSystem {
         _: u32,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if let Some(hovered_streets) = &self.hovered_streets {
             for street in hovered_streets {
@@ -144,8 +146,8 @@ impl System<Map> for DeleteStreetSystem {
         }
     }
 
-    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>) {
-        self.clean_hovered_street_state(map);
+    fn exit(&self, data: &mut Map, _plugins: HashMap<&'static str, &mut Box<dyn PluginWithOptions<Map, Modes>>>) {
+        self.clean_hovered_street_state(data);
     }
 
     fn render(
@@ -153,7 +155,7 @@ impl System<Map> for DeleteStreetSystem {
         _map: &Map,
         _context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &HashMap<&'static str, Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>
         
     ) -> Result<(), wasm_bindgen::JsValue> {
 

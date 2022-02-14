@@ -1,12 +1,14 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
+use std::any::Any;
 use std::collections::HashMap;
+use std::iter::Map;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::PluginWithOptions;
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::InformationLayer;
+use crate::{log, InformationLayer};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
@@ -19,13 +21,14 @@ use std::hash::Hash;
 use crate::ui::toolbar::Toolbar;
 use crate::{plugins::camera::Renderer, system::System};
 
-pub enum EditorMessages<S, T>
+pub enum EditorMessages<Data, Modes>
 where
-    S: Clone + std::cmp::PartialEq,
+    Modes: Clone + std::cmp::PartialEq,
 {
-    AddPlugin(Box<dyn PluginWithOptions<T>>),
-    AddMode((S, Vec<Box<dyn System<T>>>, Option<ModeProps>)),
-    SwitchMode(S),
+    AddPlugin((&'static str, Box<dyn PluginWithOptions<Data, Modes>>)),
+    PluginOptionUpdated((&'static str, &'static str, Box<dyn Any>)),
+    AddMode((Modes, Vec<Box<dyn System<Data, Modes>>>, Option<ModeProps>)),
+    SwitchMode(Modes),
 
     MouseMove(MouseEvent),
     MouseDown(MouseEvent),
@@ -33,18 +36,18 @@ where
     Render(f64),
 }
 
-pub struct App<S, T>
+pub struct App<Data, Modes>
 where
-    T: Renderer + Default + 'static,
-    S: Clone + std::cmp::PartialEq,
+    Data: Renderer + Default + 'static,
+    Modes: Clone + PartialEq + Eq + Hash,
 {
-    data: T,
+    data: Data,
 
     additional_information_layers: Vec<InformationLayer>,
-    active_mode: Option<S>,
-    modes: HashMap<S, (Vec<Box<dyn System<T>>>, Option<ModeProps>)>,
+    active_mode: Option<Modes>,
+    modes: HashMap<Modes, (Vec<Box<dyn System<Data, Modes>>>, Option<ModeProps>)>,
 
-    plugins: Vec<Box<dyn PluginWithOptions<T>>>,
+    plugins: HashMap<&'static str, Box<dyn PluginWithOptions<Data, Modes>>>,
     _render_loop: Option<AnimationFrame>,
     canvas_ref: NodeRef,
     context: Option<CanvasRenderingContext2d>,
@@ -53,18 +56,18 @@ where
 #[derive(Properties, PartialEq, Default)]
 pub struct EditorProps {}
 
-impl<S, T> Component for App<S, T>
+impl<Data, Modes> Component for App<Data, Modes>
 where
-    T: Renderer + Default + 'static,
-    S: Clone + PartialEq + Eq + Hash + 'static,
+    Data: Renderer + Default + 'static,
+    Modes: Clone + PartialEq + Eq + Hash + 'static,
 {
-    type Message = EditorMessages<S, T>;
+    type Message = EditorMessages<Data, Modes>;
     type Properties = EditorProps;
 
     fn create(_ctx: &yew::Context<Self>) -> Self {
         App {
-            data: T::default(),
-            plugins: Vec::new(),
+            data: Data::default(),
+            plugins: HashMap::new(),
             modes: HashMap::new(),
             active_mode: None,
             additional_information_layers: Vec::new(),
@@ -101,8 +104,8 @@ where
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            EditorMessages::AddPlugin(e) => {
-                self.plugins.push(e);
+            EditorMessages::AddPlugin((key, plugin)) => {
+                self.plugins.insert(key, plugin);
             }
             EditorMessages::AddMode((index, mode, button)) => {
                 self.modes.insert(index, (mode, button));
@@ -119,7 +122,7 @@ where
                     y: e.movement_y() as f64,
                 };
 
-                for plugin in &mut self.plugins {
+                for (_, plugin) in &mut self.plugins {
                     plugin.mouse_move(mouse_pos, mouse_diff, &mut self.data);
                 }
 
@@ -142,7 +145,7 @@ where
 
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
-                for plugin in &mut self.plugins {
+                for (_, plugin) in &mut self.plugins {
                     plugin.mouse_down(mouse_pos, e.button() as u32, &mut self.data);
                 }
 
@@ -170,7 +173,7 @@ where
 
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
-                for plugin in &mut self.plugins {
+                for (_, plugin) in &mut self.plugins {
                     plugin.mouse_up(mouse_pos, e.button() as u32, &mut self.data);
                 }
 
@@ -193,11 +196,15 @@ where
             }
             EditorMessages::Render(_) => {
                 let context = self.context.as_ref().unwrap();
-                for plugin in &mut self.plugins {
+                for (_, plugin) in &mut self.plugins {
                     plugin.render(context);
                 }
 
                 self.render(ctx.link());
+            }
+            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => { 
+                let plugin = self.get_plugin_by_key_mut(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
+                plugin.update_property(attribute, value);
             }
         }
 
@@ -213,15 +220,13 @@ where
         <main>
             <canvas ref={self.canvas_ref.clone()} width="1920" height="1080" {onmousedown} {onmouseup} {onmousemove}></canvas>
 
-            <Dialog> 
+            <Dialog>
             {
-                for self.plugins.iter().map(|plugin| {
-                    plugin.view_options()
+                for self.plugins.iter().map(|(_, plugin)| {
+                    plugin.view_options(ctx)
                 })
             }
             </Dialog>
-
-
 
             <Toolbar>
             {
@@ -237,15 +242,15 @@ where
     }
 }
 
-impl<S, T> App<S, T>
+impl<Data, Modes> App<Data, Modes>
 where
-    T: Renderer + Default + 'static,
-    S: Clone + PartialEq + Eq + Hash + 'static,
+    Data: Renderer + Default + 'static,
+    Modes: Clone + PartialEq + Eq + Hash + 'static,
 {
     fn view_mode_button(
         &self,
         ctx: &yew::Context<Self>,
-        id: &S,
+        id: &Modes,
         mode_props: &Option<ModeProps>,
     ) -> Html {
         let id = id.clone();
@@ -253,16 +258,30 @@ where
         let on_click = ctx.link().callback(|e| EditorMessages::SwitchMode(e));
 
         html! {
-            <ToolbarButton<S> icon={mode_props.icon} tooltip={mode_props.tooltip} identifier={id} {on_click} />
+            <ToolbarButton<Modes> icon={mode_props.icon} tooltip={mode_props.tooltip} identifier={id} {on_click} />
         }
     }
 
+    
+    fn get_plugin_by_key_mut(&mut self, key: &str) -> Option<&mut dyn PluginWithOptions<Data, Modes>>
+    where
+        
+        Data: Renderer + 'static,
+    {
+        if let Some(plugin) = self.plugins.get_mut(key) {
+            return Some(&mut **plugin)
+        }
+
+        None
+    }
+    
+
     pub fn get_plugin<P>(&self) -> Option<&P>
     where
-        P: PluginWithOptions<T> + 'static,
-        T: Renderer + 'static,
+        P: PluginWithOptions<Data, Modes> + 'static,
+        Data: Renderer + 'static,
     {
-        for plugin in &self.plugins {
+        for (_, plugin) in &self.plugins {
             if let Some(p) = plugin.as_ref().as_any().downcast_ref::<P>() {
                 return Some(p);
             }
@@ -288,7 +307,7 @@ where
 
         context.clear_rect(0.0, 0.0, 2000.0, 2000.0);
 
-        for plugin in &mut self.plugins {
+        for (_, plugin) in &mut self.plugins {
             plugin.render(context);
         }
 
@@ -321,12 +340,12 @@ where
     }
 }
 
-pub struct GenericEditor<S, T>
+pub struct GenericEditor<Data, Modes>
 where
-    T: Renderer + Default + 'static,
-    S: Clone + PartialEq + Eq + Hash + 'static,
+    Data: Renderer + Default + 'static,
+    Modes: Clone + PartialEq + Eq + Hash + 'static,
 {
-    app_handle: AppHandle<App<S, T>>,
+    app_handle: AppHandle<App<Data, Modes>>,
 }
 
 pub struct ModeProps {
@@ -334,41 +353,43 @@ pub struct ModeProps {
     pub tooltip: &'static str,
 }
 
-impl<S, T> GenericEditor<S, T>
+impl<Data, Modes> GenericEditor<Data, Modes>
 where
-    T: Renderer + Default + 'static,
-    S: Clone + PartialEq + Eq + Hash + 'static,
+    Data: Renderer + Default + 'static,
+    Modes: Clone + PartialEq + Eq + Hash + 'static,
 {
     pub fn add_plugin<P>(&mut self, plugin: P)
     where
-        P: PluginWithOptions<T> + 'static,
+        P: PluginWithOptions<Data, Modes> + 'static,
     {
-        self.app_handle
-            .send_message(EditorMessages::AddPlugin(Box::new(plugin)));
+        self.app_handle.send_message(EditorMessages::AddPlugin((
+            P::identifier(),
+            Box::new(plugin),
+        )));
     }
 
     pub fn add_mode(
         &mut self,
-        index: S,
-        systems: Vec<Box<dyn System<T>>>,
+        index: Modes,
+        systems: Vec<Box<dyn System<Data, Modes>>>,
         button: Option<ModeProps>,
     ) {
         self.app_handle
             .send_message(EditorMessages::AddMode((index, systems, button)));
     }
 
-    pub fn activate_mode(&mut self, mode: S) {
+    pub fn activate_mode(&mut self, mode: Modes) {
         self.app_handle
             .send_message(EditorMessages::SwitchMode(mode));
     }
 }
 
-pub fn x_launch<S, T>() -> GenericEditor<S, T>
+pub fn x_launch<Data, Modes>() -> GenericEditor<Data, Modes>
 where
-    T: Renderer + Default + 'static,
-    S: Clone + PartialEq + Eq + Hash + 'static,
+    Data: Renderer + Default + 'static,
+    Modes: Clone + PartialEq + Eq + Hash + 'static,
 {
     GenericEditor {
-        app_handle: yew::start_app::<App<S, T>>(),
+        app_handle: yew::start_app::<App<Data, Modes>>(),
     }
 }

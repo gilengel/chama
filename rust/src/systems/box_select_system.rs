@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use geo::{Coordinate, Rect};
 use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
@@ -7,7 +9,7 @@ use rust_editor::{
     InformationLayer, plugins::plugin::{Plugin, PluginWithOptions},
 };
 
-use crate::map::map::Map;
+use crate::{map::map::Map, Modes};
 
 fn default_coordinate() -> Coordinate<f64> {
     Coordinate { x: 0., y: 0. }
@@ -29,13 +31,13 @@ impl Default for BoxSelectSystem {
     }
 }
 
-impl System<Map> for BoxSelectSystem {
+impl System<Map, Modes> for BoxSelectSystem {
     fn mouse_down(
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         self.selection_min = mouse_pos;
         self.active = true;
@@ -45,7 +47,7 @@ impl System<Map> for BoxSelectSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         self.selection_max = mouse_pos;
     }
@@ -55,7 +57,7 @@ impl System<Map> for BoxSelectSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         for intersection in map
             .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
@@ -73,7 +75,7 @@ impl System<Map> for BoxSelectSystem {
         _map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
+        plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) -> Result<(), wasm_bindgen::JsValue> {
         if self.active {
             Rect::new(self.selection_min, self.selection_max).render(

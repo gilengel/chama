@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use geo::Coordinate;
 use rust_editor::{
     gizmo::Id,
@@ -8,7 +10,7 @@ use rust_editor::{
 };
 use uuid::Uuid;
 
-use crate::map::{district::District, map::Map};
+use crate::{map::{district::District, map::Map}, Modes};
 
 pub struct DeleteDistrictSystem {
     hovered_district: Option<Uuid>,
@@ -22,7 +24,7 @@ impl Default for DeleteDistrictSystem {
     }
 }
 
-impl System<Map> for DeleteDistrictSystem {
+impl System<Map, Modes> for DeleteDistrictSystem {
     fn mouse_down(
         &mut self,
         _mouse_pos: Coordinate<f64>,
@@ -30,7 +32,7 @@ impl System<Map> for DeleteDistrictSystem {
         _: &mut Map,
         
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
     }
 
@@ -39,7 +41,7 @@ impl System<Map> for DeleteDistrictSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if let Some(old_hovered_district) = self.hovered_district {
             let old_hovered_district: &mut District =
@@ -60,7 +62,7 @@ impl System<Map> for DeleteDistrictSystem {
         _: u32,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
             map.remove_district(&hovered_district);
@@ -73,7 +75,7 @@ impl System<Map> for DeleteDistrictSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
         
     ) -> Result<(), wasm_bindgen::JsValue> {
         map.render(&context, additional_information_layer)?;

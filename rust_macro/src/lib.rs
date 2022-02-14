@@ -181,8 +181,11 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
         let mut callbacks = quote!{};
         
         let number_types: Vec<&str>  = vec!["i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "f32", "f64"];
+
+        let mut arms: Vec<TokenStream2> = vec![];
         for (attr, ty, metas) in attrs {
             if number_types.contains(&&ty.to_string()[..]) {
+                
                 
                 let min = get_mandatory_meta_value(&metas, "min").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "min".red(), name));
                 let max = get_mandatory_meta_value(&metas, "max").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "max".red(), name));
@@ -193,28 +196,47 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
 
                 let muu = format_ident!("{}", attr.name);
                
+                let label = attr.label;
+                let plugin = name_str.clone();
+                let attribute = attr.name.to_string();
+
+
+ 
+                
+                arms.push(quote! {
+                    #attribute => { if let Some(value) = value.as_ref().downcast_ref::<#ty>() { self.#muu = *value } }
+                });
+                
                 
                 
                 callbacks.extend(quote!{
-                    //let muumuu = std::rc::Rc::clone(&self.offset);
+                    let #callback_name = ctx.link().callback(|(plugin, attribute, value)| {
+                        //let msg = format!("prop {} of plugin {} was changed to {} ----", attribute, plugin, value);
+                        //web_sys::console::log_1(&msg.into());
 
-                    //let #callback_captured_value = std::rc::Rc::new(std::cell::RefCell::new(&self.#muu));                        
-                    let #callback_name: Callback<#ty> = Callback::from(move |value: #ty| {
-                        //let mut muu = *muumuu.borrow_mut();
-                        //muu = 123;
-                        let msg = format!("New Value is {}", value);
-                        web_sys::console::log_1(&msg.into());
+                        EditorMessages::PluginOptionUpdated((plugin, attribute, Box::new(value)))
                     });
-                    
+                    /*
+                    let #callback_name: Callback<(&'static str, &'static str, #ty)> = Callback::from(move |(plugin, attribute, value)| {
+                        
+
+                        
+                    });
+                    */
                 });
-
-                
-
-
-                let label = attr.label;
-                    
-                //muus.push(quote!{<div><label>{#label}</label><input type="number" min=#min max=#max value=#default /></div>});            
-                muus.push(quote!{<div><label>{#label}</label><NumberBox<#ty> min={#min} max={#max} value={10} on_value_change={#callback_name} /></div>});   
+       
+                muus.push(quote!{
+                    <div>
+                        <label>{#label}</label>
+                        <NumberBox<#ty> 
+                            plugin={#plugin} 
+                            attribute={#attribute} 
+                            min={#min} 
+                            max={#max} 
+                            value={10} 
+                            on_value_change={#callback_name} 
+                        />
+                    </div>});   
 
             }
 
@@ -240,20 +262,37 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
 
         muus.push(quote!{</div>});
         inner.append_all(muus);
-        t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);
-        
-        
+        t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);       
 
-        let gen = quote! {           
-            use yew::{html, Html, Callback, use_mut_ref};
+        let gen = quote! {        
+            use std::ops::Deref;   
+            use yew::{html, Html, Callback, Context};
             //use yew::{html, Component, Context, Html, Callback};
             use rust_internal::ui::textbox::TextBox;
             use rust_internal::ui::numberbox::NumberBox;
+            use crate::ui::app::App;
+            use crate::ui::app::EditorMessages;
+            use std::any::Any;
 
-            impl<T> PluginWithOptions<T> for #name where T: Renderer + 'static {            
-                fn view_options(&self) -> Html {
+            impl<Data, Modes> PluginWithOptions<Data, Modes> for #name where 
+                Data: Renderer + Default + 'static,
+                Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, {        
+                
+                fn identifier() -> &'static str where Self: Sized {
+                    #name_str
+                }
+                
+                fn view_options(&self, ctx: &Context<App<Data, Modes>>) -> Html {
                     #callbacks
                     #t                    
+                }
+
+                fn update_property(&mut self, property: &str, value: Box<dyn Any>) {                
+                    match property {
+                        #(#arms),*
+                        _ => {}
+                    }
+                    
                 }
             }            
         };

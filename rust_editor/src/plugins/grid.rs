@@ -35,10 +35,7 @@ pub struct Grid {
 */
 
 impl<T> Plugin<T> for Grid where T: Renderer + 'static{
-    fn render(&self, context: &CanvasRenderingContext2d){
-
-        log!("{}", self.offset);
-        
+    fn render(&self, context: &CanvasRenderingContext2d){        
         if self.offset == 0 {
             return;
         }

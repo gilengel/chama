@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::{ops::Add, collections::HashMap};
 
 use geo::Coordinate;
 use rust_editor::{
@@ -9,7 +9,7 @@ use rust_editor::{
 };
 use uuid::Uuid;
 
-use crate::map::map::Map;
+use crate::{map::map::Map, Modes};
 
 pub struct MoveControlSystem {
     hovered_control: Option<Uuid>,
@@ -45,7 +45,7 @@ impl MoveControlSystem {
     }
 }
 
-impl System<Map> for MoveControlSystem {
+impl System<Map, Modes> for MoveControlSystem {
     fn mouse_down(
         &mut self,
         mouse_pos: Coordinate<f64>,
@@ -53,7 +53,7 @@ impl System<Map> for MoveControlSystem {
         map: &mut Map,
         
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         self.gizmo.mouse_down(
             mouse_pos,
@@ -79,7 +79,7 @@ impl System<Map> for MoveControlSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         self.center_gizmo(map);
 
@@ -100,7 +100,7 @@ impl System<Map> for MoveControlSystem {
         button: u32,
         map: &mut Map,        
 
-        _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>
+        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if self.gizmo.is_active() {
             self.gizmo.mouse_up(
@@ -117,12 +117,12 @@ impl System<Map> for MoveControlSystem {
         self.gizmo.is_active()
     }
 
-    fn enter(&mut self, map: &mut Map, _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>) {
-        self.center_gizmo(map);
+    fn enter(&mut self, data: &mut Map, plugins: HashMap<&'static str, &mut Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>) {
+        self.center_gizmo(data);
     }
 
-    fn exit(&self, map: &mut Map, _plugins: &mut Vec<Box<dyn PluginWithOptions<Map>>>) {
-        self.clean_hovered_control_state(map);
+    fn exit(&self, data: &mut Map, plugins: HashMap<&'static str, &mut Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>) {
+        self.clean_hovered_control_state(data);
     }
 
     fn render(
@@ -130,7 +130,7 @@ impl System<Map> for MoveControlSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &Vec<Box<dyn PluginWithOptions<Map>>>
+        _plugins: &HashMap<&'static str, Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>
         
     ) -> Result<(), wasm_bindgen::JsValue> {
         self.gizmo.render(

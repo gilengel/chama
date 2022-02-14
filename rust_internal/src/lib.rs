@@ -5,6 +5,8 @@ use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
+pub mod ui;
+
 pub trait GetPluginWithOptions<T> {
     fn get<S>(&self) -> Option<S>;
 }
@@ -13,14 +15,16 @@ pub trait AsAny {
     fn as_any(&self) -> &dyn Any;
 }
 
+/*
 pub struct Attribute {
+    pub name: String,
     pub label: String,
     pub description: String,
 }
-pub struct NumberAttribute {
-    pub default: i128,
-    pub min: i128,
-    pub max: i128,
+pub struct NumberAttribute<T> {
+    pub default: T,
+    pub min: T,
+    pub max: T,
 }
 
 pub struct BoolAttribute {
@@ -31,11 +35,18 @@ pub struct TextAttribute {
     pub default: String
 }
 
-pub enum PluginAttributes {
-    Number((Attribute, NumberAttribute)),
-    Text((Attribute, TextAttribute)),
-    Bool((Attribute, BoolAttribute)),
+
+enum PluginAttributeType {
+    Number,
+    String,
+    Bool
 }
+
+struct PluginAttribute<T> {
+    default: T,
+    attribute_type: PluginAttributeType,
+}
+*/
 
 pub struct Plugins<T> {
     count: usize,

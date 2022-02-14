@@ -7,7 +7,10 @@ use crate::plugins::camera::Camera;
 use crate::plugins::plugin::PluginWithOptions;
 use crate::ui::toolbar_button::ToolbarButton;
 use crate::InformationLayer;
+
+use crate::ui::dialog::Dialog;
 use geo::Coordinate;
+use rust_internal::ui::textbox::TextBox;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
@@ -205,18 +208,19 @@ where
         let onmousedown = ctx.link().callback(|e| EditorMessages::MouseDown(e));
         let onmouseup = ctx.link().callback(|e| EditorMessages::MouseUp(e));
         let onmousemove = ctx.link().callback(|e| EditorMessages::MouseMove(e));
+
         html! {
         <main>
             <canvas ref={self.canvas_ref.clone()} width="1920" height="1080" {onmousedown} {onmouseup} {onmousemove}></canvas>
 
-
-            <div class="options">
+            <Dialog> 
             {
                 for self.plugins.iter().map(|plugin| {
                     plugin.view_options()
                 })
             }
-            </div>
+            </Dialog>
+
 
 
             <Toolbar>

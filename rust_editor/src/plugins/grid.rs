@@ -5,6 +5,8 @@ use rust_macro::Plugin;
 use web_sys::CanvasRenderingContext2d;
 
 
+use crate::log;
+
 use super::{plugin::{Plugin, PluginWithOptions}, camera::Renderer};
 
 
@@ -34,6 +36,8 @@ pub struct Grid {
 
 impl<T> Plugin<T> for Grid where T: Renderer + 'static{
     fn render(&self, context: &CanvasRenderingContext2d){
+
+        log!("{}", self.offset);
         
         if self.offset == 0 {
             return;
@@ -105,32 +109,6 @@ impl<T> Plugin<T> for Grid where T: Renderer + 'static{
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
-    }
-}
-
-impl Grid {
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-    }
-
-    pub fn offset(&self) -> u32 {
-        self.offset
-    }
-
-    pub fn set_offset(&mut self, offset: u32) {
-        self.offset = offset;
-    }
-
-    pub fn subdivisions(&self) -> u8 {
-        self.subdivisions
-    }
-
-    pub fn set_subdivisions(&mut self, subdivisions: u8) {
-        self.subdivisions = subdivisions;
     }
 }
 

@@ -38,6 +38,7 @@
   $padding: 4px;
   // app colors
   $primary: #1e88e5;
+  $error: #d64933;
   $text: #ffffff;
   $background: #211f20;
 
@@ -46,17 +47,21 @@
   $padding: 4px;
 
   body {
-    font-family: 'Heebo', sans-serif;
+    font-family: "Heebo", sans-serif;
   }
 
   main {
-    .options {
+    .dialog {
       position: absolute;
-      left: 50%;
-      top: 50%;
+      //left: 50%;
+      right: 0;
+      top: 0%;
+      height: 100%;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
 
-      transform: translate(-50%, -50%);
+      //transform: translate(-50%, -50%);
 
+      min-width: 500px;
       max-width: 800px;
       border-radius: $border-radius;
 
@@ -66,6 +71,37 @@
       display: flex;
       flex-direction: column;
 
+      button.close {
+        position: absolute;
+        top: 0;
+        right: 12px;
+        width: 28px;
+        height: 28px;
+        border: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: solid lighten($background, 20%) 1px;
+        border-top: none;
+        border-bottom-left-radius: $border-radius;
+        border-bottom-right-radius: $border-radius;
+        background-color: transparent;
+        transition: all 0.05s ease-out;
+        
+        span {
+          color: lighten($background, 20%);
+        }
+      }
+
+      button.close:hover {
+        background-color: $error;
+        cursor: pointer;
+
+        span {
+          color: white;
+        }
+      }
+
       div:first-child {
         h2 {
           margin-top: 0;
@@ -73,21 +109,21 @@
       }
 
       div {
-
         h2 {
           margin-top: 1em;
         }
-        div {
-          padding-top: $padding;
-          padding-bottom: $padding;
+
+        .textbox {
+          height: 4em;
           display: flex;
-          justify-content: space-between;
+          flex-direction: column;
 
-          line-height: 2em;
-
-          label {
-            padding-right: 1em;
-            font-size: 1em;
+          .info {
+            color: $error;
+            font-size: 0.8em;
+            text-align: right;
+            padding: 0;
+            padding-top: 0.1em;
           }
 
           input[type="number"],
@@ -101,6 +137,23 @@
             padding-left: $padding;
 
             font-size: 1em;
+            height: 2em;
+          }
+
+          input[type="number"]:focus,
+          input[type="text"]:focus {
+            outline: none;
+          }
+
+          input[type="number"]:focus:not(.error),
+          input[type="text"]:focus:not(.error) {
+            outline: none;
+            border-bottom: solid $primary 2px !important;
+          }
+
+          .error {
+            border: none !important;
+            border-bottom: solid $error 2px !important;
           }
 
           input[type="number"]::-webkit-inner-spin-button,
@@ -109,8 +162,23 @@
             margin: 0;
           }
         }
+        div {
+          position: relative;
+          padding-top: $padding;
+          padding-bottom: $padding;
+          display: flex;
+          justify-content: space-between;
+
+          line-height: em;
+
+          label {
+            padding-right: 1em;
+            font-size: 1em;
+          }
+        }
       }
     }
+
     canvas {
       position: absolute;
     }

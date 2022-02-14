@@ -8,7 +8,7 @@ use super::camera::Renderer;
 
 
 pub trait PluginWithOptions<T>: Plugin<T> where
-T: Renderer + 'static,{
+T: Renderer + 'static {
     fn view_options(&self) -> Html;
 }
 

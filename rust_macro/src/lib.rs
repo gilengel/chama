@@ -1,5 +1,4 @@
 #![allow(warnings)]
-#![feature(extend_one)]
 
 extern crate proc_macro;
 
@@ -11,7 +10,6 @@ use proc_macro2::{Ident, Span};
 use proc_macro2::Delimiter;
 use proc_macro_error::{abort, proc_macro_error, ResultExt};
 use quote::{format_ident, quote, quote_spanned, ToTokens, TokenStreamExt};
-use rust_internal::{PluginAttributes, Attribute, NumberAttribute, BoolAttribute, TextAttribute};
 use syn::parse::Parser;
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, Type, Lit};
@@ -22,23 +20,29 @@ extern crate quote;
 extern crate proc_macro2;
 
 use syn::{DataStruct, Meta};
-use yew::{Html, html};
+use yew::{Html, html, Callback};
 use yew::virtual_dom::VNode;
 
 mod generate;
 
 
-fn attribute_type(ty: &Type) -> String {
+fn attribute_type(ty: Type) -> Ident {
     match ty {
         Type::Path(path) => {
-            let ty = &path.path.segments.first().unwrap().ident;
-            
-            ty.to_string()
+            path.path.segments.first().unwrap().ident.clone()          
         },
         _ => todo!()
     }
 }
 
+
+type PluginAttribute = (Attribute, Ident, Vec<Meta>);
+
+struct Attribute {
+    pub name: Ident,
+    pub label: Lit,
+    pub description: Lit,
+}
 
 
 #[proc_macro_derive(Plugin, attributes(get, with_prefix, option))]
@@ -46,47 +50,34 @@ fn attribute_type(ty: &Type) -> String {
 pub fn plugin(input: TokenStream) -> TokenStream {
     
     // Parse the string representation
-    let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
+    let mut ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
 
-    let number_types: Vec<&str>  = vec!["i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "f32", "f64"];
+    
 
-    let mut attrs: Vec<PluginAttributes> = Vec::new();
-    match &ast.data {
+    let mut attrs: Vec<PluginAttribute> = Vec::new();
+    match &mut ast.data {
         Data::Struct(s) => {
-            match &s.fields {
+            match &mut s.fields {
                 Fields::Named(n) => {
                     
-                    for named in &n.named { // Field
+                    for named in &mut n.named { // Field
                         let name = named.ident.as_ref().unwrap();
-                        let ty = attribute_type(&named.ty);
+                        let ty = attribute_type(named.ty.clone());
                         
-                        let is_number = number_types.contains(&&ty[..]);
-
                         for attribute in &named.attrs {                            
                             if !attribute.path.is_ident("option") {
                                 panic!("attribute {} has no option annotation.", name.to_string());
                             }
 
                             let metas = parse_attr(attribute);
-                            let label = get_mandatory_meta_value_as_string(&metas, "label").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "label".red(), name));
-                            let description = get_mandatory_meta_value_as_string(&metas, "description").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "description".red(), name));
+                            let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "label".red(), name));
+                            let description = get_mandatory_meta_value(&metas, "description").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "description".red(), name));
 
-                            if is_number {                                
-                                //let default = get_mandatory_meta_value_as_isize(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
-                                let min = get_mandatory_meta_value_as_isize(&metas, "min").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "min".red(), name));
-                                let max = get_mandatory_meta_value_as_isize(&metas, "max").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "max".red(), name));
-                                let default = get_mandatory_meta_value_as_isize(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
-
-                                attrs.push(PluginAttributes::Number((Attribute { label, description }, NumberAttribute { default, min, max })))
-                            } else if ty == "bool" {
-                                let default = get_mandatory_meta_value_as_bool(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
-                                attrs.push(PluginAttributes::Bool((Attribute { label, description }, BoolAttribute { default })))
-                            } else if ty == "String" {
-                                let default = get_mandatory_meta_value_as_string(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
-                                attrs.push(PluginAttributes::Text((Attribute { label, description }, TextAttribute { default })))
-                            }
+                            attrs.push((Attribute { name: name.clone(), label: label.clone(), description: description.clone() }, ty.clone(), metas.clone()));
                         }                        
                     }
+
+                    n.named.clear();
                 },
                 _ => panic!("Only works on named attributes")
             }
@@ -119,40 +110,10 @@ fn get_mandatory_meta_value<'a>(meta_attrs: &'a Vec<Meta>, identifier: &str) -> 
     None
 }
 
-fn get_mandatory_meta_value_as_f64(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<f64> {
-    if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
-        if let Lit::Float(e) = lit {
-            return Some(e.base10_parse::<f64>().unwrap_or_abort());
-        }
-    }
-
-    None
-}
-
-fn get_mandatory_meta_value_as_isize(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<i128> {
+fn get_mandatory_meta_value_as_int<T>(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<T> where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
     if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
         if let Lit::Int(e) = lit {            
-            return Some(e.base10_parse::<i128>().unwrap_or_abort());
-        }
-    }
-
-    None
-}
-
-fn get_mandatory_meta_value_as_string(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<String> {
-    if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
-        if let Lit::Str(e) = lit {
-            return Some(e.value())
-        }
-    }
-
-    None
-}
-
-fn get_mandatory_meta_value_as_bool(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<bool> {
-    if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
-        if let Lit::Bool(e) = lit {
-            return Some(e.value())
+            return Some(e.base10_parse::<T>().unwrap_or_abort());
         }
     }
 
@@ -190,7 +151,9 @@ fn parse_attr(attr: &syn::Attribute) -> Vec<Meta> {
     vec![]
 }
 
-fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
+
+
+fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
     use yew::html;
 
     let name = &ast.ident;
@@ -203,30 +166,68 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
     // Is it a struct?
     if let syn::Data::Struct(DataStruct { ref fields, .. }) = ast.data {
         let mut t = TokenStream2::new();
-        t.extend_one(TokenTree::Ident(Ident::new("html",  Span::call_site())));
-        t.extend_one(TokenTree::Punct(Punct::new('!', Spacing::Alone)));
-        //
+        t.extend(vec![
+            TokenTree::Ident(Ident::new("html",  Span::call_site())),             
+            TokenTree::Punct(Punct::new('!', Spacing::Alone))
+        ]);
+        
     
         let mut inner = TokenStream2::new();
         let mut muus: Vec<TokenStream2> = vec![
             quote! { <div> },
             quote! { <h2>{#name_str}</h2> },
         ];
+
+        let mut callbacks = quote!{};
         
-        for attr in attrs {
+        let number_types: Vec<&str>  = vec!["i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "f32", "f64"];
+        for (attr, ty, metas) in attrs {
+            if number_types.contains(&&ty.to_string()[..]) {
+                
+                let min = get_mandatory_meta_value(&metas, "min").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "min".red(), name));
+                let max = get_mandatory_meta_value(&metas, "max").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "max".red(), name));
+                let default = get_mandatory_meta_value(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
+
+                let callback_name = format_ident!("cb_{}", attr.name);
+                    
+
+                let muu = format_ident!("{}", attr.name);
+               
+                
+                
+                callbacks.extend(quote!{
+                    //let muumuu = std::rc::Rc::clone(&self.offset);
+
+                    //let #callback_captured_value = std::rc::Rc::new(std::cell::RefCell::new(&self.#muu));                        
+                    let #callback_name: Callback<#ty> = Callback::from(move |value: #ty| {
+                        //let mut muu = *muumuu.borrow_mut();
+                        //muu = 123;
+                        let msg = format!("New Value is {}", value);
+                        web_sys::console::log_1(&msg.into());
+                    });
+                    
+                });
+
+                
+
+
+                let label = attr.label;
+                    
+                //muus.push(quote!{<div><label>{#label}</label><input type="number" min=#min max=#max value=#default /></div>});            
+                muus.push(quote!{<div><label>{#label}</label><NumberBox<#ty> min={#min} max={#max} value={10} on_value_change={#callback_name} /></div>});   
+
+            }
+
+
+            /*
             match attr {
                 PluginAttributes::Number((attr, number_attr)) => {
-                    let min = number_attr.min;
-                    let max = number_attr.max;
-                    let label = attr.label;
-                    let default = number_attr.default;
-                        
-                    muus.push(quote!{<div><label>{#label}</label><input type="number" min=#min max=#max value=#default /></div>});            
+         
                 },
                 PluginAttributes::Text((attr, str_attr)) => {
                     let label = attr.label;
                     let default = str_attr.default;
-                    muus.push(quote!{<div><label>{#label}</label><input type="text" value=#default /></div>});
+                    muus.push(quote!{<div><label>{#label}</label><TextBox /></div>});
                 },
                 PluginAttributes::Bool((attr, bool_attr)) => {
                     let label = attr.label;
@@ -234,22 +235,25 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
                     muus.push(quote!{<div><label>{#label}</label><input type="checkbox" checked=#default /></div>})
                 },
             }
+            */
         }
 
-        
-        
         muus.push(quote!{</div>});
         inner.append_all(muus);
-        t.extend_one(TokenTree::Group(Group::new(Delimiter::Brace, inner)));
+        t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);
+        
         
 
         let gen = quote! {           
-            use yew::{html, Html};
-            impl<T> PluginWithOptions<T> for #name where T: Renderer + 'static {
-                
+            use yew::{html, Html, Callback, use_mut_ref};
+            //use yew::{html, Component, Context, Html, Callback};
+            use rust_internal::ui::textbox::TextBox;
+            use rust_internal::ui::numberbox::NumberBox;
 
+            impl<T> PluginWithOptions<T> for #name where T: Renderer + 'static {            
                 fn view_options(&self) -> Html {
-                    #t
+                    #callbacks
+                    #t                    
                 }
             }            
         };
@@ -261,26 +265,6 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttributes>) -> TokenStream2 {
     }
 }
 
-/*
-#[proc_macro_derive(Plugin)]
-pub fn plugin(tokens: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(tokens as DeriveInput);
-
-    let name = input.ident;
-
-    let modified = quote! {
-        use std::any::Any;
-        use rust_internal::AsAny;
-
-        impl AsAny for #name {
-            fn as_any(&self) -> &dyn Any {
-                self
-            }
-        }
-    };
-    TokenStream::from(modified)
-}
-*/
 
 #[proc_macro_derive(ElementId)]
 pub fn derive_id_trait_functions(tokens: TokenStream) -> TokenStream {
@@ -310,91 +294,6 @@ macro_rules! derive_error {
             .to_compile_error()
             .into()
     };
-}
-
-#[proc_macro_derive(IsVariant)]
-pub fn derive_is_variant(input: TokenStream) -> TokenStream {
-    // See https://doc.servo.org/syn/derive/struct.DeriveInput.html
-    let input: DeriveInput = parse_macro_input!(input as DeriveInput);
-
-    // get enum name
-    let ref name = input.ident;
-    let ref data = input.data;
-
-    let mut variant_checker_functions;
-
-    // data is of type syn::Data
-    // See https://doc.servo.org/syn/enum.Data.html
-    match data {
-        // Only if data is an enum, we do parsing
-        Data::Enum(data_enum) => {
-            // data_enum is of type syn::DataEnum
-            // https://doc.servo.org/syn/struct.DataEnum.html
-
-            variant_checker_functions = TokenStream2::new();
-
-            // Iterate over enum variants
-            // `variants` if of type `Punctuated` which implements IntoIterator
-            //
-            // https://doc.servo.org/syn/punctuated/struct.Punctuated.html
-            // https://doc.servo.org/syn/struct.Variant.html
-            for variant in &data_enum.variants {
-                // Variant's name
-                let ref variant_name = variant.ident;
-
-                if let Fields::Unnamed(e) = &variant.fields {
-                    if let syn::Type::Path(e) = &e.unnamed[0].ty {
-                        let return_type = &e.path.segments.first().unwrap().ident;
-
-                        // construct an identifier named is_<variant_name> for function name
-                        // We convert it to snake case using `to_case(Case::Snake)`
-                        // For example, if variant is `HelloWorld`, it will generate `is_hello_world`
-                        let mut get_as_func_name =
-                            format_ident!("get_{}", variant_name.to_string().to_case(Case::Snake));
-                        get_as_func_name.set_span(variant_name.span());
-
-                        // Here we construct the function for the current variant
-                        variant_checker_functions.extend(quote_spanned! {variant.span()=>
-
-
-                            #[allow(dead_code)]
-                            fn #get_as_func_name(&self) -> Option<&#return_type> {
-                                match self {
-                                    #name::#variant_name(e) => Some(e),
-                                    _ => None,
-                                }
-                            }
-
-                        });
-                    }
-                }
-
-                // Above we are making a TokenStream using extend()
-                // This is because TokenStream is an Iterator,
-                // so we can keep extending it.
-                //
-                // proc_macro2::TokenStream:- https://docs.rs/proc-macro2/1.0.24/proc_macro2/struct.TokenStream.html
-
-                // Read about
-                // quote:- https://docs.rs/quote/1.0.7/quote/
-                // quote_spanned:- https://docs.rs/quote/1.0.7/quote/macro.quote_spanned.html
-                // spans:- https://docs.rs/syn/1.0.54/syn/spanned/index.html
-            }
-        }
-        _ => return derive_error!("IsVariant is only implemented for enums"),
-    };
-
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-
-    let expanded = quote! {
-        impl #impl_generics #name #ty_generics #where_clause {
-            // variant_checker_functions gets replaced by all the functions
-            // that were constructed above
-            #variant_checker_functions
-        }
-    };
-
-    TokenStream::from(expanded)
 }
 
 #[proc_macro_attribute]

@@ -3,13 +3,16 @@ use std::collections::HashMap;
 use geo::Coordinate;
 use rust_editor::{
     gizmo::Id,
-    plugins::{camera::Renderer, plugin::{Plugin, PluginWithOptions}},
+    plugins::{camera::Renderer, plugin::PluginWithOptions},
     system::System,
     InformationLayer,
 };
 use uuid::Uuid;
 
-use crate::{map::{district::create_district_for_street, map::Map}, Modes};
+use crate::{
+    map::{district::create_district_for_street, map::Map},
+    Modes,
+};
 
 pub struct CreateDistrictSystem {
     hovered_street: Option<Uuid>,
@@ -29,15 +32,15 @@ impl System<Map, Modes> for CreateDistrictSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
     }
 
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        map: &mut Map,        
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        map: &mut Map,
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
         match map.get_nearest_street_to_position(&mouse_pos) {
             Some(street) => self.hovered_street = Some(street.id()),
@@ -50,7 +53,7 @@ impl System<Map, Modes> for CreateDistrictSystem {
         mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
         if let Some(hovered_street_id) = self.hovered_street {
             let hovered_street = map.street(&hovered_street_id).unwrap();
@@ -67,8 +70,7 @@ impl System<Map, Modes> for CreateDistrictSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
-        
+        _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
         map.render(context, additional_information_layer)?;
 

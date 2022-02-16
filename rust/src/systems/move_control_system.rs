@@ -1,11 +1,12 @@
-use std::{ops::Add, collections::HashMap};
+use std::{collections::HashMap, ops::Add};
 
 use geo::Coordinate;
 use rust_editor::{
     gizmo::{mouse_over, GetPosition, Gizmo, MoveGizmo, SetPosition},
     interactive_element::{InteractiveElement, InteractiveElementState},
+    plugins::plugin::PluginWithOptions,
     system::System,
-    InformationLayer, plugins::plugin::{Plugin, PluginWithOptions},
+    InformationLayer,
 };
 use uuid::Uuid;
 
@@ -51,9 +52,8 @@ impl System<Map, Modes> for MoveControlSystem {
         mouse_pos: Coordinate<f64>,
         button: u32,
         map: &mut Map,
-        
 
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
         self.gizmo.mouse_down(
             mouse_pos,
@@ -77,9 +77,9 @@ impl System<Map, Modes> for MoveControlSystem {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        map: &mut Map,        
+        map: &mut Map,
 
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
         self.center_gizmo(map);
 
@@ -98,9 +98,9 @@ impl System<Map, Modes> for MoveControlSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         button: u32,
-        map: &mut Map,        
+        map: &mut Map,
 
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
         if self.gizmo.is_active() {
             self.gizmo.mouse_up(
@@ -117,11 +117,19 @@ impl System<Map, Modes> for MoveControlSystem {
         self.gizmo.is_active()
     }
 
-    fn enter(&mut self, data: &mut Map, _plugins: HashMap<&'static str, &mut Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>) {
+    fn enter(
+        &mut self,
+        data: &mut Map,
+        _plugins: HashMap<&'static str, &mut Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>,
+    ) {
         self.center_gizmo(data);
     }
 
-    fn exit(&self, data: &mut Map, _plugins: HashMap<&'static str, &mut Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>) {
+    fn exit(
+        &self,
+        data: &mut Map,
+        _plugins: HashMap<&'static str, &mut Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>,
+    ) {
         self.clean_hovered_control_state(data);
     }
 
@@ -130,8 +138,7 @@ impl System<Map, Modes> for MoveControlSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &HashMap<&'static str, Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>
-        
+        _plugins: &HashMap<&'static str, Box<(dyn PluginWithOptions<Map, Modes> + 'static)>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
         self.gizmo.render(
             context,

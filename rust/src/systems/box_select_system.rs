@@ -3,10 +3,11 @@ use std::collections::HashMap;
 use geo::{Coordinate, Rect};
 use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
+    plugins::plugin::PluginWithOptions,
     renderer::PrimitiveRenderer,
     style::Style,
     system::System,
-    InformationLayer, plugins::plugin::{Plugin, PluginWithOptions},
+    InformationLayer,
 };
 
 use crate::{map::map::Map, Modes};
@@ -37,7 +38,7 @@ impl System<Map, Modes> for BoxSelectSystem {
         mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
         self.selection_min = mouse_pos;
         self.active = true;
@@ -47,7 +48,7 @@ impl System<Map, Modes> for BoxSelectSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
         self.selection_max = mouse_pos;
     }
@@ -57,7 +58,7 @@ impl System<Map, Modes> for BoxSelectSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) {
         for intersection in map
             .intersections_within_rectangle_mut(&Rect::new(self.selection_min, self.selection_max))
@@ -75,7 +76,7 @@ impl System<Map, Modes> for BoxSelectSystem {
         _map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
         if self.active {
             Rect::new(self.selection_min, self.selection_max).render(

@@ -25,9 +25,6 @@ impl<T> Plugin<T> for Redo<T>
 where
     T: Renderer + Default + 'static,
 {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
 
     fn mouse_down(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut T) {}
 
@@ -39,10 +36,5 @@ where
     ) {
     }
 
-    fn mouse_up(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut T) {}
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    
+    fn mouse_up(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut T) {}    
 }

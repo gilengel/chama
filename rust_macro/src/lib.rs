@@ -57,7 +57,7 @@ pub fn editor_plugin(_args: TokenStream, input: TokenStream) -> TokenStream  {
                 _ => {
                     ()
                 }
-            }              
+            }    
             
             return quote! {
                 use rust_macro::PluginWithOptions;
@@ -66,7 +66,7 @@ pub fn editor_plugin(_args: TokenStream, input: TokenStream) -> TokenStream  {
                 #ast
             }.into();
         }
-        _ => panic!("`add_field` has to be used with structs "),
+        _ => abort!(ast, "`add_field` has to be used with structs "),
     }
 }
 
@@ -76,8 +76,6 @@ pub fn plugin_with_options(input: TokenStream) -> TokenStream {
     
     // Parse the string representation
     let mut ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
-
-    
 
     let mut attrs: Vec<PluginAttribute> = Vec::new();
     match &mut ast.data {
@@ -197,6 +195,9 @@ fn checkbox(plugin: &str, attribute: &str, default_value: bool) -> (TokenStream2
 fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
     let name = &ast.ident;
     let name_str = name.to_string();
+    let generics = &ast.generics;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
 
     // Is it a struct?
     if let syn::Data::Struct(DataStruct { .. }) = ast.data {
@@ -231,15 +232,11 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
         elements.push(enabled_checkbox.0);
         elements.push( quote! { </div> } );
         callbacks.push(enabled_checkbox.1);    
-        defaults.push(quote!{ __enabled: true });    
-
+        defaults.push(quote!{ __enabled: true }); 
         
-        arms.push(quote! {
-            __enabled => { if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value } }
-        });
+        arms.push(quote! { "__enabled" => { if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value } }});
 
-        
-
+        // Now for all attributes defined be the plugin developer
         for (attr, ty, metas) in attrs {
             let attr = generate_option_element(&plugin, attr, ty, metas);
             elements.push(attr.element);
@@ -253,10 +250,6 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
         t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);       
 
 
-        
-
-        
-
         let gen = quote! {        
             use std::ops::Deref;   
             use yew::{html, Html, Callback, Context};
@@ -266,7 +259,7 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
             use crate::ui::app::EditorMessages;
             use std::any::Any;
 
-            impl<Data, Modes> PluginWithOptions<Data, Modes> for #name where 
+            impl<Data, Modes> PluginWithOptions<Data, Modes> for #name #ty_generics where 
                 Data: Renderer + Default + 'static,
                 Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, {        
                 
@@ -279,10 +272,12 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
                     #t                    
                 }
 
-                fn update_property(&mut self, property: &str, value: Box<dyn Any>) {                
+                fn update_property(&mut self, property: &str, value: Box<dyn Any>) {    
+                    web_sys::console::log_1(&format!("from plugin property {} {:?}", property, value).into());
+
                     match property {
                         #(#arms),*
-                        _ => {}
+                        _ => { web_sys::console::log_1(&":(".into()); }
                     }
                     
                 }
@@ -290,9 +285,12 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
                 fn enabled(&self) -> bool {
                     self.__enabled
                 }
+
+                fn as_any(&self) -> &dyn std::any::Any { self }
+                fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }
             }    
             
-            impl Default for #name {
+            impl #impl_generics Default for #name #ty_generics #where_clause{
                 fn default() -> Self {
                     Self {
                         #(#defaults),*
@@ -300,7 +298,7 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
                 }
             }
             
-        };
+        };        
 
         gen
 

@@ -7,7 +7,7 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::PluginWithOptions;
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::InformationLayer;
+use crate::{InformationLayer, log};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
@@ -215,7 +215,7 @@ where
 
                 self.render(ctx.link());
             }
-            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {
+            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {                
                 let plugin = self.get_plugin_by_key_mut(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
                 plugin.update_property(attribute, value);
             }

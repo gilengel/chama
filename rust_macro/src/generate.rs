@@ -42,7 +42,7 @@ pub(crate) fn generate_option_element(
     result.callback = callback(&callback_name, &ty);
 
     result.arm = quote! {
-                #attribute => { if let Some(value) = value.as_ref().downcast_ref::<#ty>() { self.#attr_ident = *value } }
+        #attribute => { if let Some(value) = value.as_ref().downcast_ref::<#ty>() { self.#attr_ident = *value; } }
     };
 
     result.default = quote! {

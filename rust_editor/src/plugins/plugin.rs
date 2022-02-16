@@ -46,6 +46,9 @@ where
         Self: Sized;
 
     fn enabled(&self) -> bool;
+
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 pub trait Plugin<Data>
@@ -83,6 +86,4 @@ where
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _data: &mut Data) {}
 
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
 }

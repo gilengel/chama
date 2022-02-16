@@ -19,10 +19,10 @@ pub struct DeleteDistrictSystem {
     hovered_district: Option<Uuid>,
 }
 
-impl Default for DeleteDistrictSystem {
-    fn default() -> DeleteDistrictSystem {
-        DeleteDistrictSystem {
-            hovered_district: None,
+impl DeleteDistrictSystem {
+    pub fn new() -> Self {
+        Self {
+            hovered_district: None
         }
     }
 }
@@ -79,8 +79,6 @@ impl System<Map, Modes> for DeleteDistrictSystem {
         additional_information_layer: &Vec<InformationLayer>,
         _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(&context, additional_information_layer)?;
-
         context.set_fill_style(&"#FFFFFF".into());
         context.fill_text(
             format!(

@@ -18,10 +18,10 @@ pub struct CreateDistrictSystem {
     hovered_street: Option<Uuid>,
 }
 
-impl Default for CreateDistrictSystem {
-    fn default() -> CreateDistrictSystem {
-        CreateDistrictSystem {
-            hovered_street: None,
+impl CreateDistrictSystem {
+    pub fn new() -> Self {
+        Self {
+            hovered_street: None
         }
     }
 }
@@ -72,7 +72,6 @@ impl System<Map, Modes> for CreateDistrictSystem {
         additional_information_layer: &Vec<InformationLayer>,
         _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
-        map.render(context, additional_information_layer)?;
 
         Ok(())
     }

@@ -10,6 +10,8 @@ use rust_editor::plugins::grid::Grid;
 
 use rust_editor::ui::app::{x_launch, ModeProps};
 use rust_internal::{World};
+use systems::create_district_system::CreateDistrictSystem;
+use systems::delete_district_system::DeleteDistrictSystem;
 use systems::{
     create_freeform_street_system::CreateFreeFormStreetSystem,
     create_street_system::CreateStreetSystem, delete_street_system::DeleteStreetSystem,
@@ -25,6 +27,8 @@ enum Modes {
     CreateSimpleStreet,
     CreateFreeformStreet,
     DeleteStreet,
+    CreateDistrict,
+    DeleteDistrict    
 }
 
 
@@ -39,11 +43,6 @@ pub fn main() -> Result<(), JsValue> {
 
     
     editor.add_plugin(Camera::default());
-    /*
-    editor.add_plugin::<Undo<Map>>();
-    editor.add_plugin::<Redo<Map>>();
-    */
-
     editor.add_plugin(Grid::default());
 
     editor.add_mode(
@@ -77,6 +76,30 @@ pub fn main() -> Result<(), JsValue> {
         Some(ModeProps {
             icon: "remove",
             tooltip: "Delete",
+        }),
+    );
+
+    editor.add_mode(
+        Modes::CreateDistrict,
+        vec![
+            Box::new(MapRenderSystem::new()),
+            Box::new(CreateDistrictSystem::new()),
+        ],
+        Some(ModeProps {
+            icon: "add",
+            tooltip: "Create District",
+        }),
+    );
+
+    editor.add_mode(
+        Modes::DeleteDistrict,
+        vec![
+            Box::new(MapRenderSystem::new()),
+            Box::new(DeleteDistrictSystem::new()),
+        ],
+        Some(ModeProps {
+            icon: "remove",
+            tooltip: "Delete District",
         }),
     );
 

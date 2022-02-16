@@ -73,7 +73,8 @@ pub(crate) fn generate_option_element(
                 value={#default}
                 on_value_change={#callback_name}
             />
-            <label class="description">{#description}</label>
+            
+            /*<label class="description">{#description}</label>*/
         </div>};
     } else if ty.to_string() == "bool" {
         result.element =  quote! {

@@ -181,6 +181,7 @@
 
     canvas {
       position: absolute;
+      z-index: 0;
     }
 
     #left_primary_toolbar {
@@ -212,6 +213,7 @@
       display: flex;
 
       .toolbar {
+        
         flex-direction: row;
         width: auto;
 
@@ -236,6 +238,8 @@
     margin-bottom: $padding;
   }
   .toolbar {
+    position: relative;
+    z-index: 999;
     background: darken($background, 5);
 
     $icon-size: 24px;

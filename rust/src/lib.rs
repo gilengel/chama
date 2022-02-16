@@ -1,4 +1,4 @@
-#![allow(warnings)]
+
 
 use std::hash::Hash;
 

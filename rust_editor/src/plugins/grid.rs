@@ -1,4 +1,4 @@
-#![allow(warnings)]
+
 
 
 use rust_macro::editor_plugin;

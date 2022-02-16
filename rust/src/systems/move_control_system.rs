@@ -100,7 +100,7 @@ impl System<Map, Modes> for MoveControlSystem {
         button: u32,
         map: &mut Map,        
 
-        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if self.gizmo.is_active() {
             self.gizmo.mouse_up(

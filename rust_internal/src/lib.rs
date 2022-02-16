@@ -1,4 +1,4 @@
-#![allow(warnings)]
+
 
 use std::any::Any;
 use geo::Coordinate;

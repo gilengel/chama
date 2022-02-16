@@ -1,4 +1,4 @@
-#![allow(warnings)]
+
 
 extern crate proc_macro;
 

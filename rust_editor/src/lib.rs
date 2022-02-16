@@ -1,9 +1,9 @@
-#![allow(warnings)]
+
 
 
 use std::collections::HashMap;
 
-use plugins::{plugin::{Plugin, PluginWithOptions}, camera::Renderer};
+use plugins::{plugin::{PluginWithOptions}, camera::Renderer};
 use core::hash::Hash;
 
 pub mod actions;
@@ -38,7 +38,7 @@ where
     None
 }
 
-pub fn get_plugin_mut<Data, Modes>(plugins: &mut Vec<Box<dyn PluginWithOptions<Data, Modes>>>) -> Option<&mut Modes>
+pub fn get_plugin_mut<Data, Modes>(_plugins: &mut Vec<Box<dyn PluginWithOptions<Data, Modes>>>) -> Option<&mut Modes>
 where
     Modes: 'static,
     Data: Renderer + 'static,

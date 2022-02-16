@@ -1,18 +1,16 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
 use std::any::Any;
-use std::collections::{HashMap, hash_map};
-use std::iter::{Map, Filter};
+use std::collections::{HashMap};
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::PluginWithOptions;
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::{log, InformationLayer};
+use crate::{InformationLayer};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
-use rust_internal::ui::textbox::TextBox;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 

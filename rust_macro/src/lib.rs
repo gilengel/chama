@@ -26,17 +26,17 @@ use yew::virtual_dom::VNode;
 mod generate;
 
 
-fn attribute_type(ty: Type) -> Ident {
+fn attribute_type(ty: Type) -> TokenStream2 {
     match ty {
         Type::Path(path) => {
-            path.path.segments.first().unwrap().ident.clone()          
+            path.into_token_stream()     
         },
         _ => todo!()
     }
 }
 
 
-type PluginAttribute = (Attribute, Ident, Vec<Meta>);
+type PluginAttribute = (Attribute, TokenStream2, Vec<Meta>);
 
 struct Attribute {
     pub name: Ident,
@@ -44,10 +44,37 @@ struct Attribute {
     pub description: Lit,
 }
 
-
-#[proc_macro_derive(Plugin, attributes(get, with_prefix, option))]
 #[proc_macro_error]
-pub fn plugin(input: TokenStream) -> TokenStream {
+#[proc_macro_attribute]
+pub fn editor_plugin(_args: TokenStream, input: TokenStream) -> TokenStream  {
+    let mut ast = parse_macro_input!(input as DeriveInput);
+    match &mut ast.data {
+        syn::Data::Struct(ref mut struct_data) => {           
+            match &mut struct_data.fields {
+                syn::Fields::Named(fields) => {
+                    fields
+                        .named
+                        .push(syn::Field::parse_named.parse2(quote! { __enabled: bool }).unwrap());
+                }   
+                _ => {
+                    ()
+                }
+            }              
+            
+            return quote! {
+                use rust_macro::PluginWithOptions;
+
+                #[derive(PluginWithOptions)]
+                #ast
+            }.into();
+        }
+        _ => panic!("`add_field` has to be used with structs "),
+    }
+}
+
+#[proc_macro_error]
+#[proc_macro_derive(PluginWithOptions, attributes(get, with_prefix, option))]
+pub fn plugin_with_options(input: TokenStream) -> TokenStream {
     
     // Parse the string representation
     let mut ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
@@ -70,13 +97,12 @@ pub fn plugin(input: TokenStream) -> TokenStream {
                             }
 
                             let metas = parse_attr(attribute);
-                            let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "label".red(), name));
-                            let description = get_mandatory_meta_value(&metas, "description").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "description".red(), name));
+                            let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "label".red(), name));
+                            let description = get_mandatory_meta_value(&metas, "description").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "description".red(), name));
 
                             attrs.push((Attribute { name: name.clone(), label: label.clone(), description: description.clone() }, ty.clone(), metas.clone()));
                         }                        
                     }
-
                     n.named.clear();
                 },
                 _ => panic!("Only works on named attributes")
@@ -151,7 +177,35 @@ fn parse_attr(attr: &syn::Attribute) -> Vec<Meta> {
     vec![]
 }
 
+fn callback(callback_name: &Ident, ty: &TokenStream2) -> TokenStream2 {
+    quote!{                
+        let #callback_name : Callback<(&'static str, &'static str, #ty)> = ctx.link().callback(|(plugin, attribute, value)| {                
+            EditorMessages::PluginOptionUpdated((plugin, attribute, Box::new(value)))
+        });
+        
+    }
+}
 
+fn checkbox(plugin: &str, attribute: &str, default_value: bool) -> (TokenStream2, TokenStream2) {
+    let callback_name = format_ident!("cb_{}", attribute);
+
+    let callback = quote!{ 
+        let #callback_name : Callback<(&'static str, &'static str, bool)> = ctx.link().callback(|(plugin, attribute, value)| {                
+            EditorMessages::PluginOptionUpdated((plugin, #attribute, Box::new(value)))
+        });
+    };
+
+    let element = quote! {
+        <Checkbox 
+            plugin={#plugin} 
+            attribute="__enabled" 
+            value={#default_value} 
+            on_value_change={#callback_name} 
+        />
+    };
+
+    (element, callback)
+}
 
 fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
     use yew::html;
@@ -170,61 +224,64 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
             TokenTree::Ident(Ident::new("html",  Span::call_site())),             
             TokenTree::Punct(Punct::new('!', Spacing::Alone))
         ]);
+
+        let mut callbacks = quote!{};
         
-    
+        
+        let plugin = name_str.clone();
+        
         let mut inner = TokenStream2::new();
         let mut muus: Vec<TokenStream2> = vec![
             quote! { <div> },
             quote! { <h2>{#name_str}</h2> },
         ];
 
-        let mut callbacks = quote!{};
+        let enabled_checkbox = checkbox(&plugin.clone(), "__enabled", true);
+        muus.push(enabled_checkbox.0);
+        callbacks.extend(enabled_checkbox.1);
         
-        let number_types: Vec<&str>  = vec!["i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "f32", "f64"];
 
         let mut arms: Vec<TokenStream2> = vec![];
+        arms.push(quote! {
+            __enabled => { if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value } }
+        });
+
+        let number_types: Vec<&str>  = vec!["i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "f32", "f64"];
+
+        
+        let mut defaults: Vec<TokenStream2> = vec![];
         for (attr, ty, metas) in attrs {
-            if number_types.contains(&&ty.to_string()[..]) {
-                
-                
+            
+            // Allow the user to define generic datatypes as usuall like Coordinate<f64>. Without this replacing we would force user
+            // to write instead Coordinate::<f64> which is odd.
+            let ty = &str::replace(&ty.clone().to_string(), " <", "::<");
+            let ty: proc_macro2::TokenStream = ty.parse().unwrap();
+
+            let default = match get_mandatory_meta_value(&metas, "default") {
+                Some(e) => quote!{ #e },
+                None => quote! { #ty::default()},
+            };            
+            
+            let attribute = attr.name.to_string();
+            let attr_ident = format_ident!("{}", attr.name);
+
+            // Add the callback to inform the editor that the option has been updated by the user
+            let callback_name = format_ident!("cb_{}", attr.name);
+            callbacks.extend(callback(&callback_name, &ty));
+
+            arms.push(quote! {
+                #attribute => { if let Some(value) = value.as_ref().downcast_ref::<#ty>() { self.#attr_ident = *value } }
+            });
+
+            defaults.push(quote! {
+                #attr_ident: #default
+            });
+
+            let label = attr.label;
+            if number_types.contains(&&ty.to_string()[..]) {                
                 let min = get_mandatory_meta_value(&metas, "min").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "min".red(), name));
                 let max = get_mandatory_meta_value(&metas, "max").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "max".red(), name));
-                let default = get_mandatory_meta_value(&metas, "default").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "default".red(), name));
-
-                let callback_name = format_ident!("cb_{}", attr.name);
-                    
-
-                let muu = format_ident!("{}", attr.name);
-               
-                let label = attr.label;
-                let plugin = name_str.clone();
-                let attribute = attr.name.to_string();
-
-
- 
                 
-                arms.push(quote! {
-                    #attribute => { if let Some(value) = value.as_ref().downcast_ref::<#ty>() { self.#muu = *value } }
-                });
-                
-                
-                
-                callbacks.extend(quote!{
-                    let #callback_name = ctx.link().callback(|(plugin, attribute, value)| {
-                        //let msg = format!("prop {} of plugin {} was changed to {} ----", attribute, plugin, value);
-                        //web_sys::console::log_1(&msg.into());
-
-                        EditorMessages::PluginOptionUpdated((plugin, attribute, Box::new(value)))
-                    });
-                    /*
-                    let #callback_name: Callback<(&'static str, &'static str, #ty)> = Callback::from(move |(plugin, attribute, value)| {
-                        
-
-                        
-                    });
-                    */
-                });
-       
                 muus.push(quote!{
                     <div>
                         <label>{#label}</label>
@@ -233,43 +290,39 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
                             attribute={#attribute} 
                             min={#min} 
                             max={#max} 
-                            value={10} 
+                            value={#default} 
                             on_value_change={#callback_name} 
                         />
                     </div>});   
 
+            } else if ty.to_string() == "bool" {
+                muus.push(quote!{
+                    <div>
+                        <label>{#label}</label>
+                        <Checkbox 
+                            plugin={#plugin} 
+                            attribute={#attribute} 
+                            value={true} 
+                            on_value_change={#callback_name} 
+                        />
+                    </div>});   
             }
-
-
-            /*
-            match attr {
-                PluginAttributes::Number((attr, number_attr)) => {
-         
-                },
-                PluginAttributes::Text((attr, str_attr)) => {
-                    let label = attr.label;
-                    let default = str_attr.default;
-                    muus.push(quote!{<div><label>{#label}</label><TextBox /></div>});
-                },
-                PluginAttributes::Bool((attr, bool_attr)) => {
-                    let label = attr.label;
-                    let default = bool_attr.default;
-                    muus.push(quote!{<div><label>{#label}</label><input type="checkbox" checked=#default /></div>})
-                },
-            }
-            */
         }
 
         muus.push(quote!{</div>});
         inner.append_all(muus);
         t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);       
 
+
+        defaults.push(quote!{ __enabled: true });
+
+        
+
         let gen = quote! {        
             use std::ops::Deref;   
             use yew::{html, Html, Callback, Context};
-            //use yew::{html, Component, Context, Html, Callback};
             use rust_internal::ui::textbox::TextBox;
-            use rust_internal::ui::numberbox::NumberBox;
+            use rust_internal::ui::{numberbox::NumberBox, checkbox::Checkbox};
             use crate::ui::app::App;
             use crate::ui::app::EditorMessages;
             use std::any::Any;
@@ -294,7 +347,20 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
                     }
                     
                 }
-            }            
+
+                fn enabled(&self) -> bool {
+                    self.__enabled
+                }
+            }    
+            
+            impl Default for #name {
+                fn default() -> Self {
+                    Self {
+                        #(#defaults),*
+                    }
+                }
+            }
+            
         };
 
         gen
@@ -303,6 +369,26 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
         quote! {}
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+// DATASOURCE
+
+
+
+
+
+
+
+
 
 
 #[proc_macro_derive(ElementId)]

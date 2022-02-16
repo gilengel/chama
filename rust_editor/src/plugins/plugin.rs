@@ -44,6 +44,8 @@ where
     fn identifier() -> &'static str
     where
         Self: Sized;
+
+    fn enabled(&self) -> bool;
 }
 
 pub trait Plugin<Data>

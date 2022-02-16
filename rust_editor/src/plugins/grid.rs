@@ -1,7 +1,7 @@
 #![allow(warnings)]
 
 
-use rust_macro::Plugin;
+use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
 
 
@@ -10,19 +10,16 @@ use crate::log;
 use super::{plugin::{Plugin, PluginWithOptions}, camera::Renderer};
 
 
-#[derive(Plugin)]
+#[editor_plugin]
 pub struct Grid {
-    #[option(default=10, min=0, max=2000, label="Offset", description="Blub blub")]
+    #[option(default=200, min=0, max=2000, label="Offset", description="Blub blub")]
     offset: u32,
 
-    #[option(default=2, min=0, max=100, label="Subdivisions", description="Subdivisions between offset")]
+    #[option(default=4, min=0, max=100, label="Subdivisions", description="Subdivisions between offset")]
     subdivisions: u8,
 
-    #[option(default=true, label="Grid Enabled", description="Enables / Disables the grid")]
-    enabled: bool,
-
-    #[option(default="Ferne Welt", label="Grid Enabled", description="Enables / Disables the grid")]
-    muu: String
+    //#[option(default=true, label="Grid Enabled", description="Enables / Disables the grid")]
+    //enabled: bool,
 }
 
 /*
@@ -35,7 +32,7 @@ pub struct Grid {
 */
 
 impl<T> Plugin<T> for Grid where T: Renderer + 'static{
-    fn render(&self, context: &CanvasRenderingContext2d){        
+    fn render(&self, context: &CanvasRenderingContext2d){  
         if self.offset == 0 {
             return;
         }
@@ -106,16 +103,5 @@ impl<T> Plugin<T> for Grid where T: Renderer + 'static{
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
-    }
-}
-
-impl Default for Grid {
-    fn default() -> Self {
-        Self {
-            offset: 200,
-            subdivisions: 4,
-            enabled: true,
-            muu: "mUU".to_string()
-        }
     }
 }

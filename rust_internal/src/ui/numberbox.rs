@@ -66,11 +66,8 @@ where
         match value.parse::<T>() {
             Ok(e) => { callback.emit((plugin, attribute, e)); },
             Err(_) => {}
-        }
-        
+        }        
     });
-
-
 
     html! {
         <div class="textbox">

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    plugins::{plugin::{Plugin, PluginWithOptions}, camera::Camera},
+    plugins::{plugin::{PluginWithOptions}, camera::Camera},
     renderer::apply_style,
     style::Style,
     system::System,
@@ -94,7 +94,7 @@ impl System<Map, Modes> for CreateFreeFormStreetSystem {
         button: u32,
         _: &mut Map,
 
-       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+       _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if button == 0 {
             self.brush_active = true;
@@ -106,7 +106,7 @@ impl System<Map, Modes> for CreateFreeFormStreetSystem {
         mouse_pos: Coordinate<f64>,
         _: &mut Map,
 
-       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+       _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
@@ -118,7 +118,7 @@ impl System<Map, Modes> for CreateFreeFormStreetSystem {
         _: Coordinate<f64>,
         button: u32,
         map: &mut Map,
-       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+       _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         // Only proceed if the left button was released
         if button != 0 {

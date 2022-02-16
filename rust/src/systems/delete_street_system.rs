@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use geo::Coordinate;
 use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::{plugin::{Plugin, PluginWithOptions}},
+    plugins::{plugin::{PluginWithOptions}},
     system::System,
     InformationLayer,
 };

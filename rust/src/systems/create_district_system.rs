@@ -29,7 +29,7 @@ impl System<Map, Modes> for CreateDistrictSystem {
         _mouse_pos: Coordinate<f64>,
         _: u32,
         _: &mut Map,
-        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
     }
 
@@ -37,7 +37,7 @@ impl System<Map, Modes> for CreateDistrictSystem {
         &mut self,
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
-        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         match map.get_nearest_street_to_position(&mouse_pos) {
             Some(street) => self.hovered_street = Some(street.id()),
@@ -50,7 +50,7 @@ impl System<Map, Modes> for CreateDistrictSystem {
         mouse_pos: Coordinate<f64>,
         _: u32,
         map: &mut Map,
-        plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if let Some(hovered_street_id) = self.hovered_street {
             let hovered_street = map.street(&hovered_street_id).unwrap();

@@ -12,7 +12,7 @@ use rand::{thread_rng, Rng};
 use rust_editor::{
     gizmo::{GetPosition, Id, SetId, SetPosition},
     system::System,
-    InformationLayer, plugins::plugin::{Plugin, PluginWithOptions},
+    InformationLayer, plugins::plugin::{PluginWithOptions},
 };
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
@@ -248,7 +248,7 @@ impl<'a> System<Map, Modes> for CreateStreetSystem {
         map: &mut Map,
         
 
-       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+       _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         // We only check for left click
         if button != 0 {
@@ -313,7 +313,7 @@ impl<'a> System<Map, Modes> for CreateStreetSystem {
         mouse_pos: Coordinate<f64>,
         map: &mut Map,        
 
-       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+       _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         if !self.mouse_pressed {
             return;
@@ -394,7 +394,7 @@ impl<'a> System<Map, Modes> for CreateStreetSystem {
         button: u32,
         _map: &mut Map,        
 
-       plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+       _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
     ) {
         // Cancel creation of street with right mouse button click
         if button == 2 {
@@ -415,7 +415,7 @@ impl<'a> System<Map, Modes> for CreateStreetSystem {
         _map: &Map,
         _context: &CanvasRenderingContext2d,
         _additional_information_layer: &Vec<InformationLayer>,
-        plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
         
     ) -> Result<(), JsValue> {
         Ok(())

@@ -3,16 +3,15 @@
 extern crate proc_macro;
 
 use colored::Colorize;
-use convert_case::{Case, Casing};
 use proc_macro::TokenStream;
 use proc_macro2::{TokenStream as TokenStream2, TokenTree, Punct, Spacing, Group, };
 use proc_macro2::{Ident, Span};
 use proc_macro2::Delimiter;
 use proc_macro_error::{abort, proc_macro_error, ResultExt};
-use quote::{format_ident, quote, quote_spanned, ToTokens, TokenStreamExt};
+use quote::{format_ident, quote, ToTokens, TokenStreamExt};
 use syn::parse::Parser;
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, Type, Lit};
+use syn::{parse_macro_input, Data, DeriveInput, Fields, Type, Lit};
 
 
 extern crate syn;
@@ -20,8 +19,6 @@ extern crate quote;
 extern crate proc_macro2;
 
 use syn::{DataStruct, Meta};
-use yew::{Html, html, Callback};
-use yew::virtual_dom::VNode;
 
 mod generate;
 
@@ -136,17 +133,6 @@ fn get_mandatory_meta_value<'a>(meta_attrs: &'a Vec<Meta>, identifier: &str) -> 
     None
 }
 
-fn get_mandatory_meta_value_as_int<T>(meta_attrs: &Vec<Meta>, identifier: &str) -> Option<T> where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
-    if let Some(lit) = get_mandatory_meta_value(meta_attrs, identifier) {
-        if let Lit::Int(e) = lit {            
-            return Some(e.base10_parse::<T>().unwrap_or_abort());
-        }
-    }
-
-    None
-}
-
-
 fn parse_attr(attr: &syn::Attribute) -> Vec<Meta> {
     use syn::{punctuated::Punctuated, Token};
 
@@ -208,17 +194,11 @@ fn checkbox(plugin: &str, attribute: &str, default_value: bool) -> (TokenStream2
 }
 
 fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
-    use yew::html;
-
     let name = &ast.ident;
-    let generics = &ast.generics;
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
-
     let name_str = name.to_string();
 
     // Is it a struct?
-    if let syn::Data::Struct(DataStruct { ref fields, .. }) = ast.data {
+    if let syn::Data::Struct(DataStruct { .. }) = ast.data {
         let mut t = TokenStream2::new();
         t.extend(vec![
             TokenTree::Ident(Ident::new("html",  Span::call_site())),             
@@ -278,6 +258,7 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
             });
 
             let label = attr.label;
+            let description = attr.description;
             if number_types.contains(&&ty.to_string()[..]) {                
                 let min = get_mandatory_meta_value(&metas, "min").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "min".red(), name));
                 let max = get_mandatory_meta_value(&metas, "max").unwrap_or_else(|| panic!("the attribute {} is missing for {}", "max".red(), name));
@@ -293,6 +274,7 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
                             value={#default} 
                             on_value_change={#callback_name} 
                         />
+                        <label class="description">{#description}</label>
                     </div>});   
 
             } else if ty.to_string() == "bool" {
@@ -411,14 +393,6 @@ pub fn derive_id_trait_functions(tokens: TokenStream) -> TokenStream {
         }
     };
     TokenStream::from(modified)
-}
-
-macro_rules! derive_error {
-    ($string: tt) => {
-        Error::new(Span::call_site(), $string)
-            .to_compile_error()
-            .into()
-    };
 }
 
 #[proc_macro_attribute]

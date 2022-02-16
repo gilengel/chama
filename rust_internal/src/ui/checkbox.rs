@@ -1,14 +1,7 @@
-use std::cell::RefCell;
-use std::fmt::Display;
 use std::ops::Deref;
-use std::rc::Rc;
-use std::str::FromStr;
-
-use std::fmt::Debug;
 use wasm_bindgen::JsCast;
-use web_sys::{console, EventTarget, HtmlInputElement, KeyboardEvent};
-use yew::events::Event;
-use yew::{classes, function_component, html, use_context, use_mut_ref, use_state, Callback, Html, InputEvent};
+use web_sys::{EventTarget, HtmlInputElement};
+use yew::{classes, function_component, html, use_state, Callback, Html, InputEvent};
 
 use yew::Properties;
 

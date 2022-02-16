@@ -1,9 +1,4 @@
-use std::ops::Deref;
-
-use wasm_bindgen::JsCast;
-use web_sys::{console, EventTarget, HtmlInputElement, KeyboardEvent};
-use yew::events::Event;
-use yew::{function_component, html, use_state, Callback, Html, use_context, classes, Children};
+use yew::{function_component, html, Html, Children};
 
 use yew::Properties;
 

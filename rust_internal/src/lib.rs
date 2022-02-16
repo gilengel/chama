@@ -1,74 +1,11 @@
-
-
-use std::any::Any;
 use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 pub mod ui;
 
-pub trait GetPluginWithOptions<T> {
-    fn get<S>(&self) -> Option<S>;
-}
-
-pub trait AsAny {
-    fn as_any(&self) -> &dyn Any;
-}
-
-/*
-pub struct Attribute {
-    pub name: String,
-    pub label: String,
-    pub description: String,
-}
-pub struct NumberAttribute<T> {
-    pub default: T,
-    pub min: T,
-    pub max: T,
-}
-
-pub struct BoolAttribute {
-    pub default: bool
-}
-
-pub struct TextAttribute {
-    pub default: String
-}
-
-
-enum PluginAttributeType {
-    Number,
-    String,
-    Bool
-}
-
-struct PluginAttribute<T> {
-    default: T,
-    attribute_type: PluginAttributeType,
-}
-*/
-
-pub struct Plugins<T> {
-    count: usize,
-    render_plugins: Vec<Box<dyn PluginRenderer>>,
-    mouse_events_plugins: Vec<Box<dyn PluginMouseEvents<T>>>,
-    keyboard_events_plugins: Vec<Box<dyn PluginKeyboardEvents>>,
-}
-
-impl<T> Plugins<T> {
-    pub fn borrow_component_vec<ComponentType: 'static>(&self) -> Option<&Vec<Option<ComponentType>>> {
-
-        None
-    }
-
-    
-}
-
 pub trait Renderer {
-    fn render(
-        &self,
-        context: &CanvasRenderingContext2d,
-    ) -> Result<(), JsValue>;
+    fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue>;
 }
 
 pub trait PluginRenderer {
@@ -102,8 +39,6 @@ where
 }
 
 pub trait PluginKeyboardEvents {}
-
-
 
 pub struct World {
     entities_count: usize,

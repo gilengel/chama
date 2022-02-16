@@ -1,13 +1,13 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
 use std::any::Any;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::PluginWithOptions;
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::{InformationLayer};
+use crate::InformationLayer;
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
@@ -143,7 +143,12 @@ where
 
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
-                for plugin in self.plugins.values_mut().into_iter().filter(|(plugin)| plugin.enabled()) {
+                for plugin in self
+                    .plugins
+                    .values_mut()
+                    .into_iter()
+                    .filter(|plugin| plugin.enabled())
+                {
                     plugin.mouse_down(mouse_pos, e.button() as u32, &mut self.data);
                 }
 
@@ -171,7 +176,12 @@ where
 
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
-                for plugin in self.plugins.values_mut().into_iter().filter(|(plugin)| plugin.enabled()) {
+                for plugin in self
+                    .plugins
+                    .values_mut()
+                    .into_iter()
+                    .filter(|plugin| plugin.enabled())
+                {
                     plugin.mouse_up(mouse_pos, e.button() as u32, &mut self.data);
                 }
 
@@ -194,13 +204,18 @@ where
             }
             EditorMessages::Render(_) => {
                 let context = self.context.as_ref().unwrap();
-                for plugin in self.plugins.values().into_iter().filter(|(plugin)| plugin.enabled()) {
+                for plugin in self
+                    .plugins
+                    .values()
+                    .into_iter()
+                    .filter(|plugin| plugin.enabled())
+                {
                     plugin.render(context);
                 }
 
                 self.render(ctx.link());
             }
-            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => { 
+            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {
                 let plugin = self.get_plugin_by_key_mut(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
                 plugin.update_property(attribute, value);
             }
@@ -260,19 +275,19 @@ where
         }
     }
 
-    
-    fn get_plugin_by_key_mut(&mut self, key: &str) -> Option<&mut dyn PluginWithOptions<Data, Modes>>
+    fn get_plugin_by_key_mut(
+        &mut self,
+        key: &str,
+    ) -> Option<&mut dyn PluginWithOptions<Data, Modes>>
     where
-        
         Data: Renderer + 'static,
     {
         if let Some(plugin) = self.plugins.get_mut(key) {
-            return Some(&mut **plugin)
+            return Some(&mut **plugin);
         }
 
         None
     }
-    
 
     pub fn get_plugin<P>(&self) -> Option<&P>
     where
@@ -305,7 +320,12 @@ where
 
         context.clear_rect(0.0, 0.0, 2000.0, 2000.0);
 
-        for plugin in self.plugins.values().into_iter().filter(|(plugin)| plugin.enabled()) {
+        for plugin in self
+            .plugins
+            .values()
+            .into_iter()
+            .filter(|plugin| plugin.enabled())
+        {
             plugin.render(context);
         }
 

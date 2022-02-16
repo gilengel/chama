@@ -1,14 +1,11 @@
-use std::cell::RefCell;
 use std::fmt::Display;
 use std::ops::Deref;
-use std::rc::Rc;
 use std::str::FromStr;
 
 use std::fmt::Debug;
 use wasm_bindgen::JsCast;
-use web_sys::{console, EventTarget, HtmlInputElement, KeyboardEvent};
-use yew::events::Event;
-use yew::{classes, function_component, html, use_context, use_mut_ref, use_state, Callback, Html, InputEvent};
+use web_sys::{EventTarget, HtmlInputElement};
+use yew::{classes, function_component, html, use_state, Callback, Html, InputEvent};
 
 use yew::Properties;
 
@@ -33,7 +30,7 @@ where
 #[function_component]
 pub fn NumberBox<T>(props: &NumberBoxProps<T>) -> Html
 where
-    T: std::str::FromStr + PartialOrd + Display + Default + Copy + 'static ,
+    T: std::str::FromStr + PartialOrd + Display + Default + Copy + 'static,
     <T as FromStr>::Err: Debug,
 {
     let value_handle = use_state(|| props.value.to_string());
@@ -53,7 +50,7 @@ where
             .target()
             .expect("Event should have a target when dispatched");
 
-        let mut value = target.unchecked_into::<HtmlInputElement>().value();
+        let value = target.unchecked_into::<HtmlInputElement>().value();
 
         let range = *range_handle;
         match value.clone().parse::<T>() {
@@ -64,9 +61,11 @@ where
         value_handle.set(value.clone());
 
         match value.parse::<T>() {
-            Ok(e) => { callback.emit((plugin, attribute, e)); },
+            Ok(e) => {
+                callback.emit((plugin, attribute, e));
+            }
             Err(_) => {}
-        }        
+        }
     });
 
     html! {

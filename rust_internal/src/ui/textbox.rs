@@ -1,9 +1,6 @@
 use std::ops::Deref;
 
-use wasm_bindgen::JsCast;
-use web_sys::{console, EventTarget, HtmlInputElement, KeyboardEvent};
-use yew::events::Event;
-use yew::{function_component, html, use_state, Callback, Html, use_context, classes};
+use yew::{function_component, html, use_state, Html, classes};
 
 use yew::Properties;
 
@@ -12,7 +9,7 @@ pub struct TextBoxProps {
 }
 
 #[function_component]
-pub fn TextBox(props: &TextBoxProps) -> Html {
+pub fn TextBox(_props: &TextBoxProps) -> Html {
 
 
     let error_handle = use_state(|| false);

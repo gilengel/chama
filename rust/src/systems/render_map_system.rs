@@ -1,9 +1,13 @@
 use std::collections::HashMap;
 
 use rust_editor::{
-    plugins::{camera::{Renderer, Camera}, plugin::{Plugin, PluginWithOptions}},
+    get_plugin,
+    plugins::{
+        camera::{Camera, Renderer},
+        plugin::PluginWithOptions,
+    },
     system::System,
-    InformationLayer, get_plugin,
+    InformationLayer,
 };
 
 use crate::{map::map::Map, Modes};
@@ -22,13 +26,11 @@ impl System<Map, Modes> for MapRenderSystem {
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>
+        plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
-        
-        
         if let Some(camera) = get_plugin::<Map, Modes, Camera>(plugins) {
             context.translate(camera.x() as f64, camera.y() as f64)?;
-        }        
+        }
 
         map.render(context, additional_information_layer)?;
 

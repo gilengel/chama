@@ -3,10 +3,6 @@
 
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
-
-
-use crate::log;
-
 use super::{plugin::{Plugin, PluginWithOptions}, camera::Renderer};
 
 

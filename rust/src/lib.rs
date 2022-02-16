@@ -6,8 +6,8 @@ use map::map::Map;
 
 use rust_editor::plugins::camera::Camera;
 use rust_editor::plugins::grid::Grid;
-
-
+use rust_editor::plugins::redo::Redo;
+use rust_editor::plugins::undo::Undo;
 use rust_editor::ui::app::{x_launch, ModeProps};
 use rust_internal::{World};
 use systems::create_district_system::CreateDistrictSystem;
@@ -40,10 +40,10 @@ pub fn main() -> Result<(), JsValue> {
     let entity = world.new_entity();
     world.add_component_to_entity(entity, Camera::default());
 
-
-    
     editor.add_plugin(Camera::default());
     editor.add_plugin(Grid::default());
+    editor.add_plugin(Undo::<Map>::default());
+    editor.add_plugin(Redo::<Map>::default());
 
     editor.add_mode(
         Modes::CreateSimpleStreet,

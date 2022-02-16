@@ -1,8 +1,9 @@
 use proc_macro2::TokenStream as TokenStream2;
+use proc_macro_error::abort;
 use quote::{format_ident, quote};
-use syn::Meta;
+use syn::{Meta, Ident};
 
-use crate::{callback, get_mandatory_meta_value, Attribute};
+use crate::{callback, get_mandatory_meta_value, Attribute, VisibleAttribute};
 
 pub(crate) struct PluginOptionElement {
     pub element: TokenStream2,
@@ -11,9 +12,19 @@ pub(crate) struct PluginOptionElement {
     pub default: TokenStream2,
 }
 
+pub(crate) fn generate_default_arm(attr_ident: &Ident, ty: &TokenStream2, metas: &Vec<Meta>) -> TokenStream2 {
+    let default = match get_mandatory_meta_value(&metas, "default") {
+        Some(e) => quote! { #e },
+        None => quote! { #ty::default()},
+    };
+
+    quote! {
+        #attr_ident: #default
+    }
+}
 pub(crate) fn generate_option_element(
     plugin: &String,
-    attr: Attribute,
+    attr: VisibleAttribute,
     ty: TokenStream2,
     metas: Vec<Meta>,
 ) -> PluginOptionElement {
@@ -29,10 +40,7 @@ pub(crate) fn generate_option_element(
     let ty = &str::replace(&ty.clone().to_string(), " <", "::<");
     let ty: proc_macro2::TokenStream = ty.parse().unwrap();
 
-    let default = match get_mandatory_meta_value(&metas, "default") {
-        Some(e) => quote! { #e },
-        None => quote! { #ty::default()},
-    };
+
 
     let attribute = attr.name.to_string();
     let attr_ident = format_ident!("{}", attr.name);
@@ -45,9 +53,8 @@ pub(crate) fn generate_option_element(
         #attribute => { if let Some(value) = value.as_ref().downcast_ref::<#ty>() { self.#attr_ident = *value; } }
     };
 
-    result.default = quote! {
-        #attr_ident: #default
-    };
+    let default = generate_default_arm(&attr_ident, &ty, &metas);
+    
 
     let label = attr.label;
     let description = attr.description;
@@ -58,9 +65,10 @@ pub(crate) fn generate_option_element(
     ];
     if number_types.contains(&&ty.to_string()[..]) {
         let min = get_mandatory_meta_value(&metas, "min")
-            .unwrap_or_else(|| panic!("the attribute {} is missing for {}", "min", attribute));
+            .unwrap_or_else(|| abort!(attr.name, format!("the attribute {} is missing for {}", "min", attribute)));
         let max = get_mandatory_meta_value(&metas, "max")
-            .unwrap_or_else(|| panic!("the attribute {} is missing for {}", "max", attribute));
+            .unwrap_or_else(|| abort!(attr.name, format!("the attribute {} is missing for {}", "max", attribute)));
+        let value = get_mandatory_meta_value(&metas, "default").unwrap_or_else(|| abort!(attr.name, format!("the attribute {} is missing for {}", "default", attribute)));
 
         result.element = quote! {
         <div>
@@ -70,7 +78,7 @@ pub(crate) fn generate_option_element(
                 attribute={#attribute}
                 min={#min}
                 max={#max}
-                value={#default}
+                value={#value}
                 on_value_change={#callback_name}
             />
             
@@ -89,5 +97,6 @@ pub(crate) fn generate_option_element(
         </div>};
     }
 
+    result.default = default;
     result
 }

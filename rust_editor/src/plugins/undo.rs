@@ -1,18 +1,17 @@
+use rust_macro::editor_plugin;
+
 use crate::{
     actions::Action,
 };
 
 use super::{camera::Renderer, plugin::Plugin};
 
-pub struct Undo<T> {
-    pub stack: Vec<Box<dyn Action<T>>>,
+#[editor_plugin]
+pub struct Undo<Data> {
+    #[option(skip)]
+    pub stack: Vec::<Box::<dyn Action<Data>>>,
 }
 
-impl<T> Default for Undo<T> {
-    fn default() -> Self {
-        Undo { stack: Vec::new() }
-    }
-}
 
 impl<T> Undo<T>
 where

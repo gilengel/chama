@@ -21,6 +21,8 @@ extern crate proc_macro2;
 
 use syn::{DataStruct, Meta};
 
+use crate::generate::generate_default_arm;
+
 mod generate;
 
 
@@ -34,13 +36,24 @@ fn attribute_type(ty: Type) -> TokenStream2 {
 }
 
 
-type PluginAttribute = (Attribute, TokenStream2, Vec<Meta>);
 
-pub(crate) struct Attribute {
+
+pub(crate) struct VisibleAttribute {
     pub name: Ident,
     pub label: Lit,
     pub description: Lit,
 }
+
+pub(crate) struct HiddenAttribute {
+    pub name: Ident,
+}
+
+pub(crate) enum Attribute {
+    Visible(VisibleAttribute),
+    Hidden(HiddenAttribute)
+}
+
+type PluginAttribute = (Attribute, TokenStream2, Vec<Meta>);
 
 #[proc_macro_error]
 #[proc_macro_attribute]
@@ -77,6 +90,7 @@ pub fn plugin_with_options(input: TokenStream) -> TokenStream {
     // Parse the string representation
     let mut ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
 
+    
     let mut attrs: Vec<PluginAttribute> = Vec::new();
     match &mut ast.data {
         Data::Struct(s) => {
@@ -92,11 +106,16 @@ pub fn plugin_with_options(input: TokenStream) -> TokenStream {
                                 panic!("attribute {} has no option annotation.", name.to_string());
                             }
 
-                            let metas = parse_attr(attribute);
-                            let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "label".red(), name));
-                            let description = get_mandatory_meta_value(&metas, "description").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "description".red(), name));
+                            let ( metas, hidden) = parse_attr(attribute);
+                                
+                            if !hidden {
+                                let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "label".red(), name));
+                                let description = get_mandatory_meta_value(&metas, "description").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "description".red(), name));
 
-                            attrs.push((Attribute { name: name.clone(), label: label.clone(), description: description.clone() }, ty.clone(), metas.clone()));
+                                attrs.push((Attribute::Visible(VisibleAttribute { name: name.clone(), label: label.clone(), description: description.clone() }), ty.clone(), metas.clone()));
+                            } else {
+                                attrs.push((Attribute::Hidden(HiddenAttribute { name: name.clone(),  }), ty.clone(), metas.clone()));
+                            }                              
                         }                        
                     }
                     n.named.clear();
@@ -132,11 +151,11 @@ pub(crate) fn get_mandatory_meta_value<'a>(meta_attrs: &'a Vec<Meta>, identifier
     None
 }
 
-fn parse_attr(attr: &syn::Attribute) -> Vec<Meta> {
+fn parse_attr(attr: &syn::Attribute) -> (Vec<Meta>, bool) {
     use syn::{punctuated::Punctuated, Token};
 
     if attr.path.is_ident("option") {
-        let last= attr
+        let (skip, metas)= attr
             .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
             .unwrap_or_abort()
             .into_iter()
@@ -145,21 +164,27 @@ fn parse_attr(attr: &syn::Attribute) -> Vec<Meta> {
                     || meta.path().is_ident("min")
                     || meta.path().is_ident("max")
                     || meta.path().is_ident("label")
-                    || meta.path().is_ident("description"))
+                    || meta.path().is_ident("description")
+                    || meta.path().is_ident("skip"))
                 {
-                    abort!(meta.path().span(), "unknown parameter")
+                    abort!(meta.path().span(), "unknown parameter");
                 }
             })
-            .fold(vec![], |mut last, meta| {               
-                last.push(meta);
+            .fold((false, Vec::<Meta>::new()), |(skip, mut metas), meta| {  
+                if meta.path().is_ident("skip") {
+                    (true, metas)
+                } else {
+                    metas.push(meta);                
+                    (skip, metas)
+                }       
+
                 
-                last
             });
 
-        return last;
+        return (metas, skip);
     }
 
-    vec![]
+    (vec![], false)
 }
 
 pub(crate) fn callback(callback_name: &Ident, ty: &TokenStream2) -> TokenStream2 {
@@ -237,17 +262,29 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
         arms.push(quote! { "__enabled" => { if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value } }});
 
         // Now for all attributes defined be the plugin developer
-        for (attr, ty, metas) in attrs {
-            let attr = generate_option_element(&plugin, attr, ty, metas);
-            elements.push(attr.element);
-            callbacks.push(attr.callback);
-            arms.push(attr.arm);
-            defaults.push(attr.default);
+        for (attr, ty, metas) in attrs { 
+            match attr {
+                Attribute::Visible(attr) => {
+                    let attr = generate_option_element(&plugin, attr, ty, metas);
+                    elements.push(attr.element);
+                    callbacks.push(attr.callback);
+                    arms.push(attr.arm);
+                    
+                    
+                    defaults.push(attr.default.clone());
+                },
+                Attribute::Hidden(attr) => {
+                    defaults.push(generate_default_arm(&attr.name, &ty, &metas));
+                },
+            }    
+            
         }
 
         elements.push(quote!{</div>});
         inner.append_all(elements);
-        t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);       
+        t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);   
+        
+        print!("\n\n\n{}\n\n\n", t.to_string());
 
 
         let gen = quote! {        
@@ -259,36 +296,38 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
             use crate::ui::app::EditorMessages;
             use std::any::Any;
 
-            impl<Data, Modes> PluginWithOptions<Data, Modes> for #name #ty_generics where 
+            impl<Data, Modes> crate::PluginWithOptions<Data, Modes> for #name #ty_generics where 
                 Data: Renderer + Default + 'static,
-                Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, {        
+                Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, {     
+                
+                    
                 
                 fn identifier() -> &'static str where Self: Sized {
                     #name_str
                 }
                 
                 fn view_options(&self, ctx: &Context<App<Data, Modes>>) -> Html {
+                    
                     #(#callbacks)*
-                    #t                    
+                    #t                   
                 }
 
-                fn update_property(&mut self, property: &str, value: Box<dyn Any>) {    
-                    web_sys::console::log_1(&format!("from plugin property {} {:?}", property, value).into());
-
+                fn update_property(&mut self, property: &str, value: Box<dyn Any>) {   
                     match property {
                         #(#arms),*
                         _ => { web_sys::console::log_1(&":(".into()); }
                     }
-                    
                 }
 
                 fn enabled(&self) -> bool {
                     self.__enabled
                 }
-
+   
                 fn as_any(&self) -> &dyn std::any::Any { self }
-                fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }
-            }    
+                fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }        
+                     
+            }   
+                                 
             
             impl #impl_generics Default for #name #ty_generics #where_clause{
                 fn default() -> Self {
@@ -296,9 +335,10 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
                         #(#defaults),*
                     }
                 }
-            }
+            } 
             
-        };        
+                    
+        };   
 
         gen
 

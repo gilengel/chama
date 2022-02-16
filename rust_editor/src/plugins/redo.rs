@@ -1,16 +1,15 @@
+use rust_macro::editor_plugin;
+
 use crate::actions::Action;
 
 use super::{camera::Renderer, plugin::Plugin};
 
-pub struct Redo<T> {
-    pub stack: Vec<Box<dyn Action<T>>>,
+#[editor_plugin]
+pub struct Redo<Data> {
+    #[option(skip)]
+    pub stack: Vec::<Box::<dyn Action<Data>>>,
 }
 
-impl<T> Default for Redo<T> {
-    fn default() -> Self {
-        Redo { stack: Vec::new() }
-    }
-}
 
 impl<T> Redo<T>
 where

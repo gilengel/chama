@@ -18,14 +18,6 @@ pub struct Grid {
     //enabled: bool,
 }
 
-/*
-
-pub struct Grid {
-    offset: u32,
-    subdivisions: u8,
-    enabled: bool,
-}
-*/
 
 impl<T> Plugin<T> for Grid where T: Renderer + 'static{
     fn render(&self, context: &CanvasRenderingContext2d){  

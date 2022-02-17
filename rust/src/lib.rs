@@ -9,7 +9,6 @@ use rust_editor::plugins::grid::Grid;
 use rust_editor::plugins::redo::Redo;
 use rust_editor::plugins::undo::Undo;
 use rust_editor::ui::app::{x_launch, ModeProps};
-use rust_internal::{World};
 use systems::create_district_system::CreateDistrictSystem;
 use systems::delete_district_system::DeleteDistrictSystem;
 use systems::{
@@ -18,6 +17,7 @@ use systems::{
     render_map_system::MapRenderSystem,
 };
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use rust_macro::launch;
 
 mod map;
 mod systems;
@@ -31,14 +31,9 @@ enum Modes {
     DeleteDistrict    
 }
 
-
-#[wasm_bindgen(start)]
-pub fn main() -> Result<(), JsValue> {
+#[launch]
+fn editor() {
     let mut editor = x_launch::<Map, Modes>();
-
-    let mut world = World::new();
-    let entity = world.new_entity();
-    world.add_component_to_entity(entity, Camera::default());
 
     editor.add_plugin(Camera::default());
     editor.add_plugin(Grid::default());
@@ -104,6 +99,4 @@ pub fn main() -> Result<(), JsValue> {
     );
 
     editor.activate_mode(Modes::CreateFreeformStreet);
-
-    Ok(())
 }

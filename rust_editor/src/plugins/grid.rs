@@ -1,26 +1,35 @@
-
-
-
+use super::{camera::Renderer, plugin::Plugin};
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
-use super::{plugin::{Plugin, PluginWithOptions}, camera::Renderer};
-
 
 #[editor_plugin]
 pub struct Grid {
-    #[option(default=200, min=0, max=2000, label="Offset", description="Blub blub")]
+    #[option(
+        default = 200,
+        min = 0,
+        max = 2000,
+        label = "Offset",
+        description = "Blub blub"
+    )]
     offset: u32,
 
-    #[option(default=4, min=0, max=100, label="Subdivisions", description="Subdivisions between offset")]
+    #[option(
+        default = 4,
+        min = 0,
+        max = 100,
+        label = "Subdivisions",
+        description = "Subdivisions between offset"
+    )]
     subdivisions: u8,
-
     //#[option(default=true, label="Grid Enabled", description="Enables / Disables the grid")]
     //enabled: bool,
 }
 
-
-impl<T> Plugin<T> for Grid where T: Renderer + 'static{
-    fn render(&self, context: &CanvasRenderingContext2d){  
+impl<T> Plugin<T> for Grid
+where
+    T: Renderer + 'static,
+{
+    fn render(&self, context: &CanvasRenderingContext2d) {
         if self.offset == 0 {
             return;
         }
@@ -82,6 +91,6 @@ impl<T> Plugin<T> for Grid where T: Renderer + 'static{
             context.stroke();
         }
 
-        context.restore();       
+        context.restore();
     }
 }

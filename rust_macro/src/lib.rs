@@ -2,18 +2,16 @@
 
 extern crate proc_macro;
 
-use colored::Colorize;
 use generate::generate_option_element;
 use proc_macro::TokenStream;
 use proc_macro2::{TokenStream as TokenStream2, TokenTree, Punct, Spacing, Group, };
 use proc_macro2::{Ident, Span};
 use proc_macro2::Delimiter;
 use proc_macro_error::{abort, proc_macro_error, ResultExt};
-use quote::{format_ident, quote, ToTokens, TokenStreamExt};
+use quote::{quote, ToTokens, TokenStreamExt};
 use syn::parse::Parser;
-use syn::spanned::Spanned;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, Type, Lit};
-
+use syn::{parse_macro_input, DeriveInput, Type, Lit, NestedMeta};
+use syn::AttributeArgs;
 
 extern crate syn;
 extern crate quote;
@@ -21,10 +19,13 @@ extern crate proc_macro2;
 
 use syn::{DataStruct, Meta};
 
-use crate::generate::generate_default_arm;
+use crate::parse::parse_attrs;
+use crate::generate::{generate_default_arm, checkbox};
+
+
 
 mod generate;
-
+mod parse;
 
 fn attribute_type(ty: Type) -> TokenStream2 {
     match ty {
@@ -34,9 +35,6 @@ fn attribute_type(ty: Type) -> TokenStream2 {
         _ => todo!()
     }
 }
-
-
-
 
 pub(crate) struct VisibleAttribute {
     pub name: Ident,
@@ -55,10 +53,35 @@ pub(crate) enum Attribute {
 
 type PluginAttribute = (Attribute, TokenStream2, Vec<Meta>);
 
+/// Checks if an editor plugin has the skip attribute. Used
+/// to skip the ui generation for its properties.
+/// 
+/// ```
+/// #[editor_plugin(skip)]
+/// struct MyPlugin {}
+/// ```
+fn plugin_has_skip_attribute(args: AttributeArgs) -> bool {
+    args.iter().any(|x| {
+        if let NestedMeta::Meta(meta) = x { 
+            if let Meta::Path(path) = meta {
+                if path.is_ident("skip") {
+                    return true;
+                }
+            }
+        }
+
+        false
+    })
+}
+
 #[proc_macro_error]
 #[proc_macro_attribute]
-pub fn editor_plugin(_args: TokenStream, input: TokenStream) -> TokenStream  {
+pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream  {
     let mut ast = parse_macro_input!(input as DeriveInput);
+
+    let args = parse_macro_input!(args as AttributeArgs);
+    let skip = plugin_has_skip_attribute(args);
+
     match &mut ast.data {
         syn::Data::Struct(ref mut struct_data) => {           
             match &mut struct_data.fields {
@@ -72,10 +95,15 @@ pub fn editor_plugin(_args: TokenStream, input: TokenStream) -> TokenStream  {
                 }
             }    
             
-            return quote! {
-                use rust_macro::PluginWithOptions;
+            let derive_tokenstream = if !skip { quote! { #[derive(rust_macro::PluginWithOptions)] } } else { quote! { #[derive(rust_macro::SkipPluginWithOptions)] } };
 
-                #[derive(PluginWithOptions)]
+            print!("\n\n\n{}\n\n\n", quote! {
+                #derive_tokenstream
+                #ast
+            });
+
+            return quote! {
+                #derive_tokenstream
                 #ast
             }.into();
         }
@@ -83,57 +111,33 @@ pub fn editor_plugin(_args: TokenStream, input: TokenStream) -> TokenStream  {
     }
 }
 
+
 #[proc_macro_error]
-#[proc_macro_derive(PluginWithOptions, attributes(get, with_prefix, option))]
+#[proc_macro_derive(SkipPluginWithOptions, attributes(skip, option))]
+pub fn skip_plugin_with_options(input: TokenStream) -> TokenStream {
+    let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
+
+    
+    let attrs: Vec<PluginAttribute> = parse_attrs(&ast);
+
+    // Build the impl
+    let gen = produce_skip_plugin(&ast, attrs);
+
+    // Return the generated impl
+    gen.into()
+}
+
+
+#[proc_macro_error]
+#[proc_macro_derive(PluginWithOptions, attributes(skip, option))]
 pub fn plugin_with_options(input: TokenStream) -> TokenStream {
-    
-    // Parse the string representation
-    let mut ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
+    let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
 
     
-    let mut attrs: Vec<PluginAttribute> = Vec::new();
-    match &mut ast.data {
-        Data::Struct(s) => {
-            match &mut s.fields {
-                Fields::Named(n) => {
-                    
-                    for named in &mut n.named { // Field
-                        let name = named.ident.as_ref().unwrap();
-                        let ty = attribute_type(named.ty.clone());
-                        
-                        for attribute in &named.attrs {                            
-                            if !attribute.path.is_ident("option") {
-                                panic!("attribute {} has no option annotation.", name.to_string());
-                            }
-
-                            let ( metas, hidden) = parse_attr(attribute);
-                                
-                            if !hidden {
-                                let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "label".red(), name));
-                                let description = get_mandatory_meta_value(&metas, "description").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "description".red(), name));
-
-                                attrs.push((Attribute::Visible(VisibleAttribute { name: name.clone(), label: label.clone(), description: description.clone() }), ty.clone(), metas.clone()));
-                            } else {
-                                attrs.push((Attribute::Hidden(HiddenAttribute { name: name.clone(),  }), ty.clone(), metas.clone()));
-                            }                              
-                        }                        
-                    }
-                    n.named.clear();
-                },
-                _ => panic!("Only works on named attributes")
-            }
-        },
-        _ => panic!("Derive macro \"Plugin\" can only applied to a structs. Use it like this:\n\n#[derive(Plugin)]\nstruct MyPlugin{{}};")
-    }
-
-    for attr in &ast.attrs {
-        panic!("{:?}", attr);
-    }
+    let attrs: Vec<PluginAttribute> = parse_attrs(&ast);
 
     // Build the impl
     let gen = produce(&ast, attrs);
-    
-
 
     // Return the generated impl
     gen.into()
@@ -151,143 +155,148 @@ pub(crate) fn get_mandatory_meta_value<'a>(meta_attrs: &'a Vec<Meta>, identifier
     None
 }
 
-fn parse_attr(attr: &syn::Attribute) -> (Vec<Meta>, bool) {
-    use syn::{punctuated::Punctuated, Token};
-
-    if attr.path.is_ident("option") {
-        let (skip, metas)= attr
-            .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
-            .unwrap_or_abort()
-            .into_iter()
-            .inspect(|meta| {
-                if !(meta.path().is_ident("default")
-                    || meta.path().is_ident("min")
-                    || meta.path().is_ident("max")
-                    || meta.path().is_ident("label")
-                    || meta.path().is_ident("description")
-                    || meta.path().is_ident("skip"))
-                {
-                    abort!(meta.path().span(), "unknown parameter");
-                }
-            })
-            .fold((false, Vec::<Meta>::new()), |(skip, mut metas), meta| {  
-                if meta.path().is_ident("skip") {
-                    (true, metas)
-                } else {
-                    metas.push(meta);                
-                    (skip, metas)
-                }       
-
-                
-            });
-
-        return (metas, skip);
-    }
-
-    (vec![], false)
-}
-
-pub(crate) fn callback(callback_name: &Ident, ty: &TokenStream2) -> TokenStream2 {
-    quote!{                
-        let #callback_name : Callback<(&'static str, &'static str, #ty)> = ctx.link().callback(|(plugin, attribute, value)| {                
-            EditorMessages::PluginOptionUpdated((plugin, attribute, Box::new(value)))
-        });
-        
-    }
-}
-
-fn checkbox(plugin: &str, attribute: &str, default_value: bool) -> (TokenStream2, TokenStream2) {
-    let callback_name = format_ident!("cb_{}", attribute);
-
-    let callback = quote!{ 
-        let #callback_name : Callback<(&'static str, &'static str, bool)> = ctx.link().callback(|(plugin, attribute, value)| {                
-            EditorMessages::PluginOptionUpdated((plugin, #attribute, Box::new(value)))
-        });
-    };
-
-    let element = quote! {
-        <Checkbox 
-            plugin={#plugin} 
-            attribute="__enabled" 
-            value={#default_value} 
-            on_value_change={#callback_name} 
-        />
-    };
-
-    (element, callback)
-}
-
-fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
+fn produce_default_impl(ast: &DeriveInput, attrs: &Vec<PluginAttribute>) -> TokenStream2 {
     let name = &ast.ident;
-    let name_str = name.to_string();
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+       
 
+    // Used for the default impl function
+    let mut defaults: Vec<TokenStream2> = vec![];
+    defaults.push(quote!{ __enabled: true }); 
 
-    // Is it a struct?
-    if let syn::Data::Struct(DataStruct { .. }) = ast.data {
-        let mut t = TokenStream2::new();
-        t.extend(vec![
-            TokenTree::Ident(Ident::new("html",  Span::call_site())),             
-            TokenTree::Punct(Punct::new('!', Spacing::Alone))
-        ]);
-
-        let mut callbacks: Vec<TokenStream2> = vec![];
+    // Now for all attributes defined be the plugin developer
+    for (attr, ty, metas) in attrs { 
+        match attr {
+            Attribute::Visible(attr) => {
+                defaults.push(generate_default_arm(&attr.name, &ty, &metas));
+            },
+            Attribute::Hidden(attr) => {
+                defaults.push(generate_default_arm(&attr.name, &ty, &metas));
+            },
+        }    
         
-        
-        let plugin = name_str.clone();
-        
-        let mut inner = TokenStream2::new();
+    }
 
-        // match arms used when a plugin received a message one of its properties was changed. 
-        // The match arm maps the message content to the corresponding property
-        let mut arms: Vec<TokenStream2> = vec![];
+    quote! {        
+        impl #impl_generics Default for #name #ty_generics #where_clause{
+            fn default() -> Self {
+                Self {
+                    #(#defaults),*
+                }
+            }
+        }                  
+    }
+}
 
-        // Used for the default impl function
-        let mut defaults: Vec<TokenStream2> = vec![];
+fn produce_identifier_impl(name: &Ident) -> TokenStream2 {
+    let name_str = name.to_string();
+    quote! {
+        fn identifier() -> &'static str where Self: Sized {
+            #name_str
+        }
+    }
+}
 
-        // List of the html elements
-        let mut elements: Vec<TokenStream2> = vec![
-            quote! { <div> },
-            quote! { <div><h2>{#name_str}</h2> },
-        ];
+fn produce_enabled() -> TokenStream2 {
+    quote! {
+        fn enabled(&self) -> bool {
+            self.__enabled
+        }
+    }
+}
 
-        // Enable checkbox for each plugin
-        let enabled_checkbox = checkbox(&plugin.clone(), "__enabled", true);
-        elements.push(enabled_checkbox.0);
-        elements.push( quote! { </div> } );
-        callbacks.push(enabled_checkbox.1);    
-        defaults.push(quote!{ __enabled: true }); 
-        
-        arms.push(quote! { "__enabled" => { if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value } }});
+fn produce_as_any_impl() -> TokenStream2 {
+    quote! {
+        fn as_any(&self) -> &dyn std::any::Any { self }
+        fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }   
+    }
+}
 
-        // Now for all attributes defined be the plugin developer
-        for (attr, ty, metas) in attrs { 
-            match attr {
-                Attribute::Visible(attr) => {
-                    let attr = generate_option_element(&plugin, attr, ty, metas);
-                    elements.push(attr.element);
-                    callbacks.push(attr.callback);
-                    arms.push(attr.arm);
-                    
-                    
-                    defaults.push(attr.default.clone());
-                },
-                Attribute::Hidden(attr) => {
-                    defaults.push(generate_default_arm(&attr.name, &ty, &metas));
-                },
-            }    
-            
+fn produce_ui_impl(ast: &DeriveInput, attrs: &Vec<PluginAttribute>) -> TokenStream2 {
+    let name = &ast.ident;
+    let name_str = name.to_string();
+
+    let mut t = TokenStream2::new();
+    t.extend(vec![
+        TokenTree::Ident(Ident::new("html",  Span::call_site())),             
+        TokenTree::Punct(Punct::new('!', Spacing::Alone))
+    ]);
+
+    let mut callbacks: Vec<TokenStream2> = vec![];
+    
+    
+    let plugin = name_str.clone();
+    
+    let mut inner = TokenStream2::new();
+
+    // match arms used when a plugin received a message one of its properties was changed. 
+    // The match arm maps the message content to the corresponding property
+    let mut arms: Vec<TokenStream2> = vec![];
+
+    // List of the html elements
+    let mut elements: Vec<TokenStream2> = vec![
+        quote! { <div> },
+        quote! { <div><h2>{#name_str}</h2> },
+    ];
+
+    // Enable checkbox for each plugin
+    let enabled_checkbox = checkbox(&plugin.clone(), "__enabled", true);
+    elements.push(enabled_checkbox.0);
+    elements.push( quote! { </div> } );
+    callbacks.push(enabled_checkbox.1);    
+    
+    arms.push(quote! { "__enabled" => { if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value } }});
+
+    // Now for all attributes defined be the plugin developer
+    for (attr, ty, metas) in attrs { 
+        if let Attribute::Visible(attr) = attr {
+            let attr = generate_option_element(&plugin, attr, ty, metas);
+            elements.push(attr.element);
+            callbacks.push(attr.callback);
+            arms.push(attr.arm);
+        } 
+    }
+
+    elements.push(quote!{</div>});
+    inner.append_all(elements);
+    t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);   
+    
+    let gen = quote! {        
+        fn view_options(&self, ctx: &Context<App<Data, Modes>>) -> Html {   
+            #(#callbacks)*
+            #t                   
         }
 
-        elements.push(quote!{</div>});
-        inner.append_all(elements);
-        t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);   
-        
-        print!("\n\n\n{}\n\n\n", t.to_string());
+        fn update_property(&mut self, property: &str, value: Box<dyn Any>) {   
+            match property {
+                #(#arms),*
+                _ => { web_sys::console::log_1(&":(".into()); }
+            }
+        }                 
+    };   
 
+    gen
 
-        let gen = quote! {        
+}
+
+fn produce_skip_plugin(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
+
+    // Is it a struct?
+    if let syn::Data::Struct(DataStruct { .. }) = ast.data {        
+        let generics = &ast.generics;
+        let (_, ty_generics, _) = generics.split_for_impl();
+
+        let name = &ast.ident;
+
+        // generated methods
+        let identifier_impl = produce_identifier_impl(&ast.ident);
+        let default_impl = produce_default_impl(ast, &attrs);
+        let ui_impl = produce_ui_impl(ast, &attrs);
+        let enabled_impl = produce_enabled();
+        let produce_as_any_impl = produce_as_any_impl();        
+
+        let muu = quote! {
             use std::ops::Deref;   
             use yew::{html, Html, Callback, Context};
             use rust_internal::ui::textbox::TextBox;
@@ -295,59 +304,80 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
             use crate::ui::app::App;
             use crate::ui::app::EditorMessages;
             use std::any::Any;
-
+    
             impl<Data, Modes> crate::PluginWithOptions<Data, Modes> for #name #ty_generics where 
                 Data: Renderer + Default + 'static,
-                Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, {     
-                
-                    
-                
-                fn identifier() -> &'static str where Self: Sized {
-                    #name_str
-                }
-                
-                fn view_options(&self, ctx: &Context<App<Data, Modes>>) -> Html {
-                    
-                    #(#callbacks)*
-                    #t                   
-                }
+                Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, {  
 
-                fn update_property(&mut self, property: &str, value: Box<dyn Any>) {   
-                    match property {
-                        #(#arms),*
-                        _ => { web_sys::console::log_1(&":(".into()); }
-                    }
-                }
+                #identifier_impl
+                #enabled_impl
+            }
 
-                fn enabled(&self) -> bool {
-                    self.__enabled
-                }
-   
-                fn as_any(&self) -> &dyn std::any::Any { self }
-                fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }        
-                     
-            }   
-                                 
-            
-            impl #impl_generics Default for #name #ty_generics #where_clause{
-                fn default() -> Self {
-                    Self {
-                        #(#defaults),*
-                    }
-                }
-            } 
-            
-                    
-        };   
+            impl<Data> crate::plugins::plugin::AnyPlugin<Data> for #name #ty_generics where 
+                Data: Renderer + Default + 'static, {  
 
-        gen
+                #produce_as_any_impl
 
+            }
+
+            #default_impl
+        };
+
+        muu
     } else {
         quote! {}
     }
 }
 
+fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>) -> TokenStream2 {
 
+    // Is it a struct?
+    if let syn::Data::Struct(DataStruct { .. }) = ast.data {        
+        let generics = &ast.generics;
+        let (_, ty_generics, _) = generics.split_for_impl();
+
+        let name = &ast.ident;
+
+        // generated methods
+        let identifier_impl = produce_identifier_impl(&ast.ident);
+        let default_impl = produce_default_impl(ast, &attrs);
+        let ui_impl = produce_ui_impl(ast, &attrs);
+        let enabled_impl = produce_enabled();
+        let produce_as_any_impl = produce_as_any_impl();        
+
+        let muu = quote! {
+            use std::ops::Deref;   
+            use yew::{html, Html, Callback, Context};
+            use rust_internal::ui::textbox::TextBox;
+            use rust_internal::ui::{numberbox::NumberBox, checkbox::Checkbox};
+            use crate::ui::app::App;
+            use crate::ui::app::EditorMessages;
+            use std::any::Any;
+    
+            impl<Data, Modes> crate::PluginWithOptions<Data, Modes> for #name #ty_generics where 
+                Data: Renderer + Default + 'static,
+                Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, {  
+
+                #identifier_impl
+                #enabled_impl
+                #ui_impl
+            }
+
+            impl<Data> crate::plugins::plugin::AnyPlugin<Data> for #name #ty_generics where 
+                Data: Renderer + Default + 'static, {  
+
+                #produce_as_any_impl
+
+            }
+
+            #default_impl
+        };
+
+        muu
+    } else {
+        quote! {}
+    }
+}
 
 
 

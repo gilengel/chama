@@ -1,12 +1,11 @@
 use geo::Coordinate;
+use rust_macro::editor_plugin;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
-use rust_macro::editor_plugin;
-
 
 use crate::InformationLayer;
 
-use super::plugin::{Plugin, PluginWithOptions};
+use super::plugin::Plugin;
 
 pub trait Renderer {
     fn render(
@@ -18,12 +17,15 @@ pub trait Renderer {
 
 #[editor_plugin]
 pub struct Camera {
-    #[option(label="Camera Position", description="Enables / Disables the grid")]
+    #[option(label = "Camera Position", description = "Enables / Disables the grid")]
     position: Coordinate<f64>,
 
-    #[option(default=true, label="Camera Enabled", description="Enables / Disables the grid")]
+    #[option(
+        default = true,
+        label = "Camera Enabled",
+        description = "Enables / Disables the grid"
+    )]
     active: bool,
-
 }
 
 impl Camera {
@@ -56,7 +58,10 @@ impl Camera {
     }
 }
 
-impl<T> Plugin<T> for Camera where T: Renderer + 'static {
+impl<T> Plugin<T> for Camera
+where
+    T: Renderer + 'static,
+{
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut T) {
         self.active = button == 1;
     }
@@ -80,4 +85,3 @@ impl<T> Plugin<T> for Camera where T: Renderer + 'static {
         }
     }
 }
-

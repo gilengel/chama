@@ -2,8 +2,9 @@ use proc_macro2::TokenStream as TokenStream2;
 use proc_macro_error::abort;
 use quote::{format_ident, quote};
 use syn::{Meta, Ident};
+use std::str::FromStr;
 
-use crate::{callback, get_mandatory_meta_value, Attribute, VisibleAttribute};
+use crate::{get_mandatory_meta_value, VisibleAttribute};
 
 pub(crate) struct PluginOptionElement {
     pub element: TokenStream2,
@@ -13,6 +14,11 @@ pub(crate) struct PluginOptionElement {
 }
 
 pub(crate) fn generate_default_arm(attr_ident: &Ident, ty: &TokenStream2, metas: &Vec<Meta>) -> TokenStream2 {
+    // I guess there is a smarter way to do it but converting it to a str, replace < with :: < and converting it back
+    // works and handles the case if the user defines a variable with generic type like 
+    // position: Coordinate<f64> instead of position: Coordinate::<f64>
+    let ty = TokenStream2::from_str(&str::replace(&ty.clone().to_string(), " <", ":: <")[..]).unwrap();
+
     let default = match get_mandatory_meta_value(&metas, "default") {
         Some(e) => quote! { #e },
         None => quote! { #ty::default()},
@@ -22,11 +28,44 @@ pub(crate) fn generate_default_arm(attr_ident: &Ident, ty: &TokenStream2, metas:
         #attr_ident: #default
     }
 }
+
+fn callback(callback_name: &Ident, ty: &TokenStream2) -> TokenStream2 {
+    quote!{                
+        let #callback_name : Callback<(&'static str, &'static str, #ty)> = ctx.link().callback(|(plugin, attribute, value)| {                
+            EditorMessages::PluginOptionUpdated((plugin, attribute, Box::new(value)))
+        });
+        
+    }
+}
+
+pub(crate) fn checkbox(plugin: &str, attribute: &str, default_value: bool) -> (TokenStream2, TokenStream2) {
+    let callback_name = format_ident!("cb_{}", attribute);
+
+    let callback = quote!{ 
+        let #callback_name : Callback<(&'static str, &'static str, bool)> = ctx.link().callback(|(plugin, attribute, value)| {                
+            EditorMessages::PluginOptionUpdated((plugin, #attribute, Box::new(value)))
+        });
+    };
+
+    let element = quote! {
+        <Checkbox 
+            plugin={#plugin} 
+            attribute="__enabled" 
+            value={#default_value} 
+            on_value_change={#callback_name} 
+        />
+    };
+
+    (element, callback)
+}
+
+
+
 pub(crate) fn generate_option_element(
     plugin: &String,
-    attr: VisibleAttribute,
-    ty: TokenStream2,
-    metas: Vec<Meta>,
+    attr: &VisibleAttribute,
+    ty: &TokenStream2,
+    metas: &Vec<Meta>,
 ) -> PluginOptionElement {
     let mut result = PluginOptionElement {
         element: quote! {},
@@ -56,8 +95,8 @@ pub(crate) fn generate_option_element(
     let default = generate_default_arm(&attr_ident, &ty, &metas);
     
 
-    let label = attr.label;
-    let description = attr.description;
+    let label = attr.label.clone();
+    //let description = attr.description;
 
     let number_types: Vec<&str> = vec![
         "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",

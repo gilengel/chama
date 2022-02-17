@@ -4,7 +4,7 @@ use geo::Coordinate;
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::{camera::Renderer, plugin::PluginWithOptions},
+    plugins::plugin::PluginWithOptions,
     system::System,
     InformationLayer,
 };
@@ -22,7 +22,7 @@ pub struct DeleteDistrictSystem {
 impl DeleteDistrictSystem {
     pub fn new() -> Self {
         Self {
-            hovered_district: None
+            hovered_district: None,
         }
     }
 }

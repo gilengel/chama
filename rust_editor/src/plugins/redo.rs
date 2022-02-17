@@ -4,10 +4,10 @@ use crate::actions::Action;
 
 use super::{camera::Renderer, plugin::Plugin};
 
-#[editor_plugin]
+#[editor_plugin(skip)]
 pub struct Redo<Data> {
     #[option(skip)]
-    pub stack: Vec::<Box::<dyn Action<Data>>>,
+    pub stack: Vec<Box<dyn Action<Data>>>,
 }
 
 

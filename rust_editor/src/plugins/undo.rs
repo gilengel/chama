@@ -6,10 +6,10 @@ use crate::{
 
 use super::{camera::Renderer, plugin::Plugin};
 
-#[editor_plugin]
+#[editor_plugin(skip)]
 pub struct Undo<Data> {
     #[option(skip)]
-    pub stack: Vec::<Box::<dyn Action<Data>>>,
+    pub stack: Vec<Box<dyn Action<Data>>>,
 }
 
 

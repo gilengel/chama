@@ -3,11 +3,10 @@ use std::any::Any;
 use core::hash::Hash;
 use geo::Coordinate;
 use web_sys::CanvasRenderingContext2d;
-use yew::{Context, Html, html};
+use yew::{html, Context, Html};
 
 use crate::ui::app::App;
-
-use super::camera::Renderer;
+use crate::plugins::camera::Renderer;
 
 pub trait AnyPlugin<Data>: Plugin<Data>
 where
@@ -43,10 +42,12 @@ where
     Data: Renderer + Default + 'static,
     Modes: Clone + PartialEq + Eq + Hash + 'static,
 {
-    fn view_options(&self, context: &Context<App<Data, Modes>>) -> Html { html! {} }
+    fn view_options(&self, _context: &Context<App<Data, Modes>>) -> Html {
+        html! {}
+    }
 
     /// Called each time a property is updated. Use it to message the change or apply it to the plugin directly.
-    fn update_property(&mut self, property: &str, value: Box<dyn Any>) {}
+    fn update_property(&mut self, _property: &str, _value: Box<dyn Any>) {}
 
     fn identifier() -> &'static str
     where
@@ -57,7 +58,7 @@ where
 
 pub trait Plugin<Data>
 where
-    Data: Renderer + 'static,
+    Data: Renderer,
 {
     /// Is used to implement behaviour of the state if the user clicked inside the specified
     /// html element by the statemachine.

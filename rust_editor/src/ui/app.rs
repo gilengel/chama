@@ -5,7 +5,7 @@ use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
-use crate::plugins::plugin::{AnyPlugin, PluginWithOptions};
+use crate::plugins::plugin::PluginWithOptions;
 use crate::ui::toolbar_button::ToolbarButton;
 use crate::InformationLayer;
 
@@ -376,7 +376,6 @@ where
     Data: Renderer + Default + 'static,
     Modes: Clone + PartialEq + Eq + Hash + 'static,
 {
-    
     pub fn add_plugin<P>(&mut self, plugin: P)
     where
         P: PluginWithOptions<Data, Modes> + 'static,

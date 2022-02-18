@@ -18,7 +18,7 @@ use crate::{plugins::{camera::Renderer, plugin::PluginWithOptions}, InformationL
 pub trait System<Data, Modes>
 where
     Data: Renderer,
-    Modes: Clone + std::cmp::PartialEq
+    Modes: Clone + PartialEq
 {
     /// Is used to implement behaviour of the state if the user clicked inside the specified
     /// html element by the statemachine.

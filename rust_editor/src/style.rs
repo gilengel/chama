@@ -14,6 +14,16 @@ pub struct Style {
     pub background_color: String,
 }
 
+impl Default for Style {
+    fn default() -> Self {
+        Style {
+            border_width: 1,
+            border_color: "#FFFFFF".to_string(),
+            background_color: "#FFFFFFF".to_string(),
+        }
+    }
+}
+
 /// Defines multiple styles that can applied to an element based on the current state of it
 #[derive(Clone, Serialize, Deserialize)]
 pub struct InteractiveElementStyle {

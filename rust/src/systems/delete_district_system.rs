@@ -76,7 +76,7 @@ impl System<Map, Modes> for DeleteDistrictSystem {
         &self,
         map: &Map,
         context: &web_sys::CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
+        _additional_information_layer: &Vec<InformationLayer>,
         _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
         context.set_fill_style(&"#FFFFFF".into());

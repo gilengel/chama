@@ -1,14 +1,15 @@
-
-
 use std::hash::Hash;
 
 use map::map::Map;
 
+//use plugins::create_freeform_street::CreateFreeformStreet;
 use rust_editor::plugins::camera::Camera;
 use rust_editor::plugins::grid::Grid;
 use rust_editor::plugins::redo::Redo;
 use rust_editor::plugins::undo::Undo;
+
 use rust_editor::ui::app::{x_launch, ModeProps};
+use rust_macro::launch;
 use systems::create_district_system::CreateDistrictSystem;
 use systems::delete_district_system::DeleteDistrictSystem;
 use systems::{
@@ -16,10 +17,11 @@ use systems::{
     create_street_system::CreateStreetSystem, delete_street_system::DeleteStreetSystem,
     render_map_system::MapRenderSystem,
 };
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-use rust_macro::launch;
+use plugins::create_freeform_street::CreateFreeformStreet;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 mod map;
+mod plugins;
 mod systems;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -28,7 +30,7 @@ enum Modes {
     CreateFreeformStreet,
     DeleteStreet,
     CreateDistrict,
-    DeleteDistrict    
+    DeleteDistrict,
 }
 
 #[launch]
@@ -39,6 +41,7 @@ fn editor() {
     editor.add_plugin(Grid::default());
     editor.add_plugin(Undo::<Map>::default());
     editor.add_plugin(Redo::<Map>::default());
+    editor.add_plugin(CreateFreeformStreet::default());
 
     editor.add_mode(
         Modes::CreateSimpleStreet,
@@ -51,6 +54,7 @@ fn editor() {
             tooltip: "Create Simple Street",
         }),
     );
+    /*
     editor.add_mode(
         Modes::CreateFreeformStreet,
         vec![
@@ -62,6 +66,7 @@ fn editor() {
             tooltip: "Create Freeform Street",
         }),
     );
+    */
     editor.add_mode(
         Modes::DeleteStreet,
         vec![
@@ -98,5 +103,5 @@ fn editor() {
         }),
     );
 
-    editor.activate_mode(Modes::CreateFreeformStreet);
+    editor.activate_mode(Modes::CreateSimpleStreet);
 }

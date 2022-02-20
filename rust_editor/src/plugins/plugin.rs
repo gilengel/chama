@@ -89,5 +89,18 @@ where
     /// * `x` - x coordinate of the cursor where the click occured
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
+    /// * `data` - The data hold by the editor
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _data: &mut Data) {}
+
+    /// React to a key held down on a keyboard.  
+    /// 
+    /// * 'key' the value of the pressed key. [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
+    /// * `data` - The data hold by the editor
+    fn key_down(&mut self, key: &str, _data: &mut Data) {}
+
+    /// React to a key released on a keyboard.  
+    /// 
+    /// * 'key' the value of the released key. [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
+    /// * `data` - The data hold by the editor
+    fn key_up(&mut self, key: &str, _data: &mut Data) {}
 }

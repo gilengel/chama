@@ -7,11 +7,11 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::PluginWithOptions;
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::InformationLayer;
+use crate::{log, InformationLayer};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use std::hash::Hash;
@@ -31,6 +31,8 @@ where
     MouseMove(MouseEvent),
     MouseDown(MouseEvent),
     MouseUp(MouseEvent),
+    KeyDown(KeyboardEvent),
+    KeyUp(KeyboardEvent),
     Render(f64),
 }
 
@@ -202,6 +204,27 @@ where
                     }
                 }
             }
+            EditorMessages::KeyDown(e) => {
+                log!("{}", e.key());
+                for plugin in self
+                    .plugins
+                    .values_mut()
+                    .into_iter()
+                    .filter(|plugin| plugin.enabled())
+                {
+                    plugin.key_down(&e.key()[..], &mut self.data);
+                }
+            }
+            EditorMessages::KeyUp(e) => {
+                for plugin in self
+                    .plugins
+                    .values_mut()
+                    .into_iter()
+                    .filter(|plugin| plugin.enabled())
+                {
+                    plugin.key_up(&e.key()[..], &mut self.data);
+                }
+            }
             EditorMessages::Render(_) => {
                 let context = self.context.as_ref().unwrap();
                 for plugin in self
@@ -229,9 +252,12 @@ where
         let onmouseup = ctx.link().callback(|e| EditorMessages::MouseUp(e));
         let onmousemove = ctx.link().callback(|e| EditorMessages::MouseMove(e));
 
+        let onkeyup = ctx.link().callback(|e| EditorMessages::KeyUp(e));
+        let onkeydown = ctx.link().callback(|e| EditorMessages::KeyDown(e));
+
         html! {
         <main>
-            <canvas ref={self.canvas_ref.clone()} width="1920" height="1080" {onmousedown} {onmouseup} {onmousemove}></canvas>
+            <canvas ref={self.canvas_ref.clone()} width="1920" height="1080" {onmousedown} {onmouseup} {onmousemove} {onkeyup} {onkeydown} tabindex="0"></canvas>
 
             <Dialog>
             {

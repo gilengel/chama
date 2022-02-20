@@ -1,16 +1,16 @@
-use crate::{Attribute, HiddenAttribute, VisibleAttribute};
-use crate::get_mandatory_meta_value;
-use crate::attribute_type;
-use crate::PluginAttribute;
-
 use proc_macro_error::abort;
 
-use syn::{DeriveInput, Meta, Data, Fields};
+use syn::parse::{ParseStream, Parse};
+use syn::punctuated::Punctuated;
+use syn::{DeriveInput, Meta, Data, Fields, Token, Error, Lit};
 use syn::spanned::Spanned;
 
-pub(crate) fn parse_attr(attr: &syn::Attribute) -> (Vec<Meta>, bool) {
-    use syn::{punctuated::Punctuated, Token};
 
+
+use crate::attribute_type;
+use crate::structs::{Attribute, VisibleAttribute, HiddenAttribute, GenericParam, EditorPluginArg, EditorPluginArgs, PluginAttribute};
+
+pub(crate) fn parse_attr(attr: &syn::Attribute) -> (Vec<Meta>, bool) {
     if attr.path.is_ident("option") {
         let (skip, metas)= attr
             .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
@@ -81,4 +81,78 @@ pub(crate) fn parse_attrs(ast: &DeriveInput) -> Vec<PluginAttribute>{
     }
 
     attrs
+}
+
+pub(crate) fn get_mandatory_meta_value<'a>(
+    meta_attrs: &'a Vec<Meta>,
+    identifier: &str,
+) -> Option<&'a Lit> {
+    if let Some(default_meta) = meta_attrs
+        .iter()
+        .find(|meta| meta.path().is_ident(identifier))
+    {
+        if let Meta::NameValue(e) = &default_meta {
+            return Some(&e.lit);
+        }
+    }
+
+    None
+}
+
+impl Parse for GenericParam {
+    fn parse(input: ParseStream) -> Result<Self, Error> {
+        let content;
+        syn::parenthesized!(content in input);
+        let ty = content.parse()?;
+        content.parse::<Token![,]>()?;
+        let execution_behaviour = content.parse()?;
+        Ok(GenericParam { ty, execution_behaviour })
+    }
+}
+
+impl Parse for EditorPluginArg {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(syn::Ident) {
+            let ident = input.parse::<syn::Ident>()?;
+
+            if ident == "skip" {
+                return Ok(EditorPluginArg::Skip);
+            }
+
+            if ident == "specific_to" {
+                input.parse::<syn::Token![=]>()?;
+                let ty = input.parse::<syn::Ident>()?;
+
+                return Ok(EditorPluginArg::SpecificTo(ty));
+            }
+
+            if ident == "execution" {
+                input.parse::<syn::Token![=]>()?;
+                let ty = input.parse::<syn::Ident>()?;
+
+                //let behaviour = PluginExecutionBehaviour::from_str(&ty.to_string()).unwrap();
+
+                return Ok(EditorPluginArg::ExecutionBehaviour(ty));
+            }
+
+            Err(input.error(format!("unknown identifier got {}. Allowed identifiers are \"skip\", \"specific_to=Type\" and \"execution=PluginExecutionBehaviour\"", ident)))
+        } else {
+            Err(lookahead.error())
+        }
+    }
+}
+
+impl Parse for EditorPluginArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let parsed_args: Punctuated<EditorPluginArg, syn::Token![,]> =
+            input.parse_terminated(EditorPluginArg::parse)?;
+
+        // There must be a better way to do this but I will leave it for now like this 2022-02-18
+        let mut args = vec![];
+        for i in parsed_args {
+            args.push(i);
+        }
+        Ok(EditorPluginArgs { args })
+    }
 }

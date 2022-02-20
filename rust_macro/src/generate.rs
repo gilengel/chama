@@ -2,9 +2,10 @@ use proc_macro2::TokenStream as TokenStream2;
 use proc_macro_error::abort;
 use quote::TokenStreamExt;
 use quote::{format_ident, quote};
-use syn::DataStruct;
 use std::str::FromStr;
-use syn::{DeriveInput, Ident, Meta};
+use syn::{DataStruct, DeriveInput, Ident, Meta};
+
+use crate::GenericParam;
 
 use proc_macro2::Delimiter;
 use proc_macro2::Span;
@@ -29,8 +30,8 @@ pub(crate) fn generate_default_arm(
     // I guess there is a smarter way to do it but converting it to a str, replace < with :: < and converting it back
     // works and handles the case if the user defines a variable with generic type like
     // position: Coordinate<f64> instead of position: Coordinate::<f64>
-    let ty =
-        TokenStream2::from_str(&str::replace(&ty.clone().to_string(), " <", ":: <")[..]).unwrap();
+    let ty = TokenStream2::from_str(&str::replace(&ty.clone().to_string(), " <", ":: <")[..])
+        .unwrap_or_else(|_| abort!(ty, "BLOWFISH"));
 
     let default = match get_mandatory_meta_value(&metas, "default") {
         Some(e) => quote! { #e },
@@ -92,7 +93,7 @@ pub(crate) fn generate_option_element(
     // Allow the user to define generic datatypes as usuall like Coordinate<f64>. Without this replacing we would force user
     // to write instead Coordinate::<f64> which is odd.
     let ty = &str::replace(&ty.clone().to_string(), " <", "::<");
-    let ty: proc_macro2::TokenStream = ty.parse().unwrap();
+    let ty: proc_macro2::TokenStream = ty.parse().unwrap_or_else(|_| abort!(ty, "BLOWFISH 2"));
 
     let attribute = attr.name.to_string();
     let attr_ident = format_ident!("{}", attr.name);
@@ -293,67 +294,6 @@ fn produce_ui_impl(
     gen
 }
 
-pub(crate) fn produce_skip_plugin(
-    ast: &DeriveInput,
-    attrs: Vec<PluginAttribute>,
-    generic_type: Ident,
-    execution_behaviour: Ident,
-) -> TokenStream2 {
-    let (where_clause_plugins_with_options, where_clause_any_plugin) = if generic_type == "Data" {
-        (
-            quote! { where Data: Renderer + Default + 'static, Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, },
-            quote! { where Data: Renderer + Default + 'static, },
-        )
-    } else {
-        (
-            quote! { where Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, },
-            quote! {},
-        )
-    };
-
-    // Is it a struct?
-    if let syn::Data::Struct(DataStruct { .. }) = ast.data {
-        let generics = &ast.generics;
-        let (_, ty_generics, _) = generics.split_for_impl();
-
-        let name = &ast.ident;
-
-        // generated methods
-        let identifier_impl = produce_identifier_impl(&ast.ident);
-        let default_impl = produce_default_impl(ast, &attrs, &execution_behaviour);
-        let enabled_impl = produce_enabled();
-        let produce_as_any_impl = produce_as_any_impl();
-
-        let muu = quote! {
-            use std::ops::Deref;
-            use yew::{html, Html, Callback, Context};
-            use rust_internal::ui::textbox::TextBox;
-            use rust_internal::ui::{numberbox::NumberBox, checkbox::Checkbox};
-            use crate::ui::app::App;
-            use crate::ui::app::EditorMessages;
-            use std::any::Any;
-            use std::marker::PhantomData;
-
-            impl<#generic_type, Modes> crate::PluginWithOptions<Data, Modes> for #name #ty_generics #where_clause_plugins_with_options
-            {
-                #identifier_impl
-                #enabled_impl
-            }
-
-            impl<#generic_type> crate::plugins::plugin::AnyPlugin<Data> for #name #ty_generics #where_clause_any_plugin
-            {
-                #produce_as_any_impl
-            }
-
-            #default_impl
-        };
-
-        muu
-    } else {
-        quote! {}
-    }
-}
-
 fn produce_use_statements(crate_name: &Ident) -> TokenStream2 {
     quote! {
         use std::ops::Deref;
@@ -362,11 +302,12 @@ fn produce_use_statements(crate_name: &Ident) -> TokenStream2 {
         use rust_internal::ui::{numberbox::NumberBox, checkbox::Checkbox};
         use #crate_name::ui::app::App;
         use #crate_name::ui::app::EditorMessages;
+        use #crate_name::plugins::plugin::SpecialKey;
         use std::any::Any;
     }
 }
 
-fn crate_name() -> Ident { 
+fn crate_name() -> Ident {
     let crate_name = std::env::var("CARGO_PKG_NAME").unwrap();
     let crate_name = Ident::new(
         if &crate_name[..] == "rust_editor" {
@@ -380,13 +321,47 @@ fn crate_name() -> Ident {
     crate_name
 }
 
+fn produce_internal_key_up(param: &GenericParam) -> TokenStream2 {
+    let ty = param.ty.clone();
+
+    if let Some(expr) = &param.shortkey_expression {
+        
+        let mut statements: Vec<TokenStream2> = Vec::new();
+        if expr.ctrl {
+            statements.push(quote! { special_keys.contains(&SpecialKey::Ctrl)});
+        }
+
+        if expr.shift {
+            statements.push(quote! { special_keys.contains(&SpecialKey::Shift)});
+        }
+
+        if expr.alt {
+            statements.push(quote! { special_keys.contains(&SpecialKey::Alt)});
+        }
+
+        let key = &expr.key;
+        statements.push(quote! { key == #key });
+
+        return quote! {
+            fn __internal_key_up(&mut self, key: &str, special_keys: &Vec<SpecialKey>, _data: &mut #ty) {
+                if #(#statements) && * {
+                    web_sys::console::log_1(&":)".into())
+                }
+                
+            }
+        };
+    }
+
+    quote! {}
+}
+
 pub(crate) fn produce(
     ast: &DeriveInput,
     attrs: Vec<PluginAttribute>,
-    generic_type: Ident,
-    execution_behaviour: Ident,
+    param: &GenericParam,
+    skip_ui_gen: bool,
 ) -> TokenStream2 {
-    let (where_clause_plugins_with_options, where_clause_any_plugin) = if generic_type == "Data" {
+    let (where_clause_plugins_with_options, where_clause_any_plugin) = if param.ty == "Data" {
         (
             quote! { where Data: Renderer + Default + 'static, Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, },
             quote! { where Data: Renderer + Default + 'static, },
@@ -395,7 +370,7 @@ pub(crate) fn produce(
         (quote! {}, quote! {})
     };
 
-    let (impl_plugins_with_options, impl_any_plugin) = if generic_type == "Data" {
+    let (impl_plugins_with_options, impl_any_plugin) = if param.ty == "Data" {
         (quote! { impl<Data, Modes> }, quote! { impl<Data> })
     } else {
         (quote! { impl }, quote! { impl })
@@ -410,12 +385,18 @@ pub(crate) fn produce(
 
         // generated methods
         let identifier_impl = produce_identifier_impl(&ast.ident);
-        let default_impl = produce_default_impl(ast, &attrs, &execution_behaviour);
-        let ui_impl = produce_ui_impl(ast, &attrs, &generic_type);
+        let default_impl = produce_default_impl(ast, &attrs, &param.execution_behaviour);
+        let ui_impl = match skip_ui_gen {
+            true => quote! {},
+            false => produce_ui_impl(ast, &attrs, &param.ty),
+        };
         let enabled_impl = produce_enabled();
         let produce_as_any_impl = produce_as_any_impl();
+        let internal_key_up_impl = produce_internal_key_up(&param);
 
         let crate_name = crate_name();
+
+        let generic_type = param.ty.clone();
 
         let use_statements = produce_use_statements(&crate_name);
         let muu = quote! {
@@ -426,6 +407,7 @@ pub(crate) fn produce(
                 #identifier_impl
                 #enabled_impl
                 #ui_impl
+                #internal_key_up_impl
             }
 
             #impl_any_plugin #crate_name::plugins::plugin::AnyPlugin<#generic_type> for #name #ty_generics #where_clause_any_plugin

@@ -1,14 +1,18 @@
+
+
 use proc_macro_error::abort;
 
+use quote::ToTokens;
 use syn::parse::{ParseStream, Parse};
 use syn::punctuated::Punctuated;
-use syn::{DeriveInput, Meta, Data, Fields, Token, Error, Lit};
+use syn::{DeriveInput, Meta, Data, Fields, Token, Error, Lit, Expr, ExprBinary};
 use syn::spanned::Spanned;
 
 
 
+
 use crate::attribute_type;
-use crate::structs::{Attribute, VisibleAttribute, HiddenAttribute, GenericParam, EditorPluginArg, EditorPluginArgs, PluginAttribute};
+use crate::structs::{Attribute, VisibleAttribute, HiddenAttribute, GenericParam, EditorPluginArg, EditorPluginArgs, PluginAttribute, ShortKeyExpr};
 
 pub(crate) fn parse_attr(attr: &syn::Attribute) -> (Vec<Meta>, bool) {
     if attr.path.is_ident("option") {
@@ -53,7 +57,7 @@ pub(crate) fn parse_attrs(ast: &DeriveInput) -> Vec<PluginAttribute>{
                 Fields::Named(n) => {
                     
                     for named in &n.named { // Field
-                        let name = named.ident.as_ref().unwrap();
+                        let name = named.ident.as_ref().unwrap_or_else(|| abort!(named, "MUU"));
                         let ty = attribute_type(named.ty.clone());
                         
                         for attribute in &named.attrs {                            
@@ -99,14 +103,88 @@ pub(crate) fn get_mandatory_meta_value<'a>(
     None
 }
 
+
+fn parse_binary_expr(expr: &ExprBinary) -> ShortKeyExpr {
+    fn parse_loop<'a>(expr: &ExprBinary) -> Vec<String> {
+        let mut keys: Vec<String> = Vec::new();
+
+        for expr in [expr.left.as_ref(), expr.right.as_ref()]{
+            match expr {
+                Expr::Binary(e) => {
+                    keys.append(&mut parse_loop(e));            
+                },
+                Expr::Lit(e) => {
+                    match &e.lit {
+                        Lit::Str(s) => keys.push(s.value()),
+                        Lit::Int(s) => keys.push(s.base10_digits().to_string()),
+                        _ => { abort!(e, "Invalid key defined for mapping"); }
+                    }
+                    
+                    
+                }
+                ,
+                Expr::Path(e) => {
+                    keys.push(e.to_token_stream().to_string().to_lowercase());
+                }
+                _ => { abort!(expr, "Left operand is invalid. Make sure that your shortkey is in the form of \"Key\" or \"Key + Key\" for multiple keys"); }
+            }
+        }
+
+        keys
+    }
+
+    let mut keys = parse_loop(expr);
+    let mut shortkey_expr = ShortKeyExpr {
+        ctrl: keys.contains(&"ctrl".to_string()),
+        shift: keys.contains(&"shift".to_string()),
+        alt: keys.contains(&"alt".to_string()),
+        key: "".to_string()
+    };
+
+
+    keys.retain(|x| *x != "ctrl".to_string());
+    keys.retain(|x| *x != "shift".to_string());
+    keys.retain(|x| *x != "alt".to_string());
+
+    shortkey_expr.key = keys.first().unwrap_or_else(|| abort!(expr, "You specified either an empty shortcut or one only containing ctrl, shift and/or alt. Make sure that your shortkey contains one \"normal\" key.")).clone();
+    shortkey_expr
+
+}
+
 impl Parse for GenericParam {
     fn parse(input: ParseStream) -> Result<Self, Error> {
+        
+
         let content;
         syn::parenthesized!(content in input);
         let ty = content.parse()?;
         content.parse::<Token![,]>()?;
         let execution_behaviour = content.parse()?;
-        Ok(GenericParam { ty, execution_behaviour })
+        
+        let shortkey_expression = if content.lookahead1().peek(Token![,]) {
+            content.parse::<Token![,]>()?;
+
+            let expr = content.parse::<Expr>()?;
+            match expr {
+                
+                Expr::Binary(e) => {
+                    Some(parse_binary_expr(&e))
+                },
+                Expr::Lit(e) => {
+                    Some(ShortKeyExpr {
+                        ctrl: false,
+                        shift: false,
+                        alt: false,
+                        key: e.lit.into_token_stream().to_string()
+                    })
+                },
+                _ => { abort!(expr, "Shortcut has invalid format: Allowed are a single key (shortcut=1) or an expression (ctrl+alt+w)."); }
+            }
+        } else { None };
+        
+        
+
+        Ok(GenericParam { ty, execution_behaviour, shortkey_expression })
     }
 }
 
@@ -134,6 +212,13 @@ impl Parse for EditorPluginArg {
                 //let behaviour = PluginExecutionBehaviour::from_str(&ty.to_string()).unwrap();
 
                 return Ok(EditorPluginArg::ExecutionBehaviour(ty));
+            }
+
+            if ident == "shortkey" {
+                input.parse::<syn::Token![=]>()?;
+                let shortkey_expr = input.parse::<syn::Expr>()?;
+
+                return Ok(EditorPluginArg::ShortKey(shortkey_expr));
             }
 
             Err(input.error(format!("unknown identifier got {}. Allowed identifiers are \"skip\", \"specific_to=Type\" and \"execution=PluginExecutionBehaviour\"", ident)))

@@ -5,9 +5,9 @@ use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
-use crate::plugins::plugin::PluginWithOptions;
+use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::{log, InformationLayer};
+use crate::InformationLayer;
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
@@ -205,7 +205,6 @@ where
                 }
             }
             EditorMessages::KeyDown(e) => {
-                log!("{}", e.key());
                 for plugin in self
                     .plugins
                     .values_mut()
@@ -216,6 +215,21 @@ where
                 }
             }
             EditorMessages::KeyUp(e) => {
+                let mut special_keys = vec![];
+                if e.ctrl_key() {
+                    special_keys.push(SpecialKey::Ctrl);
+                }
+                if e.alt_key() {
+                    special_keys.push(SpecialKey::Alt);
+                }
+                if e.shift_key() {
+                    special_keys.push(SpecialKey::Shift);
+                }
+
+                for plugin in self.plugins.values_mut() {
+                    plugin.__internal_key_up(&e.key()[..], &special_keys, &mut self.data);
+                }
+
                 for plugin in self
                     .plugins
                     .values_mut()

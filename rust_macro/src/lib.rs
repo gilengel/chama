@@ -1,21 +1,19 @@
 extern crate proc_macro;
 
-use generate::{produce_skip_plugin, produce};
+use generate::produce;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro2::{Ident, Span};
 use proc_macro_error::{abort, proc_macro_error, ResultExt};
 use quote::{quote, ToTokens};
-use structs::{EditorPluginArg, GenericParam, PluginAttribute, EditorPluginArgs};
+use structs::{EditorPluginArg, EditorPluginArgs, GenericParam, PluginAttribute};
 use syn::parse::Parser;
-use syn::AttributeArgs;
-use syn::{parse_macro_input, DeriveInput, NestedMeta, Type};
+
+use syn::{parse_macro_input, DeriveInput, Expr, ItemFn, Type};
 
 extern crate proc_macro2;
 extern crate quote;
 extern crate syn;
-
-use syn::{ItemFn, Meta};
 
 use crate::parse::parse_attrs;
 
@@ -43,27 +41,6 @@ fn attribute_type(ty: Type) -> TokenStream2 {
     }
 }
 
-/// Checks if an editor plugin has the skip attribute. Used
-/// to skip the ui generation for its properties.
-///
-/// ```
-/// #[editor_plugin(skip)]
-/// struct MyPlugin {}
-/// ```
-fn plugin_has_skip_attribute(args: &AttributeArgs) -> bool {
-    args.iter().any(|x| {
-        if let NestedMeta::Meta(meta) = x {
-            if let Meta::Path(path) = meta {
-                if path.is_ident("skip") {
-                    return true;
-                }
-            }
-        }
-
-        false
-    })
-}
-
 fn plugin_generic_type(args: &Vec<EditorPluginArg>) -> Ident {
     for arg in args {
         if let EditorPluginArg::SpecificTo(x) = arg {
@@ -84,7 +61,17 @@ fn plugin_execution_behaviour(args: &Vec<EditorPluginArg>) -> Ident {
     Ident::new("Always", Span::call_site())
 }
 
-fn derive(ast: &syn::DeriveInput) -> GenericParam {
+fn plugin_shortkey_expr(args: &Vec<EditorPluginArg>) -> Option<Expr> {
+    for arg in args {
+        if let EditorPluginArg::ShortKey(x) = arg {
+            return Some(x.clone());
+        }
+    }
+
+    None
+}
+
+fn derive_plugin_params(ast: &syn::DeriveInput) -> GenericParam {
     let attribute = ast
         .attrs
         .iter()
@@ -98,6 +85,14 @@ fn derive(ast: &syn::DeriveInput) -> GenericParam {
     parameter
 }
 
+fn derive_plugin_skip(ast: &syn::DeriveInput) -> bool {
+    ast.attrs
+        .iter()
+        .filter(|a| a.path.segments.len() == 1 && a.path.segments[0].ident == "skip")
+        .nth(0)
+        != None
+}
+
 #[proc_macro_error]
 #[proc_macro_attribute]
 pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -105,6 +100,7 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
     let args = parse_macro_input!(args as EditorPluginArgs);
     let generic_type = plugin_generic_type(&args.args);
     let execution_behaviour = plugin_execution_behaviour(&args.args);
+    let shortkey_expr = plugin_shortkey_expr(&args.args);
 
     match &mut ast.data {
         syn::Data::Struct(ref mut struct_data) => {
@@ -113,32 +109,33 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
                     fields.named.push(
                         syn::Field::parse_named
                             .parse2(quote! { __enabled: bool })
-                            .unwrap(),
+                            .unwrap_or_else(|_| abort!(fields, "Not possible to add to fields")),
                     );
 
                     fields.named.push(
                         syn::Field::parse_named
                             .parse2(quote! { __execution_behaviour: rust_internal::PluginExecutionBehaviour })
-                            .unwrap(),
+                            .unwrap_or_else(|_| abort!(fields, "Not possible to add to fields")),
                     );
                 }
                 _ => (),
             }
 
-            let derive_tokenstream = if !args.args.contains(&EditorPluginArg::Skip) {
-                quote! {
-                    #[derive(rust_macro::PluginWithOptions)]
-                    #[type_trait(#generic_type, #execution_behaviour)]
-                }
-            } else {
-                quote! {
-                    #[derive(rust_macro::SkipPluginWithOptions)]
-                    #[type_trait(#generic_type, #execution_behaviour)]
-                }
+            let skip = match args.args.contains(&EditorPluginArg::Skip) {
+                true => quote! { #[skip] },
+                false => quote! {},
+            };
+
+            let type_trait = match shortkey_expr {
+                Some(e) => quote! { #[type_trait(#generic_type,#execution_behaviour,#e)] },
+                None => quote! { #[type_trait(#generic_type, #execution_behaviour)] },
             };
 
             return quote! {
-                #derive_tokenstream
+                #[derive(rust_macro::PluginWithOptions)]
+                #type_trait
+                #skip
+
                 #ast
             }
             .into();
@@ -148,31 +145,17 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_error]
-#[proc_macro_derive(SkipPluginWithOptions, attributes(skip, option, type_trait))]
-pub fn skip_plugin_with_options(input: TokenStream) -> TokenStream {
-    let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
-    let attrs: Vec<PluginAttribute> = parse_attrs(&ast);
-
-    let param = derive(&ast);
-
-    // Build the impl
-    let gen = produce_skip_plugin(&ast, attrs, param.ty, param.execution_behaviour);
-
-    // Return the generated impl
-    gen.into()
-}
-
-#[proc_macro_error]
 #[proc_macro_derive(PluginWithOptions, attributes(skip, option, type_trait))]
 pub fn plugin_with_options(input: TokenStream) -> TokenStream {
     let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
 
-    let param = derive(&ast);
-
+    let param = derive_plugin_params(&ast);
     let attrs: Vec<PluginAttribute> = parse_attrs(&ast);
 
+    let skip_ui_gen = derive_plugin_skip(&ast);
+
     // Build the impl
-    let gen = produce(&ast, attrs, param.ty, param.execution_behaviour);
+    let gen = produce(&ast, attrs, &param, skip_ui_gen);
 
     // Return the generated impl
     gen.into()

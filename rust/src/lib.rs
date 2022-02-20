@@ -13,7 +13,6 @@ use rust_macro::launch;
 use systems::create_district_system::CreateDistrictSystem;
 use systems::delete_district_system::DeleteDistrictSystem;
 use systems::{
-    create_freeform_street_system::CreateFreeFormStreetSystem,
     create_street_system::CreateStreetSystem, delete_street_system::DeleteStreetSystem,
     render_map_system::MapRenderSystem,
 };
@@ -27,7 +26,6 @@ mod systems;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum Modes {
     CreateSimpleStreet,
-    CreateFreeformStreet,
     DeleteStreet,
     CreateDistrict,
     DeleteDistrict,

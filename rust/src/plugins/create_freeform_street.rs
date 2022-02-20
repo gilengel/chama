@@ -3,7 +3,7 @@ use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     plugins::plugin::Plugin,
     renderer::apply_style,
-    style::Style, log,
+    style::Style,
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -11,7 +11,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{map::map::Map, Modes};
 
-#[editor_plugin(specific_to=Map)]
+#[editor_plugin(specific_to=Map, shortkey=Ctrl+1)]
 pub struct CreateFreeformStreet {
     #[option(skip)]
     raw_points: Vec<Coordinate<f64>>,

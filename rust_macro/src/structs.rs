@@ -1,7 +1,8 @@
-use syn::{Ident, Lit, Meta};
+use syn::{Ident, Lit, Meta, Expr};
 
 use proc_macro2::TokenStream as TokenStream2;
 
+#[derive(Debug)]
 /// Represents the attribute data that will added to the ui
 pub(crate) struct VisibleAttribute {
     /// Name is equivalent to the variable name
@@ -14,10 +15,12 @@ pub(crate) struct VisibleAttribute {
     pub description: Lit,
 }
 
+#[derive(Debug)]
 pub(crate) struct HiddenAttribute {
     pub name: Ident,
 }
 
+#[derive(Debug)]
 pub(crate) enum Attribute {
     Visible(VisibleAttribute),
     Hidden(HiddenAttribute),
@@ -29,6 +32,7 @@ pub(crate) type PluginAttribute = (Attribute, TokenStream2, Vec<Meta>);
 pub(crate) struct GenericParam {
     pub ty: Ident,
     pub execution_behaviour: Ident,
+    pub shortkey_expression: Option<ShortKeyExpr>
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,9 +40,18 @@ pub(crate) enum EditorPluginArg {
     Skip,
     SpecificTo(Ident),
     ExecutionBehaviour(Ident),
+    ShortKey(Expr)
 }
 
 #[derive(Debug)]
 pub(crate) struct EditorPluginArgs {
     pub args: Vec<EditorPluginArg>,
+}
+
+#[derive(Debug)]
+pub(crate) struct ShortKeyExpr {
+    pub(crate) ctrl: bool,
+    pub(crate) shift: bool,
+    pub(crate) alt: bool,
+    pub(crate) key: String
 }

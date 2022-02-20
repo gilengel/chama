@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use geo::Coordinate;
 use rust_editor::{
-    gizmo::Id,
-    plugins::{camera::Renderer, plugin::PluginWithOptions},
-    system::System,
-    InformationLayer,
+    gizmo::Id, plugins::plugin::PluginWithOptions, system::System, InformationLayer,
 };
 use uuid::Uuid;
 
@@ -21,7 +18,7 @@ pub struct CreateDistrictSystem {
 impl CreateDistrictSystem {
     pub fn new() -> Self {
         Self {
-            hovered_street: None
+            hovered_street: None,
         }
     }
 }
@@ -72,7 +69,6 @@ impl System<Map, Modes> for CreateDistrictSystem {
         _additional_information_layer: &Vec<InformationLayer>,
         _plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Map, Modes>>>,
     ) -> Result<(), wasm_bindgen::JsValue> {
-
         Ok(())
     }
 }

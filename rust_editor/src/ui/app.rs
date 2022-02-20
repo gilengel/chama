@@ -1,4 +1,5 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
+use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
 use std::collections::HashMap;
 use wasm_bindgen::JsCast;
@@ -7,7 +8,7 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::{InformationLayer, log};
+use crate::{InformationLayer, log, error};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
@@ -123,7 +124,12 @@ where
                     y: e.movement_y() as f64,
                 };
 
-                for (_, plugin) in &mut self.plugins {
+                for plugin in self
+                    .plugins
+                    .values_mut()
+                    .into_iter()
+                    .filter(|plugin| plugin.enabled())
+                {
                     plugin.mouse_move(mouse_pos, mouse_diff, &mut self.data);
                 }
 
@@ -259,7 +265,21 @@ where
                 plugin.update_property(attribute, value);
             }
             EditorMessages::ActivatePlugin(plugin_id) => {
-                log!("Activate plugin {}", plugin_id);
+                if !self.plugins.contains_key(plugin_id) {
+                    error!("tried to activate plugin with id {} which is not registered", plugin_id);
+                    return true;
+                }
+
+                if let Some((id, exclusive_active_plugin)) = self.plugins.iter_mut().find(|(_, x)| {
+                    x.enabled() && x.execution_behaviour() == &PluginExecutionBehaviour::Exclusive
+                }) {
+                    log!("disable {}", id);
+                    exclusive_active_plugin.disable();
+                }
+
+                self.plugins.get_mut(plugin_id).unwrap().enable();
+                log!("enable {}", plugin_id);
+                
             },
         }
 

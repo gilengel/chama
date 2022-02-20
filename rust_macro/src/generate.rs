@@ -217,6 +217,14 @@ fn produce_enabled() -> TokenStream2 {
         fn enabled(&self) -> bool {
             self.__enabled
         }
+
+        fn enable(&mut self) {
+            self.__enabled = true;
+        }
+
+        fn disable(&mut self) {
+            self.__enabled = false;
+        }
     }
 }
 
@@ -414,7 +422,12 @@ pub(crate) fn produce(
                 #enabled_impl
                 #ui_impl
                 #internal_key_up_impl
+
+                fn execution_behaviour(&self) -> &rust_internal::PluginExecutionBehaviour {
+                    &self.__execution_behaviour
+                }
             }
+            
 
             #impl_any_plugin #crate_name::plugins::plugin::AnyPlugin<#generic_type> for #name #ty_generics #where_clause_any_plugin
             {

@@ -2,6 +2,7 @@ use std::any::Any;
 
 use core::hash::Hash;
 use geo::Coordinate;
+use rust_internal::PluginExecutionBehaviour;
 use web_sys::CanvasRenderingContext2d;
 use yew::{html, Context, Html};
 
@@ -63,6 +64,11 @@ where
         Self: Sized;
 
     fn enabled(&self) -> bool;
+
+    fn enable(&mut self);
+    fn disable(&mut self);
+
+    fn execution_behaviour(&self) -> &PluginExecutionBehaviour;
 
     /// Handles enabling a plugin by pressing its shortcut and is therefore executed even if the plugin is currently disabled. 
     fn __internal_key_up(&mut self, key: &str, special_keys: &Vec<SpecialKey>, _data: &mut Data, ctx: &Context<App<Data, Modes>>) {}

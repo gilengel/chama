@@ -2,6 +2,7 @@ use std::hash::Hash;
 
 use map::map::Map;
 
+use plugins::delete_street::DeleteStreet;
 //use plugins::create_freeform_street::CreateFreeformStreet;
 use rust_editor::plugins::camera::Camera;
 use rust_editor::plugins::grid::Grid;
@@ -40,6 +41,7 @@ fn editor() {
     editor.add_plugin(Undo::<Map>::default());
     editor.add_plugin(Redo::<Map>::default());
     editor.add_plugin(CreateFreeformStreet::default());
+    editor.add_plugin(DeleteStreet::default());
 
     editor.add_mode(
         Modes::CreateSimpleStreet,

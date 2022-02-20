@@ -11,7 +11,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::{map::map::Map, Modes};
 
-#[editor_plugin(specific_to=Map, shortkey=Ctrl+1)]
+#[editor_plugin(specific_to=Map, execution=Exclusive, shortkey=Ctrl+1)]
 pub struct CreateFreeformStreet {
     #[option(skip)]
     raw_points: Vec<Coordinate<f64>>,

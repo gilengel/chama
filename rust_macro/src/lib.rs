@@ -9,10 +9,12 @@ use proc_macro2::{Group, Punct, Spacing, TokenStream as TokenStream2, TokenTree}
 use proc_macro2::{Ident, Span};
 use proc_macro_error::{abort, proc_macro_error, ResultExt};
 use quote::{quote, ToTokens, TokenStreamExt};
+use rust_internal::PluginExecutionBehaviour;
+use std::str::FromStr;
 use syn::parse::Parse;
 use syn::parse::{ParseStream, Parser};
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, DeriveInput, Lit, NestedMeta, Type};
+use syn::{parse_macro_input, DeriveInput, Lit, NestedMeta, Token, Type};
 use syn::{AttributeArgs, Error};
 
 extern crate proc_macro2;
@@ -95,25 +97,34 @@ fn plugin_generic_type(args: &Vec<EditorPluginArg>) -> Ident {
     Ident::new("Data", Span::call_site())
 }
 
-#[derive(Debug)]
-struct GenericParam(syn::Ident);
-impl Deref for GenericParam {
-    type Target = syn::Ident;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+fn plugin_execution_behaviour(args: &Vec<EditorPluginArg>) -> Ident {
+    for arg in args {
+        if let EditorPluginArg::ExecutionBehaviour(x) = arg {
+            return x.clone();
+        }
     }
+
+    Ident::new("Always", Span::call_site())
 }
+
+#[derive(Debug)]
+struct GenericParam {
+    ty: Ident,
+    execution_behaviour: Ident
+}
+
 impl Parse for GenericParam {
     fn parse(input: ParseStream) -> Result<Self, Error> {
         let content;
         syn::parenthesized!(content in input);
         let ty = content.parse()?;
-        Ok(GenericParam(ty))
+        content.parse::<Token![,]>()?;
+        let execution_behaviour = content.parse()?;
+        Ok(GenericParam { ty, execution_behaviour })
     }
 }
 
-fn derive(ast: &syn::DeriveInput) -> Ident {
+fn derive(ast: &syn::DeriveInput) -> GenericParam {
     let attribute = ast
         .attrs
         .iter()
@@ -123,15 +134,16 @@ fn derive(ast: &syn::DeriveInput) -> Ident {
 
     let parameter: GenericParam =
         syn::parse2(attribute.tokens.clone()).expect("Invalid type_trait attribute!");
-    let ident = parameter.deref().clone();
-
-    ident
+    
+        
+        parameter
 }
 
 #[derive(Debug, PartialEq)]
 enum EditorPluginArg {
     Skip,
     SpecificTo(Ident),
+    ExecutionBehaviour(Ident),
 }
 
 #[derive(Debug)]
@@ -157,7 +169,16 @@ impl Parse for EditorPluginArg {
                 return Ok(EditorPluginArg::SpecificTo(ty));
             }
 
-            Err(input.error(format!("unknown identifier got {}. Allowed identifiers are \"skip\" and \"specific_to=Type\"", ident)))
+            if ident == "execution" {
+                input.parse::<syn::Token![=]>()?;
+                let ty = input.parse::<syn::Ident>()?;
+
+                //let behaviour = PluginExecutionBehaviour::from_str(&ty.to_string()).unwrap();
+
+                return Ok(EditorPluginArg::ExecutionBehaviour(ty));
+            }
+
+            Err(input.error(format!("unknown identifier got {}. Allowed identifiers are \"skip\", \"specific_to=Type\" and \"execution=PluginExecutionBehaviour\"", ident)))
         } else {
             Err(lookahead.error())
         }
@@ -184,6 +205,7 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast = parse_macro_input!(input as DeriveInput);
     let args = parse_macro_input!(args as EditorPluginArgs);
     let generic_type = plugin_generic_type(&args.args);
+    let execution_behaviour = plugin_execution_behaviour(&args.args);
 
     match &mut ast.data {
         syn::Data::Struct(ref mut struct_data) => {
@@ -194,6 +216,12 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
                             .parse2(quote! { __enabled: bool })
                             .unwrap(),
                     );
+
+                    fields.named.push(
+                        syn::Field::parse_named
+                            .parse2(quote! { __execution_behaviour: rust_internal::PluginExecutionBehaviour })
+                            .unwrap(),
+                    );
                 }
                 _ => (),
             }
@@ -201,12 +229,12 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
             let derive_tokenstream = if !args.args.contains(&EditorPluginArg::Skip) {
                 quote! {
                     #[derive(rust_macro::PluginWithOptions)]
-                    #[type_trait(#generic_type)]
+                    #[type_trait(#generic_type, #execution_behaviour)]
                 }
             } else {
                 quote! {
                     #[derive(rust_macro::SkipPluginWithOptions)]
-                    #[type_trait(#generic_type)]
+                    #[type_trait(#generic_type, #execution_behaviour)]
                 }
             };
 
@@ -226,10 +254,10 @@ pub fn skip_plugin_with_options(input: TokenStream) -> TokenStream {
     let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
     let attrs: Vec<PluginAttribute> = parse_attrs(&ast);
 
-    let generic_type = derive(&ast);
+    let param = derive(&ast);
 
     // Build the impl
-    let gen = produce_skip_plugin(&ast, attrs, generic_type);
+    let gen = produce_skip_plugin(&ast, attrs, param.ty, param.execution_behaviour);
 
     // Return the generated impl
     gen.into()
@@ -240,12 +268,12 @@ pub fn skip_plugin_with_options(input: TokenStream) -> TokenStream {
 pub fn plugin_with_options(input: TokenStream) -> TokenStream {
     let ast: DeriveInput = syn::parse(input).expect_or_abort("Couldn't parse for plugin");
 
-    let generic_type = derive(&ast);
+    let param = derive(&ast);
 
     let attrs: Vec<PluginAttribute> = parse_attrs(&ast);
 
     // Build the impl
-    let gen = produce(&ast, attrs, generic_type);
+    let gen = produce(&ast, attrs, param.ty, param.execution_behaviour);
 
     // Return the generated impl
     gen.into()
@@ -267,7 +295,7 @@ pub(crate) fn get_mandatory_meta_value<'a>(
     None
 }
 
-fn produce_default_impl(ast: &DeriveInput, attrs: &Vec<PluginAttribute>) -> TokenStream2 {
+fn produce_default_impl(ast: &DeriveInput, attrs: &Vec<PluginAttribute>, execution_behaviour: &Ident) -> TokenStream2 {
     let name = &ast.ident;
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -275,6 +303,7 @@ fn produce_default_impl(ast: &DeriveInput, attrs: &Vec<PluginAttribute>) -> Toke
     // Used for the default impl function
     let mut defaults: Vec<TokenStream2> = vec![];
     defaults.push(quote! { __enabled: true });
+    defaults.push(quote! { __execution_behaviour: rust_internal::PluginExecutionBehaviour::#execution_behaviour });
 
     // Now for all attributes defined be the plugin developer
     for (attr, ty, metas) in attrs {
@@ -394,6 +423,7 @@ fn produce_skip_plugin(
     ast: &DeriveInput,
     attrs: Vec<PluginAttribute>,
     generic_type: Ident,
+    execution_behaviour: Ident,
 ) -> TokenStream2 {
     let (where_clause_plugins_with_options, where_clause_any_plugin) = if generic_type == "Data" {
         (
@@ -416,7 +446,7 @@ fn produce_skip_plugin(
 
         // generated methods
         let identifier_impl = produce_identifier_impl(&ast.ident);
-        let default_impl = produce_default_impl(ast, &attrs);
+        let default_impl = produce_default_impl(ast, &attrs, &execution_behaviour);
         let enabled_impl = produce_enabled();
         let produce_as_any_impl = produce_as_any_impl();
 
@@ -459,33 +489,28 @@ fn produce_use_statements(crate_name: &Ident) -> TokenStream2 {
         use #crate_name::ui::app::App;
         use #crate_name::ui::app::EditorMessages;
         use std::any::Any;
-        use std::marker::PhantomData;
     }
 }
 
-fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>, generic_type: Ident) -> TokenStream2 {
+fn produce(
+    ast: &DeriveInput,
+    attrs: Vec<PluginAttribute>,
+    generic_type: Ident,
+    execution_behaviour: Ident,
+) -> TokenStream2 {
     let (where_clause_plugins_with_options, where_clause_any_plugin) = if generic_type == "Data" {
         (
             quote! { where Data: Renderer + Default + 'static, Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, },
             quote! { where Data: Renderer + Default + 'static, },
         )
     } else {
-        (
-            quote! {},
-            quote! {},
-        )
+        (quote! {}, quote! {})
     };
 
     let (impl_plugins_with_options, impl_any_plugin) = if generic_type == "Data" {
-        (
-            quote! { impl<Data, Modes> },
-            quote! { impl<Data> },
-        )
+        (quote! { impl<Data, Modes> }, quote! { impl<Data> })
     } else {
-        (
-            quote! { impl },
-            quote! { impl },
-        )
+        (quote! { impl }, quote! { impl })
     };
 
     // Is it a struct?
@@ -497,7 +522,7 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>, generic_type: Ident) 
 
         // generated methods
         let identifier_impl = produce_identifier_impl(&ast.ident);
-        let default_impl = produce_default_impl(ast, &attrs);
+        let default_impl = produce_default_impl(ast, &attrs, &execution_behaviour);
         let ui_impl = produce_ui_impl(ast, &attrs, &generic_type);
         let enabled_impl = produce_enabled();
         let produce_as_any_impl = produce_as_any_impl();
@@ -530,8 +555,6 @@ fn produce(ast: &DeriveInput, attrs: Vec<PluginAttribute>, generic_type: Ident) 
 
             #default_impl
         };
-
-        print!("\n\n\n\n\n\n{}\n\n\n\n\n\n", muu.clone().to_string());
 
         muu
     } else {

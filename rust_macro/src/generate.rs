@@ -321,7 +321,7 @@ fn crate_name() -> Ident {
     crate_name
 }
 
-fn produce_internal_key_up(param: &GenericParam) -> TokenStream2 {
+fn produce_internal_key_up(plugin_name: &Ident, param: &GenericParam) -> TokenStream2 {
     let ty = param.ty.clone();
 
     if let Some(expr) = &param.shortkey_expression {
@@ -342,10 +342,16 @@ fn produce_internal_key_up(param: &GenericParam) -> TokenStream2 {
         let key = &expr.key;
         statements.push(quote! { key == #key });
 
+        let generic_type = param.ty.clone();
+        let context = match param.ty == "Data" {
+            true => quote! { &Context<App<Data, Modes> }, 
+            false =>  quote!{ &Context<App<#generic_type, Modes>>}
+        };
+
         return quote! {
-            fn __internal_key_up(&mut self, key: &str, special_keys: &Vec<SpecialKey>, _data: &mut #ty) {
+            fn __internal_key_up(&mut self, key: &str, special_keys: &Vec<SpecialKey>, _data: &mut #ty, ctx: #context) {
                 if #(#statements) && * {
-                    web_sys::console::log_1(&":)".into())
+                    ctx.link().send_message(EditorMessages::ActivatePlugin(#plugin_name::identifier()));
                 }
                 
             }
@@ -392,7 +398,7 @@ pub(crate) fn produce(
         };
         let enabled_impl = produce_enabled();
         let produce_as_any_impl = produce_as_any_impl();
-        let internal_key_up_impl = produce_internal_key_up(&param);
+        let internal_key_up_impl = produce_internal_key_up(&name, &param);
 
         let crate_name = crate_name();
 

@@ -7,7 +7,7 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 use crate::ui::toolbar_button::ToolbarButton;
-use crate::InformationLayer;
+use crate::{InformationLayer, log};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
@@ -25,6 +25,7 @@ where
 {
     AddPlugin((&'static str, Box<dyn PluginWithOptions<Data, Modes>>)),
     PluginOptionUpdated((&'static str, &'static str, Box<dyn Any>)),
+    ActivatePlugin(&'static str),
     AddMode((Modes, Vec<Box<dyn System<Data, Modes>>>, Option<ModeProps>)),
     SwitchMode(Modes),
 
@@ -215,6 +216,7 @@ where
                 }
             }
             EditorMessages::KeyUp(e) => {
+                
                 let mut special_keys = vec![];
                 if e.ctrl_key() {
                     special_keys.push(SpecialKey::Ctrl);
@@ -227,7 +229,7 @@ where
                 }
 
                 for plugin in self.plugins.values_mut() {
-                    plugin.__internal_key_up(&e.key()[..], &special_keys, &mut self.data);
+                    plugin.__internal_key_up(&e.key()[..], &special_keys, &mut self.data, ctx);
                 }
 
                 for plugin in self
@@ -256,6 +258,9 @@ where
                 let plugin = self.get_plugin_by_key_mut(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
                 plugin.update_property(attribute, value);
             }
+            EditorMessages::ActivatePlugin(plugin_id) => {
+                log!("Activate plugin {}", plugin_id);
+            },
         }
 
         true

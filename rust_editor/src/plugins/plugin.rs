@@ -65,7 +65,7 @@ where
     fn enabled(&self) -> bool;
 
     /// Handles enabling a plugin by pressing its shortcut and is therefore executed even if the plugin is currently disabled. 
-    fn __internal_key_up(&mut self, key: &str, special_keys: &Vec<SpecialKey>, _data: &mut Data) {}
+    fn __internal_key_up(&mut self, key: &str, special_keys: &Vec<SpecialKey>, _data: &mut Data, ctx: &Context<App<Data, Modes>>) {}
 }
 
 #[allow(unused_variables)]

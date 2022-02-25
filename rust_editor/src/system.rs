@@ -15,10 +15,9 @@ use crate::{plugins::{camera::Renderer, plugin::PluginWithOptions}, InformationL
 /// and not necessary data is removed from the map.
 
 #[allow(unused_variables)]
-pub trait System<Data, Modes>
+pub trait System<Data>
 where
     Data: Renderer,
-    Modes: Clone + PartialEq
 {
     /// Is used to implement behaviour of the state if the user clicked inside the specified
     /// html element by the statemachine.
@@ -31,7 +30,7 @@ where
         _mouse_pos: Coordinate<f64>,
         _button: u32,
         _data: &mut Data,
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Data, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Data>>>
         
     ) {
     }
@@ -45,7 +44,7 @@ where
         &mut self,
         _mouse_pos: Coordinate<f64>,
         _data: &mut Data,
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Data, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Data>>>
     ) {
     }
 
@@ -60,7 +59,7 @@ where
         _mouse_pos: Coordinate<f64>,
         _button: u32,
         _data: &mut Data,
-        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Data, Modes>>>
+        _plugins: &mut HashMap<&'static str, Box<dyn PluginWithOptions<Data>>>
     ) {
     }
 
@@ -69,7 +68,7 @@ where
         data: &Data,
         context: &CanvasRenderingContext2d,
         additional_information_layer: &Vec<InformationLayer>,
-        plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Data, Modes>>>
+        plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Data>>>
     ) -> Result<(), JsValue> {
         data.render(context, additional_information_layer)?;
 
@@ -83,9 +82,9 @@ where
 
     /// Called every time the state is activated by the state maschine. Use it to
     /// initialize values for the state.
-    fn enter(&mut self, _data: &mut Data, _plugins: HashMap<&'static str, &mut Box<dyn PluginWithOptions<Data, Modes>>>) {}
+    fn enter(&mut self, _data: &mut Data, _plugins: HashMap<&'static str, &mut Box<dyn PluginWithOptions<Data>>>) {}
 
     /// Called every time the state is deactivated by the state maschine. Use it to
     /// clean up values in the state.
-    fn exit(&self, _data: &mut Data, _plugins: HashMap<&'static str, &mut Box<dyn PluginWithOptions<Data, Modes>>>) {}
+    fn exit(&self, _data: &mut Data, _plugins: HashMap<&'static str, &mut Box<dyn PluginWithOptions<Data>>>) {}
 }

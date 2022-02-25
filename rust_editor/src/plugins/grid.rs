@@ -27,7 +27,8 @@ pub struct Grid {
 
 impl<T> Plugin<T> for Grid
 where
-    T: Renderer + 'static,
+    T: Renderer + Default + 'static,
+
 {
     fn render(&self, context: &CanvasRenderingContext2d) {
         if self.offset == 0 {

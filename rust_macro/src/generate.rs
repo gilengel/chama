@@ -286,7 +286,7 @@ fn produce_ui_impl(
     t.extend(vec![TokenTree::Group(Group::new(Delimiter::Brace, inner))]);
 
     let gen = quote! {
-        fn view_options(&self, ctx: &Context<App<#generic_type, Modes>>) -> Html {
+        fn view_options(&self, ctx: &Context<App<#generic_type>>) -> Html {
             #(#callbacks)*
             #t
         }
@@ -333,7 +333,6 @@ fn produce_internal_key_up(plugin_name: &Ident, param: &GenericParam) -> TokenSt
     let ty = param.ty.clone();
 
     if let Some(expr) = &param.shortkey_expression {
-        
         let mut statements: Vec<TokenStream2> = Vec::new();
         if expr.ctrl {
             statements.push(quote! { special_keys.contains(&SpecialKey::Ctrl)});
@@ -352,8 +351,8 @@ fn produce_internal_key_up(plugin_name: &Ident, param: &GenericParam) -> TokenSt
 
         let generic_type = param.ty.clone();
         let context = match param.ty == "Data" {
-            true => quote! { &Context<App<Data, Modes> }, 
-            false =>  quote!{ &Context<App<#generic_type, Modes>>}
+            true => quote! { &Context<App<Data> },
+            false => quote! { &Context<App<#generic_type>>},
         };
 
         return quote! {
@@ -361,7 +360,7 @@ fn produce_internal_key_up(plugin_name: &Ident, param: &GenericParam) -> TokenSt
                 if #(#statements) && * {
                     ctx.link().send_message(EditorMessages::ActivatePlugin(#plugin_name::identifier()));
                 }
-                
+
             }
         };
     }
@@ -377,15 +376,15 @@ pub(crate) fn produce(
 ) -> TokenStream2 {
     let (where_clause_plugins_with_options, where_clause_any_plugin) = if param.ty == "Data" {
         (
-            quote! { where Data: Renderer + Default + 'static, Modes: Clone + std::cmp::PartialEq + Eq + std::hash::Hash + 'static, },
-            quote! { where Data: Renderer + Default + 'static, },
+            quote! { where Data: Renderer + Default + 'static },
+            quote! { where Data: Renderer + Default + 'static },
         )
     } else {
         (quote! {}, quote! {})
     };
 
     let (impl_plugins_with_options, impl_any_plugin) = if param.ty == "Data" {
-        (quote! { impl<Data, Modes> }, quote! { impl<Data> })
+        (quote! { impl<Data> }, quote! { impl<Data> })
     } else {
         (quote! { impl }, quote! { impl })
     };
@@ -416,7 +415,7 @@ pub(crate) fn produce(
         let muu = quote! {
             #use_statements
 
-            #impl_plugins_with_options #crate_name::plugins::plugin::PluginWithOptions<#generic_type, Modes> for #name #ty_generics #where_clause_plugins_with_options
+            #impl_plugins_with_options #crate_name::plugins::plugin::PluginWithOptions<#generic_type> for #name #ty_generics #where_clause_plugins_with_options
             {
                 #identifier_impl
                 #enabled_impl
@@ -427,7 +426,7 @@ pub(crate) fn produce(
                     &self.__execution_behaviour
                 }
             }
-            
+
 
             #impl_any_plugin #crate_name::plugins::plugin::AnyPlugin<#generic_type> for #name #ty_generics #where_clause_any_plugin
             {

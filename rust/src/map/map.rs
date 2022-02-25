@@ -35,8 +35,8 @@ pub struct Map {
 impl Default for Map {
     fn default() -> Map {
         Map {
-            width: 1920,
-            height: 800,
+            width: 2560,
+            height: 1440,
             streets: HashMap::new(),
             intersections: HashMap::new(),
             districts: HashMap::new(),

@@ -19,6 +19,7 @@ rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }
 yew = { git = "https://github.com/yewstack/yew", branch = "master" }
 gloo-render = "0.1"
+thiserror = "1.0"
 
 [dependencies.web-sys]
 version = "0.3.4"

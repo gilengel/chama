@@ -85,7 +85,7 @@ macro_rules! log {
 #[macro_export]
 macro_rules! error {
     ( $( $t:tt )* ) => {
-        unsafe { web_sys::console::error_1(&format!( $( $t )* ).into()) }
+        web_sys::console::error_1(&format!( $( $t )* ).into())
     }
 }
 

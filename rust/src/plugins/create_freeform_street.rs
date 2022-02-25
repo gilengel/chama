@@ -1,17 +1,19 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
+    keys, log,
     plugins::plugin::Plugin,
     renderer::apply_style,
     style::Style,
+    ui::app::{EditorError, Shortkey},
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{map::map::Map, Modes};
+use crate::map::map::Map;
 
-#[editor_plugin(specific_to=Map, execution=Exclusive, shortkey=Ctrl+1)]
+#[editor_plugin(specific_to=Map, execution=Exclusive, shortkey=1)]
 pub struct CreateFreeformStreet {
     #[option(skip)]
     raw_points: Vec<Coordinate<f64>>,
@@ -68,8 +70,19 @@ impl Redo<Map> for CreateFreeFormStreetAction {
 
 impl Action<Map> for CreateFreeFormStreetAction {}
 
+impl CreateFreeformStreet {
+    pub fn say_hello(&mut self) {
+        log!("MUH?")
+    }
+}
+
 impl Plugin<Map> for CreateFreeformStreet {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
+        editor.add_shortkey::<CreateFreeformStreet>(keys!["Control", "a"])?;
+
+        Ok(())
+    }
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _map: &mut Map) {
         if button == 0 {
             self.brush_active = true;
         }
@@ -84,6 +97,13 @@ impl Plugin<Map> for CreateFreeformStreet {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
         }
+    }
+
+    fn shortkey_pressed(&mut self, key: &Shortkey){
+        if *key == keys!["Control", "a"] {
+            self.say_hello()
+        }
+
     }
 
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {

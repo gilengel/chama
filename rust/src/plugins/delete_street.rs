@@ -6,16 +6,9 @@ use rust_editor::{
 use rust_macro::editor_plugin;
 use uuid::Uuid;
 
-use crate::{
-    map::{
-        intersection::Side,
-        map::{self, Map},
-        street::Street,
-    },
-    Modes,
-};
+use crate::map::{intersection::Side, map::Map, street::Street};
 
-#[editor_plugin(specific_to=Map, execution=Exclusive, shortkey=Ctrl+2)]
+#[editor_plugin(specific_to=Map, execution=Exclusive, shortkey=2)]
 pub struct DeleteStreet {
     #[option(skip)]
     hovered_streets: Option<Vec<Uuid>>,
@@ -91,12 +84,12 @@ impl DeleteStreet {
     }
 }
 impl Plugin<Map> for DeleteStreet {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {}
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _map: &mut Map) {}
 
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        mouse_movement: Coordinate<f64>,
+        _mouse_movement: Coordinate<f64>,
         map: &mut Map,
     ) {
         self.clean_hovered_street_state(map);
@@ -112,7 +105,7 @@ impl Plugin<Map> for DeleteStreet {
         }
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, map: &mut Map) {
         if let Some(hovered_streets) = &self.hovered_streets {
             for street in hovered_streets {
                 map.remove_street(&street);

@@ -25,6 +25,7 @@ where
 impl<T> Plugin<T> for Undo<T>
 where
     T: Renderer + Default + 'static,
+
 {
     fn mouse_down(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut T) {}
 

@@ -1,34 +1,33 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
+use std::borrow::BorrowMut;
 use std::collections::HashMap;
+use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
-use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
-use crate::ui::toolbar_button::ToolbarButton;
-use crate::{InformationLayer, log, error};
+use crate::plugins::plugin::{PluginWithOptions, SpecialKey, Plugin};
+
+use crate::{error, log, InformationLayer};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
-use std::hash::Hash;
+use crate::plugins::camera::Renderer;
 
-use crate::ui::toolbar::Toolbar;
-use crate::{plugins::camera::Renderer, system::System};
+#[macro_export]
+macro_rules! keys {
+    ($($x:expr),*) => (vec![$($x.to_string()),*]);
+}
 
-pub enum EditorMessages<Data, Modes>
-where
-    Modes: Clone + std::cmp::PartialEq,
-{
-    AddPlugin((&'static str, Box<dyn PluginWithOptions<Data, Modes>>)),
+pub enum EditorMessages<Data> {
+    AddPlugin((&'static str, Box<dyn PluginWithOptions<Data> + 'static>)),
     PluginOptionUpdated((&'static str, &'static str, Box<dyn Any>)),
     ActivatePlugin(&'static str),
-    AddMode((Modes, Vec<Box<dyn System<Data, Modes>>>, Option<ModeProps>)),
-    SwitchMode(Modes),
 
     MouseMove(MouseEvent),
     MouseDown(MouseEvent),
@@ -38,45 +37,80 @@ where
     Render(f64),
 }
 
-pub struct App<Data, Modes>
+pub type Shortkey = Vec<String>;
+type Callback = Box<dyn FnMut()>;
+
+#[derive(Error, Debug)]
+pub enum EditorError {
+    #[error("shortkey {:?} is already registered", shortkey)]
+    ShortkeyExists { shortkey: Shortkey },
+}
+
+
+pub struct App<Data>
 where
     Data: Renderer + Default + 'static,
-    Modes: Clone + PartialEq + Eq + Hash,
 {
     data: Data,
 
-    additional_information_layers: Vec<InformationLayer>,
-    active_mode: Option<Modes>,
-    modes: HashMap<Modes, (Vec<Box<dyn System<Data, Modes>>>, Option<ModeProps>)>,
+    _additional_information_layers: Vec<InformationLayer>,
 
-    plugins: HashMap<&'static str, Box<dyn PluginWithOptions<Data, Modes>>>,
+    plugins: HashMap<&'static str, Box<dyn PluginWithOptions<Data> + 'static>>,
+    shortkeys: HashMap<&'static str, Vec<Shortkey>>,
     _render_loop: Option<AnimationFrame>,
     canvas_ref: NodeRef,
     context: Option<CanvasRenderingContext2d>,
+
+    pressed_keys: Vec<String>,
+}
+
+impl<Data> App<Data>
+where
+    Data: Renderer + Default + 'static,
+
+{
+    pub fn add_shortkey<T>(&mut self, keys: Shortkey) -> Result<(), EditorError>
+    where
+        T: PluginWithOptions<Data>,
+    {
+        match self.shortkeys.values().find(|x| x.contains(&&keys)) {
+            Some(_) => Err(EditorError::ShortkeyExists { shortkey: keys }),
+            None => {
+                let id = T::identifier();
+                if !self.shortkeys.contains_key(id) {
+                    self.shortkeys.insert(id, vec![]);
+                };
+
+                self.shortkeys.get_mut(id).unwrap().push(keys);
+                Ok(())
+            }
+        }
+    }
 }
 
 #[derive(Properties, PartialEq, Default)]
 pub struct EditorProps {}
 
-impl<Data, Modes> Component for App<Data, Modes>
+impl<Data> Component for App<Data>
 where
     Data: Renderer + Default + 'static,
-    Modes: Clone + PartialEq + Eq + Hash + 'static,
+
 {
-    type Message = EditorMessages<Data, Modes>;
+    type Message = EditorMessages<Data>;
     type Properties = EditorProps;
 
     fn create(_ctx: &yew::Context<Self>) -> Self {
         App {
             data: Data::default(),
             plugins: HashMap::new(),
-            modes: HashMap::new(),
-            active_mode: None,
-            additional_information_layers: Vec::new(),
+            shortkeys: HashMap::new(),
+            _additional_information_layers: Vec::new(),
 
             canvas_ref: NodeRef::default(),
             _render_loop: None,
             context: None,
+
+            pressed_keys: Vec::new(),
         }
     }
 
@@ -106,18 +140,16 @@ where
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            EditorMessages::AddPlugin((key, plugin)) => {
-                self.plugins.insert(key, plugin);
-            }
-            EditorMessages::AddMode((index, mode, button)) => {
-                self.modes.insert(index, (mode, button));
-            }
-            EditorMessages::SwitchMode(e) => self.active_mode = Some(e),
-            EditorMessages::MouseMove(e) => {
-                if self.active_mode == None {
-                    return false;
+            EditorMessages::AddPlugin((key, mut plugin)) => {
+                if let Err(e) = plugin.startup(self) {
+                    error!("{}", e)
                 }
+                self.plugins.insert(key, plugin);
+                
 
+                ctx.link().send_message(EditorMessages::ActivatePlugin(key))
+            }
+            EditorMessages::MouseMove(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
                 let mouse_diff = Coordinate {
                     x: e.movement_x() as f64,
@@ -132,24 +164,8 @@ where
                 {
                     plugin.mouse_move(mouse_pos, mouse_diff, &mut self.data);
                 }
-
-                let (active_mode, _) = self
-                    .modes
-                    .get_mut(self.active_mode.as_ref().unwrap())
-                    .unwrap();
-                for system in active_mode.iter_mut() {
-                    system.mouse_move(mouse_pos, &mut self.data, &mut self.plugins);
-
-                    if system.blocks_next_systems() {
-                        break;
-                    }
-                }
             }
             EditorMessages::MouseDown(e) => {
-                if self.active_mode == None {
-                    return false;
-                }
-
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
                 for plugin in self
@@ -160,29 +176,8 @@ where
                 {
                     plugin.mouse_down(mouse_pos, e.button() as u32, &mut self.data);
                 }
-
-                let (active_mode, _) = self
-                    .modes
-                    .get_mut(&self.active_mode.as_ref().unwrap())
-                    .unwrap();
-                for system in active_mode.iter_mut() {
-                    system.mouse_down(
-                        mouse_pos,
-                        e.button() as u32,
-                        &mut self.data,
-                        &mut self.plugins,
-                    );
-
-                    if system.blocks_next_systems() {
-                        break;
-                    }
-                }
             }
             EditorMessages::MouseUp(e) => {
-                if self.active_mode == None {
-                    return false;
-                }
-
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
                 for plugin in self
@@ -193,25 +188,28 @@ where
                 {
                     plugin.mouse_up(mouse_pos, e.button() as u32, &mut self.data);
                 }
-
-                let (active_mode, _) = self
-                    .modes
-                    .get_mut(&self.active_mode.as_ref().unwrap())
-                    .unwrap();
-                for system in active_mode.iter_mut() {
-                    system.mouse_up(
-                        mouse_pos,
-                        e.button() as u32,
-                        &mut self.data,
-                        &mut self.plugins,
-                    );
-
-                    if system.blocks_next_systems() {
-                        break;
-                    }
-                }
             }
             EditorMessages::KeyDown(e) => {
+                e.prevent_default();
+
+                match self.pressed_keys.last() {
+                    Some(last) => {
+                        if *last != e.key() {
+                            self.pressed_keys.push(e.key())
+                        }
+                    }
+                    None => self.pressed_keys.push(e.key()),
+                }
+
+                for (plugin_id, shortkeys) in self.shortkeys.iter_mut() {
+                    for shortkey in shortkeys {
+                        if self.pressed_keys.ends_with(shortkey) {
+                            self.plugins.get_mut(plugin_id).unwrap().shortkey_pressed(shortkey);
+                            
+                        }
+                    }
+                }
+
                 for plugin in self
                     .plugins
                     .values_mut()
@@ -222,7 +220,8 @@ where
                 }
             }
             EditorMessages::KeyUp(e) => {
-                
+                self.pressed_keys.retain(|value| *value != e.key());
+
                 let mut special_keys = vec![];
                 if e.ctrl_key() {
                     special_keys.push(SpecialKey::Ctrl);
@@ -248,16 +247,6 @@ where
                 }
             }
             EditorMessages::Render(_) => {
-                let context = self.context.as_ref().unwrap();
-                for plugin in self
-                    .plugins
-                    .values()
-                    .into_iter()
-                    .filter(|plugin| plugin.enabled())
-                {
-                    plugin.render(context);
-                }
-
                 self.render(ctx.link());
             }
             EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {
@@ -266,21 +255,24 @@ where
             }
             EditorMessages::ActivatePlugin(plugin_id) => {
                 if !self.plugins.contains_key(plugin_id) {
-                    error!("tried to activate plugin with id {} which is not registered", plugin_id);
+                    error!(
+                        "tried to activate plugin with id {} which is not registered",
+                        plugin_id
+                    );
                     return true;
                 }
 
-                if let Some((id, exclusive_active_plugin)) = self.plugins.iter_mut().find(|(_, x)| {
-                    x.enabled() && x.execution_behaviour() == &PluginExecutionBehaviour::Exclusive
-                }) {
-                    log!("disable {}", id);
+                if let Some((id, exclusive_active_plugin)) =
+                    self.plugins.iter_mut().find(|(_, x)| {
+                        x.enabled()
+                            && x.execution_behaviour() == &PluginExecutionBehaviour::Exclusive
+                    })
+                {
                     exclusive_active_plugin.disable();
                 }
 
                 self.plugins.get_mut(plugin_id).unwrap().enable();
-                log!("enable {}", plugin_id);
-                
-            },
+            }
         }
 
         true
@@ -296,7 +288,7 @@ where
 
         html! {
         <main>
-            <canvas ref={self.canvas_ref.clone()} width="1920" height="1080" {onmousedown} {onmouseup} {onmousemove} {onkeyup} {onkeydown} tabindex="0"></canvas>
+            <canvas ref={self.canvas_ref.clone()} width="2560" height="1440" {onmousedown} {onmouseup} {onmousemove} {onkeyup} {onkeydown} tabindex="0"></canvas>
 
             <Dialog>
             {
@@ -306,44 +298,40 @@ where
             }
             </Dialog>
 
+            /*
             <Toolbar>
             {
+
                 for self.modes.iter().filter(|(_, (_, button))| button.is_some()).map(|(id, (_, button))| {
                     html!{
                         self.view_mode_button(ctx, id, button)
                     }
                 })
+
             }
             </Toolbar>
+            */
         </main>
         }
     }
 }
 
-impl<Data, Modes> App<Data, Modes>
+impl<Data> App<Data>
 where
     Data: Renderer + Default + 'static,
-    Modes: Clone + PartialEq + Eq + Hash + 'static,
+
 {
-    fn view_mode_button(
-        &self,
-        ctx: &yew::Context<Self>,
-        id: &Modes,
-        mode_props: &Option<ModeProps>,
-    ) -> Html {
-        let id = id.clone();
-        let mode_props = mode_props.as_ref().unwrap();
-        let on_click = ctx.link().callback(|e| EditorMessages::SwitchMode(e));
+    fn view_mode_button(&self, ctx: &yew::Context<Self>, mode_props: &Option<ModeProps>) -> Html {
+        //let id = id.clone();
+        //let mode_props = mode_props.as_ref().unwrap();
+        //let on_click = ctx.link().callback(|e| EditorMessages::SwitchMode(e));
 
         html! {
-            <ToolbarButton<Modes> icon={mode_props.icon} tooltip={mode_props.tooltip} identifier={id} {on_click} />
+            //<ToolbarButton<Modes> icon={mode_props.icon} tooltip={mode_props.tooltip} identifier={id} {on_click} />
         }
     }
 
-    fn get_plugin_by_key_mut(
-        &mut self,
-        key: &str,
-    ) -> Option<&mut dyn PluginWithOptions<Data, Modes>>
+    fn get_plugin_by_key_mut(&mut self, key: &str) -> Option<&mut dyn PluginWithOptions<Data>>
     where
         Data: Renderer + 'static,
     {
@@ -356,7 +344,7 @@ where
 
     pub fn get_plugin<P>(&self) -> Option<&P>
     where
-        P: PluginWithOptions<Data, Modes> + 'static,
+        P: PluginWithOptions<Data> + 'static,
         Data: Renderer + 'static,
     {
         for (_, plugin) in &self.plugins {
@@ -385,6 +373,8 @@ where
 
         context.clear_rect(0.0, 0.0, 2000.0, 2000.0);
 
+        self.data.render(context, &vec![]).unwrap();
+
         for plugin in self
             .plugins
             .values()
@@ -392,25 +382,6 @@ where
             .filter(|plugin| plugin.enabled())
         {
             plugin.render(context);
-        }
-
-        let (active_mode, _) = self
-            .modes
-            .get_mut(&self.active_mode.as_ref().unwrap())
-            .unwrap();
-        for system in active_mode.iter_mut() {
-            system
-                .render(
-                    &self.data,
-                    &context,
-                    &self.additional_information_layers,
-                    &self.plugins,
-                )
-                .expect("System could not render");
-
-            if system.blocks_next_systems() {
-                break;
-            }
         }
 
         let handle = {
@@ -423,12 +394,12 @@ where
     }
 }
 
-pub struct GenericEditor<Data, Modes>
+pub struct GenericEditor<Data>
 where
     Data: Renderer + Default + 'static,
-    Modes: Clone + PartialEq + Eq + Hash + 'static,
+
 {
-    app_handle: AppHandle<App<Data, Modes>>,
+    app_handle: AppHandle<App<Data>>,
 }
 
 pub struct ModeProps {
@@ -436,43 +407,29 @@ pub struct ModeProps {
     pub tooltip: &'static str,
 }
 
-impl<Data, Modes> GenericEditor<Data, Modes>
+impl<Data> GenericEditor<Data>
 where
     Data: Renderer + Default + 'static,
-    Modes: Clone + PartialEq + Eq + Hash + 'static,
+
 {
     pub fn add_plugin<P>(&mut self, plugin: P)
     where
-        P: PluginWithOptions<Data, Modes> + 'static,
+        P: PluginWithOptions<Data> + 'static,
+    
     {
         self.app_handle.send_message(EditorMessages::AddPlugin((
             P::identifier(),
             Box::new(plugin),
         )));
     }
-
-    pub fn add_mode(
-        &mut self,
-        index: Modes,
-        systems: Vec<Box<dyn System<Data, Modes>>>,
-        button: Option<ModeProps>,
-    ) {
-        self.app_handle
-            .send_message(EditorMessages::AddMode((index, systems, button)));
-    }
-
-    pub fn activate_mode(&mut self, mode: Modes) {
-        self.app_handle
-            .send_message(EditorMessages::SwitchMode(mode));
-    }
 }
 
-pub fn x_launch<Data, Modes>() -> GenericEditor<Data, Modes>
+pub fn x_launch<Data>() -> GenericEditor<Data>
 where
     Data: Renderer + Default + 'static,
-    Modes: Clone + PartialEq + Eq + Hash + 'static,
+
 {
     GenericEditor {
-        app_handle: yew::start_app::<App<Data, Modes>>(),
+        app_handle: yew::start_app::<App<Data>>(),
     }
 }

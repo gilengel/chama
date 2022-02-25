@@ -1,11 +1,3 @@
-
-
-
-use std::collections::HashMap;
-
-use plugins::{plugin::{PluginWithOptions}, camera::Renderer};
-use core::hash::Hash;
-
 pub mod actions;
 pub mod gizmo;
 pub mod interactive_element;
@@ -16,16 +8,17 @@ pub mod store;
 pub mod style;
 pub mod system;
 pub mod ui;
+pub mod input;
 
 #[derive(PartialEq)]
 pub enum InformationLayer {
     Debug,
 }
 
-pub fn get_plugin<'a, Data, Modes, P>(plugins: &'a HashMap<&'static str, Box<(dyn PluginWithOptions<Data, Modes> + 'static)>>) -> Option<&'a P>
+/*
+pub fn get_plugin<'a, Data, Modes, P>(plugins: &'a HashMap<&'static str, Box<(dyn PluginWithOptions<Data> + 'static)>>) -> Option<&'a P>
 where
-    P: PluginWithOptions<Data, Modes> + 'static,
-    Modes: Eq + Hash + Clone + 'static,
+    P: PluginWithOptions<Data> + 'static,
     Data: Default + Renderer + 'static,
 {
     let id = P::identifier();
@@ -38,10 +31,10 @@ where
     None
 }
 
-pub fn get_plugin_mut<Data, Modes>(_plugins: &mut Vec<Box<dyn PluginWithOptions<Data, Modes>>>) -> Option<&mut Modes>
+pub fn get_plugin_mut<Data>(_plugins: &mut Vec<Box<dyn PluginWithOptions<Data>>>) -> Option<&mut Modes>
 where
-    Modes: 'static,
     Data: Renderer + 'static,
 {
     todo!()
 }
+*/

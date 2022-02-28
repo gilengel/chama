@@ -2,10 +2,13 @@ use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     keys, log,
-    plugins::plugin::Plugin,
+    plugins::plugin::{Plugin, PluginWithOptions},
     renderer::apply_style,
     style::Style,
-    ui::app::{EditorError, Shortkey},
+    ui::{
+        app::{EditorError, Shortkey},
+        toolbar::ToolbarPosition,
+    },
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -47,6 +50,10 @@ impl Undo<Map> for CreateFreeFormStreetAction {
 
 impl Redo<Map> for CreateFreeFormStreetAction {
     fn redo(&mut self, map: &mut Map) {
+        if self.raw_points.is_empty() {
+            return;
+        }
+
         let _intersections: Vec<Uuid> = vec![];
 
         let mut index_to_be_skipped = 0;
@@ -70,15 +77,22 @@ impl Redo<Map> for CreateFreeFormStreetAction {
 
 impl Action<Map> for CreateFreeFormStreetAction {}
 
-impl CreateFreeformStreet {
-    pub fn say_hello(&mut self) {
-        log!("MUH?")
-    }
-}
-
 impl Plugin<Map> for CreateFreeformStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<CreateFreeformStreet>(keys!["Control", "a"])?;
+
+        let toolbar = editor.get_or_add_toolbar("primary.edit.modes", ToolbarPosition::Left)?;
+
+        let enabled = Rc::clone(&self.__enabled);
+
+        
+        toolbar.add_toggle_button(
+            "brush",
+            "mumu",
+            "Create Freeform Streets".to_string(),
+            move || { *enabled.as_ref().borrow() },
+            EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()),
+        )?;
 
         Ok(())
     }
@@ -91,7 +105,7 @@ impl Plugin<Map> for CreateFreeformStreet {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        mouse_movement: Coordinate<f64>,
+        _mouse_movement: Coordinate<f64>,
         _data: &mut Map,
     ) {
         if self.brush_active {
@@ -99,11 +113,10 @@ impl Plugin<Map> for CreateFreeformStreet {
         }
     }
 
-    fn shortkey_pressed(&mut self, key: &Shortkey){
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>) {
         if *key == keys!["Control", "a"] {
-            self.say_hello()
+            ctx.link().send_message(EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()));
         }
-
     }
 
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {

@@ -17,7 +17,7 @@ pub trait Renderer {
 
 #[editor_plugin]
 pub struct Camera {
-    #[option(label = "Camera Position", description = "Enables / Disables the grid")]
+    #[option(skip, label = "Camera Position", description = "Enables / Disables the grid")]
     position: Coordinate<f64>,
 
     #[option(

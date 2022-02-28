@@ -299,6 +299,10 @@
       padding: $padding;
     }
 
+    button.selected {
+      color: $primary;
+    }
+
     button:hover {
       color: $primary;
     }

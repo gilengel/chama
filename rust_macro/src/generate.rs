@@ -177,7 +177,7 @@ fn produce_default_impl(
 
     // Used for the default impl function
     let mut defaults: Vec<TokenStream2> = vec![];
-    defaults.push(quote! { __enabled: true });
+    defaults.push(quote! { __enabled: Rc::new(RefCell::new(true)) });
     defaults.push(quote! { __execution_behaviour: rust_internal::PluginExecutionBehaviour::#execution_behaviour });
 
     // Now for all attributes defined be the plugin developer
@@ -215,15 +215,15 @@ fn produce_identifier_impl(name: &Ident) -> TokenStream2 {
 fn produce_enabled() -> TokenStream2 {
     quote! {
         fn enabled(&self) -> bool {
-            self.__enabled
+           *self.__enabled.as_ref().borrow()
         }
 
         fn enable(&mut self) {
-            self.__enabled = true;
+            self.__enabled.replace(true);
         }
 
         fn disable(&mut self) {
-            self.__enabled = false;
+            self.__enabled.replace(false);
         }
     }
 }
@@ -269,7 +269,7 @@ fn produce_ui_impl(
     elements.push(quote! { </div> });
     callbacks.push(enabled_checkbox.1);
 
-    arms.push(quote! { "__enabled" => { if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value } }});
+    arms.push(quote! { "__enabled" => { /*if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value }*/ }});
 
     // Now for all attributes defined be the plugin developer
     for (attr, ty, metas) in attrs {
@@ -312,6 +312,9 @@ fn produce_use_statements(crate_name: &Ident) -> TokenStream2 {
         use #crate_name::ui::app::EditorMessages;
         use #crate_name::plugins::plugin::SpecialKey;
         use std::any::Any;
+        use std::borrow::Borrow;
+        use std::cell::RefCell;
+        use std::rc::Rc;
     }
 }
 
@@ -327,45 +330,6 @@ fn crate_name() -> Ident {
     );
 
     crate_name
-}
-
-fn produce_internal_key_up(plugin_name: &Ident, param: &GenericParam) -> TokenStream2 {
-    let ty = param.ty.clone();
-
-    if let Some(expr) = &param.shortkey_expression {
-        let mut statements: Vec<TokenStream2> = Vec::new();
-        if expr.ctrl {
-            statements.push(quote! { special_keys.contains(&SpecialKey::Ctrl)});
-        }
-
-        if expr.shift {
-            statements.push(quote! { special_keys.contains(&SpecialKey::Shift)});
-        }
-
-        if expr.alt {
-            statements.push(quote! { special_keys.contains(&SpecialKey::Alt)});
-        }
-
-        let key = &expr.key;
-        statements.push(quote! { key == #key });
-
-        let generic_type = param.ty.clone();
-        let context = match param.ty == "Data" {
-            true => quote! { &Context<App<Data> },
-            false => quote! { &Context<App<#generic_type>>},
-        };
-
-        return quote! {
-            fn __internal_key_up(&mut self, key: &str, special_keys: &Vec<SpecialKey>, _data: &mut #ty, ctx: #context) {
-                if #(#statements) && * {
-                    ctx.link().send_message(EditorMessages::ActivatePlugin(#plugin_name::identifier()));
-                }
-
-            }
-        };
-    }
-
-    quote! {}
 }
 
 pub(crate) fn produce(
@@ -405,7 +369,6 @@ pub(crate) fn produce(
         };
         let enabled_impl = produce_enabled();
         let produce_as_any_impl = produce_as_any_impl();
-        let internal_key_up_impl = produce_internal_key_up(&name, &param);
 
         let crate_name = crate_name();
 
@@ -420,7 +383,6 @@ pub(crate) fn produce(
                 #identifier_impl
                 #enabled_impl
                 #ui_impl
-                #internal_key_up_impl
 
                 fn execution_behaviour(&self) -> &rust_internal::PluginExecutionBehaviour {
                     &self.__execution_behaviour

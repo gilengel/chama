@@ -1,7 +1,6 @@
 use map::map::Map;
 
 use plugins::delete_street::DeleteStreet;
-use rust_editor::plugins::camera::Camera;
 use rust_editor::plugins::grid::Grid;
 use rust_editor::plugins::redo::Redo;
 use rust_editor::plugins::undo::Undo;
@@ -19,10 +18,10 @@ mod plugins;
 fn editor() {
     let mut editor = x_launch::<Map>();
 
-    editor.add_plugin(Camera::default());
+    //editor.add_plugin(Camera::default());
     editor.add_plugin(Grid::default());
     editor.add_plugin(Undo::<Map>::default());
     editor.add_plugin(Redo::<Map>::default());
-    editor.add_plugin(DeleteStreet::default());
     editor.add_plugin(CreateFreeformStreet::default());
+    editor.add_plugin(DeleteStreet::default());
 }

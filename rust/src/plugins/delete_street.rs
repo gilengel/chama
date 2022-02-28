@@ -1,7 +1,7 @@
 use geo::Coordinate;
 use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::plugin::Plugin,
+    plugins::plugin::{Plugin, PluginWithOptions}, keys, ui::{app::{EditorError, Shortkey}, toolbar::ToolbarPosition},
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -84,6 +84,30 @@ impl DeleteStreet {
     }
 }
 impl Plugin<Map> for DeleteStreet {
+    fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
+        editor.add_shortkey::<DeleteStreet>(keys!["Control", "s"])?;
+
+        let toolbar = editor.get_or_add_toolbar("primary.edit.modes", ToolbarPosition::Left)?; 
+
+        let enabled = Rc::clone(&self.__enabled);
+        toolbar.add_toggle_button(
+            "delete_outline",
+            "mumu",
+            "Delete Streets".to_string(),
+            move || { *enabled.as_ref().borrow() },
+            EditorMessages::ActivatePlugin(DeleteStreet::identifier()),
+        )?;
+
+
+        Ok(())
+    }
+
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>) {
+        if *key == keys!["Control", "s"] {
+            ctx.link().send_message(EditorMessages::ActivatePlugin(DeleteStreet::identifier()));
+        }
+    }
+
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _map: &mut Map) {}
 
     fn mouse_move(

@@ -1,23 +1,24 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::plugins::camera::Camera;
-use crate::plugins::plugin::{PluginWithOptions, SpecialKey, Plugin};
+use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::{error, log, InformationLayer};
+use crate::{error, InformationLayer, log};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent};
-use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
+use yew::{html, AppHandle, Callback, Component, Context, Html, NodeRef, Properties, classes};
 
 use crate::plugins::camera::Renderer;
+
+use super::toolbar::ToolbarPosition;
 
 #[macro_export]
 macro_rules! keys {
@@ -38,36 +39,242 @@ pub enum EditorMessages<Data> {
 }
 
 pub type Shortkey = Vec<String>;
-type Callback = Box<dyn FnMut()>;
+
+pub type PluginId = &'static str;
 
 #[derive(Error, Debug)]
 pub enum EditorError {
     #[error("shortkey {:?} is already registered", shortkey)]
     ShortkeyExists { shortkey: Shortkey },
+
+    #[error("toolbar with id {:?} is not registered. Make sure to add it first to the editor before adding buttons to it.", id)]
+    ToolbarDoesNotExists { id: &'static str },
+
+    #[error("toolbar with id {:?} is already registered.", id)]
+    ToolbarExists { id: &'static str },
 }
 
+pub struct Toolbar<Data> {
+    pub id: &'static str,
+    pub buttons: Vec<ToolbarButton<Data>>,
+}
+
+impl<Data> Toolbar<Data> {
+    pub fn add_button(
+        &mut self,
+        icon: &'static str,
+        identifier: &'static str,
+        tooltip: String,
+        on_click_msg: EditorMessages<Data>,
+    ) -> Result<(), EditorError> {
+        let btn = ToolbarButton {
+            icon,
+            identifier,
+            tooltip,
+            on_click_msg,
+            selected: None
+        };
+
+        self.buttons.push(btn);
+
+        Ok(())
+    }
+
+    pub fn add_toggle_button(
+        &mut self,
+        icon: &'static str,
+        identifier: &'static str,
+        tooltip: String,
+        toggled: impl Fn() -> bool + 'static,
+        on_click_msg: EditorMessages<Data>,
+    ) -> Result<(), EditorError> {
+        let btn = ToolbarButton {
+            icon,
+            identifier,
+            tooltip,
+            on_click_msg,
+            selected: Some(Box::new(toggled))
+        };
+
+        self.buttons.push(btn);
+
+        Ok(())
+    }
+}
+
+struct Toolbars<Data> {
+    toolbars: HashMap<ToolbarPosition, Vec<Toolbar<Data>>>,
+}
+
+impl<Data> Toolbars<Data>
+where
+    Data: Renderer + Default,
+{
+    pub fn new() -> Self {
+        Toolbars {
+            toolbars: HashMap::new(),
+        }
+    }
+
+    fn view_button(&self, button: &ToolbarButton<Data>, _ctx: &Context<App<Data>>) -> Html {
+        //let mu = button.on_click_msg.clone();
+        //let on_click = ctx.link().callback(|e| mu);
+        //let identifier = button.identifier.clone();
+
+        let mut classes = classes!();
+        if let Some(selected_callback) = &button.selected {
+            if selected_callback() {
+                classes.push("selected");
+            }
+        }
+
+        let onclick = Callback::from(move |_| { /*on_click.emit(identifier.clone())*/ });
+        html! {
+            <li>
+            <button onclick={onclick} class={classes}>
+              <span class="material-icons">{button.icon}</span>
+
+            </button>
+            <span class="tooltip">{&button.tooltip}</span>
+          </li>
+        }
+    }
+    fn view_toolbar(&self, toolbar: &Toolbar<Data>, ctx: &Context<App<Data>>) -> Html {
+        html! {
+            <ul class="toolbar">
+                {
+                    for toolbar.buttons.iter().map(|button| {
+                        self.view_button(button, ctx)
+                    })
+                }
+            </ul>
+        }
+    }
+    fn view_toolbars_at_pos(&self, pos: &ToolbarPosition, ctx: &Context<App<Data>>) -> Html {
+        if !self.toolbars.contains_key(pos) {
+            return html! {};
+        }
+
+        let id = pos.to_string();
+
+        html! {
+            <div id={id}>
+            {
+                for self.toolbars.get(pos).unwrap().iter().map(|toolbar| self.view_toolbar(toolbar, ctx))
+            }
+            </div>
+        }
+    }
+    pub fn view(&self, ctx: &Context<App<Data>>) -> Html {
+        let positions = vec![
+            ToolbarPosition::Left,
+            ToolbarPosition::Right,
+            ToolbarPosition::Top,
+            ToolbarPosition::Bottom,
+        ];
+
+        html! {
+            for positions.iter().map(|pos| self.view_toolbars_at_pos(pos, ctx))
+        }
+    }
+
+    pub fn add_toolbar<'a>(
+        &'a mut self,
+        toolbar_id: &'static str,
+        position: ToolbarPosition,
+    ) -> Result<&'a mut Toolbar<Data>, EditorError> {
+        for (_, toolbars) in &mut self.toolbars {
+            if let Some(_) = toolbars.iter_mut().find(|toolbar| toolbar.id == toolbar_id) {
+                return Err(EditorError::ToolbarExists { id: toolbar_id });
+            }
+        }
+
+        let toolbar = Toolbar {
+            id: toolbar_id,
+            buttons: vec![],
+        };
+
+        if !self.toolbars.contains_key(&position) {
+            self.toolbars.insert(position.clone(), vec![toolbar]);
+        } else {
+            self.toolbars.get_mut(&position).unwrap().push(toolbar);
+        }
+
+        let toolbar = self
+            .toolbars
+            .get_mut(&position)
+            .unwrap()
+            .last_mut()
+            .unwrap();
+
+        Ok(toolbar)
+    }
+
+    pub fn index_and_position_of_toolbar(
+        &self,
+        id: &'static str,
+    ) -> Result<(ToolbarPosition, usize), EditorError> {
+        let mut result = self
+            .toolbars
+            .iter()
+            .map(|(pos, toolbars)| {
+                (
+                    (*pos).clone(),
+                    toolbars.iter().position(|toolbar| toolbar.id == id),
+                )
+            })
+            .collect::<Vec<(ToolbarPosition, Option<usize>)>>();
+        result.retain(|(_, x)| x.is_some());
+
+        if result.is_empty() {
+            return Err(EditorError::ToolbarDoesNotExists { id });
+        }
+
+        let (pos, index) = result.first().unwrap();
+        let result = ((*pos).clone(), index.unwrap());
+        Ok(result)
+    }
+}
+pub struct ToolbarButton<Data> {
+    pub icon: &'static str,
+    pub identifier: &'static str,
+    pub tooltip: String,
+    pub on_click_msg: EditorMessages<Data>,
+    pub selected: Option<Box<dyn Fn() -> bool>>
+}
 
 pub struct App<Data>
 where
     Data: Renderer + Default + 'static,
 {
+    /// Holds the displayed data
     data: Data,
 
+    /// TODO not needed right now - should be moved into a plugin
     _additional_information_layers: Vec<InformationLayer>,
 
-    plugins: HashMap<&'static str, Box<dyn PluginWithOptions<Data> + 'static>>,
-    shortkeys: HashMap<&'static str, Vec<Shortkey>>,
+    /// All plugins that implement the editor logic and functionality
+    plugins: HashMap<PluginId, Box<dyn PluginWithOptions<Data>>>,
+
+    /// Toolbars added by plugins
+    toolbars: Toolbars<Data>,
+
+    /// Registered by plugins, shortkeys must by unique.
+    shortkeys: HashMap<PluginId, Vec<Shortkey>>,
+
+    /// Black magic needed by yew
     _render_loop: Option<AnimationFrame>,
     canvas_ref: NodeRef,
     context: Option<CanvasRenderingContext2d>,
 
+    /// Internally stores the pressed keys as registered by native web events.
+    /// Keys are pushed to the end so the vec is sorted from oldest pressed key to newest
     pressed_keys: Vec<String>,
 }
 
 impl<Data> App<Data>
 where
     Data: Renderer + Default + 'static,
-
 {
     pub fn add_shortkey<T>(&mut self, keys: Shortkey) -> Result<(), EditorError>
     where
@@ -86,6 +293,32 @@ where
             }
         }
     }
+
+    pub fn add_toolbar(
+        &mut self,
+        toolbar_id: &'static str,
+        position: ToolbarPosition,
+    ) -> Result<&mut Toolbar<Data>, EditorError> {
+        self.toolbars.add_toolbar(toolbar_id, position)
+    }
+
+    pub fn get_or_add_toolbar(
+        &mut self,
+        toolbar_id: &'static str,
+        position: ToolbarPosition,
+    ) -> Result<&mut Toolbar<Data>, EditorError> {
+        match self.toolbars.index_and_position_of_toolbar(toolbar_id) {
+            Ok((pos, index)) => Ok(self
+                .toolbars
+                .toolbars
+                .get_mut(&pos)
+                .unwrap()
+                .get_mut(index)
+                .unwrap()),
+
+            Err(_) => return self.toolbars.add_toolbar(toolbar_id, position),
+        }
+    }
 }
 
 #[derive(Properties, PartialEq, Default)]
@@ -94,7 +327,6 @@ pub struct EditorProps {}
 impl<Data> Component for App<Data>
 where
     Data: Renderer + Default + 'static,
-
 {
     type Message = EditorMessages<Data>;
     type Properties = EditorProps;
@@ -104,6 +336,7 @@ where
             data: Data::default(),
             plugins: HashMap::new(),
             shortkeys: HashMap::new(),
+            toolbars: Toolbars::new(),
             _additional_information_layers: Vec::new(),
 
             canvas_ref: NodeRef::default(),
@@ -141,6 +374,7 @@ where
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             EditorMessages::AddPlugin((key, mut plugin)) => {
+                
                 if let Err(e) = plugin.startup(self) {
                     error!("{}", e)
                 }
@@ -204,8 +438,10 @@ where
                 for (plugin_id, shortkeys) in self.shortkeys.iter_mut() {
                     for shortkey in shortkeys {
                         if self.pressed_keys.ends_with(shortkey) {
-                            self.plugins.get_mut(plugin_id).unwrap().shortkey_pressed(shortkey);
-                            
+                            self.plugins
+                                .get_mut(plugin_id)
+                                .unwrap()
+                                .shortkey_pressed(shortkey, ctx);
                         }
                     }
                 }
@@ -233,10 +469,6 @@ where
                     special_keys.push(SpecialKey::Shift);
                 }
 
-                for plugin in self.plugins.values_mut() {
-                    plugin.__internal_key_up(&e.key()[..], &special_keys, &mut self.data, ctx);
-                }
-
                 for plugin in self
                     .plugins
                     .values_mut()
@@ -262,7 +494,7 @@ where
                     return true;
                 }
 
-                if let Some((id, exclusive_active_plugin)) =
+                if let Some((_, exclusive_active_plugin)) =
                     self.plugins.iter_mut().find(|(_, x)| {
                         x.enabled()
                             && x.execution_behaviour() == &PluginExecutionBehaviour::Exclusive
@@ -298,6 +530,10 @@ where
             }
             </Dialog>
 
+            {
+                self.toolbars.view(ctx)
+            }
+
             /*
             <Toolbar>
             {
@@ -319,18 +555,7 @@ where
 impl<Data> App<Data>
 where
     Data: Renderer + Default + 'static,
-
 {
-    fn view_mode_button(&self, ctx: &yew::Context<Self>, mode_props: &Option<ModeProps>) -> Html {
-        //let id = id.clone();
-        //let mode_props = mode_props.as_ref().unwrap();
-        //let on_click = ctx.link().callback(|e| EditorMessages::SwitchMode(e));
-
-        html! {
-            //<ToolbarButton<Modes> icon={mode_props.icon} tooltip={mode_props.tooltip} identifier={id} {on_click} />
-        }
-    }
-
     fn get_plugin_by_key_mut(&mut self, key: &str) -> Option<&mut dyn PluginWithOptions<Data>>
     where
         Data: Renderer + 'static,
@@ -397,7 +622,6 @@ where
 pub struct GenericEditor<Data>
 where
     Data: Renderer + Default + 'static,
-
 {
     app_handle: AppHandle<App<Data>>,
 }
@@ -410,12 +634,10 @@ pub struct ModeProps {
 impl<Data> GenericEditor<Data>
 where
     Data: Renderer + Default + 'static,
-
 {
     pub fn add_plugin<P>(&mut self, plugin: P)
     where
         P: PluginWithOptions<Data> + 'static,
-    
     {
         self.app_handle.send_message(EditorMessages::AddPlugin((
             P::identifier(),
@@ -427,9 +649,15 @@ where
 pub fn x_launch<Data>() -> GenericEditor<Data>
 where
     Data: Renderer + Default + 'static,
-
 {
     GenericEditor {
         app_handle: yew::start_app::<App<Data>>(),
     }
+}
+
+pub fn add_plugin<Data, P>(editor: &mut GenericEditor<Data>, plugin: P)
+where
+Data: Renderer + Default + 'static,
+P: PluginWithOptions<Data> + 'static {
+    
 }

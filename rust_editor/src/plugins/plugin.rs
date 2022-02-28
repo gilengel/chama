@@ -77,16 +77,6 @@ where
 
     /// Returns the execution behaviour of the plugin.
     fn execution_behaviour(&self) -> &PluginExecutionBehaviour;
-
-    /// Handles enabling a plugin by pressing its shortcut and is therefore executed even if the plugin is currently disabled.
-    fn __internal_key_up(
-        &mut self,
-        key: &str,
-        special_keys: &Vec<SpecialKey>,
-        _data: &mut Data,
-        ctx: &Context<App<Data>>,
-    ) {
-    }
 }
 
 #[allow(unused_variables)]
@@ -143,11 +133,19 @@ where
     /// While key_down or key_press react on single key events, shortkey_pressed is not a native web event instead pressed keys are aggregated by the 
     /// editor and checked against registered shortkeys. If the pressed shortkey exists in one plugin and the plugin is active than only this function
     /// is called.
-    fn shortkey_pressed(&mut self, key: &Shortkey){}
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Data>>){}
 
     /// Called once before the plugin is added to the editor list of plugins. You can use this it to add additional ui elements such as toolbars (and buttons) or
     /// register shortkeys for the plugin.
     fn startup(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
+        Ok(())
+    }
+
+    fn activated(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
+        Ok(())
+    }
+
+    fn deactivated(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
         Ok(())
     }
 }

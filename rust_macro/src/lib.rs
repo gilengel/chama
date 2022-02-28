@@ -108,7 +108,7 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
                 syn::Fields::Named(fields) => {
                     fields.named.push(
                         syn::Field::parse_named
-                            .parse2(quote! { __enabled: bool })
+                            .parse2(quote! { __enabled: Rc<RefCell<bool>> })
                             .unwrap_or_else(|_| abort!(fields, "Not possible to add to fields")),
                     );
 

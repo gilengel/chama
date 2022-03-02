@@ -10,12 +10,12 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::{error, InformationLayer, log};
+use crate::{error, InformationLayer};
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent};
-use yew::{html, AppHandle, Callback, Component, Context, Html, NodeRef, Properties, classes};
+use yew::{classes, html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use crate::plugins::camera::Renderer;
 
@@ -73,7 +73,7 @@ impl<Data> Toolbar<Data> {
             identifier,
             tooltip,
             on_click_callback: Rc::new(on_click_callback),
-            selected: None
+            selected: None,
         };
 
         self.buttons.push(btn);
@@ -94,7 +94,7 @@ impl<Data> Toolbar<Data> {
             identifier,
             tooltip,
             on_click_callback: Rc::new(on_click_callback),
-            selected: Some(Box::new(toggled))
+            selected: Some(Box::new(toggled)),
         };
 
         self.buttons.push(btn);
@@ -126,7 +126,7 @@ where
         }
 
         let callback = Rc::clone(&button.on_click_callback);
-        let onclick = ctx.link().callback(move |_| (*callback)() );
+        let onclick = ctx.link().callback(move |_| (*callback)());
         html! {
             <li>
             <button onclick={onclick} class={classes}>
@@ -238,7 +238,7 @@ pub struct ToolbarButton<Data> {
     pub identifier: &'static str,
     pub tooltip: String,
     pub on_click_callback: Rc<dyn Fn() -> EditorMessages<Data>>,
-    pub selected: Option<Box<dyn Fn() -> bool>>
+    pub selected: Option<Box<dyn Fn() -> bool>>,
 }
 
 pub struct App<Data>
@@ -372,12 +372,10 @@ where
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             EditorMessages::AddPlugin((key, mut plugin)) => {
-                
                 if let Err(e) = plugin.startup(self) {
                     error!("{}", e)
                 }
                 self.plugins.insert(key, plugin);
-                
 
                 ctx.link().send_message(EditorMessages::ActivatePlugin(key))
             }
@@ -651,11 +649,4 @@ where
     GenericEditor {
         app_handle: yew::start_app::<App<Data>>(),
     }
-}
-
-pub fn add_plugin<Data, P>(editor: &mut GenericEditor<Data>, plugin: P)
-where
-Data: Renderer + Default + 'static,
-P: PluginWithOptions<Data> + 'static {
-    
 }

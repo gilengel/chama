@@ -1,5 +1,6 @@
 use map::map::Map;
 
+use plugins::create_district::CreateDistrict;
 use plugins::delete_street::DeleteStreet;
 use rust_editor::plugins::grid::Grid;
 use rust_editor::plugins::redo::Redo;
@@ -24,4 +25,5 @@ fn editor() {
     editor.add_plugin(Redo::<Map>::default());
     editor.add_plugin(CreateFreeformStreet::default());
     editor.add_plugin(DeleteStreet::default());
+    editor.add_plugin(CreateDistrict::default());
 }

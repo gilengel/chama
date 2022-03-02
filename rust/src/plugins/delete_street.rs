@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::map::{intersection::Side, map::Map, street::Street};
 
-#[editor_plugin(specific_to=Map, execution=Exclusive, shortkey=2)]
+#[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct DeleteStreet {
     #[option(skip)]
     hovered_streets: Option<Vec<Uuid>>,

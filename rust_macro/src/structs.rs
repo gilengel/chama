@@ -31,8 +31,7 @@ pub(crate) type PluginAttribute = (Attribute, TokenStream2, Vec<Meta>);
 #[derive(Debug)]
 pub(crate) struct GenericParam {
     pub ty: Ident,
-    pub execution_behaviour: Ident,
-    pub shortkey_expression: Option<ShortKeyExpr>
+    pub execution_behaviour: Ident
 }
 
 #[derive(Debug, PartialEq)]

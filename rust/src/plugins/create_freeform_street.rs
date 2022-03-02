@@ -1,7 +1,7 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    keys, log,
+    keys,
     plugins::plugin::{Plugin, PluginWithOptions},
     renderer::apply_style,
     style::Style,
@@ -16,7 +16,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::map::map::Map;
 
-#[editor_plugin(specific_to=Map, execution=Exclusive, shortkey=1)]
+#[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {
     #[option(skip)]
     raw_points: Vec<Coordinate<f64>>,
@@ -85,13 +85,12 @@ impl Plugin<Map> for CreateFreeformStreet {
 
         let enabled = Rc::clone(&self.__enabled);
 
-        
         toolbar.add_toggle_button(
             "brush",
             "mumu",
             "Create Freeform Streets".to_string(),
-            move || { *enabled.as_ref().borrow() },
-            move || { EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()) },
+            move || *enabled.as_ref().borrow(),
+            move || EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()),
         )?;
 
         Ok(())
@@ -115,7 +114,9 @@ impl Plugin<Map> for CreateFreeformStreet {
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>) {
         if *key == keys!["Control", "a"] {
-            ctx.link().send_message(EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()));
+            ctx.link().send_message(EditorMessages::ActivatePlugin(
+                CreateFreeformStreet::identifier(),
+            ));
         }
     }
 

@@ -177,7 +177,7 @@ fn produce_default_impl(
 
     // Used for the default impl function
     let mut defaults: Vec<TokenStream2> = vec![];
-    defaults.push(quote! { __enabled: Rc::new(RefCell::new(true)) });
+    defaults.push(quote! { __enabled: std::rc::Rc::new(RefCell::new(true)) });
     defaults.push(quote! { __execution_behaviour: rust_internal::PluginExecutionBehaviour::#execution_behaviour });
 
     // Now for all attributes defined be the plugin developer

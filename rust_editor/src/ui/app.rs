@@ -2,6 +2,7 @@ use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
 use std::collections::HashMap;
+use std::rc::Rc;
 use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
@@ -65,13 +66,13 @@ impl<Data> Toolbar<Data> {
         icon: &'static str,
         identifier: &'static str,
         tooltip: String,
-        on_click_msg: EditorMessages<Data>,
+        on_click_callback: impl Fn() -> EditorMessages<Data> + 'static,
     ) -> Result<(), EditorError> {
         let btn = ToolbarButton {
             icon,
             identifier,
             tooltip,
-            on_click_msg,
+            on_click_callback: Rc::new(on_click_callback),
             selected: None
         };
 
@@ -86,13 +87,13 @@ impl<Data> Toolbar<Data> {
         identifier: &'static str,
         tooltip: String,
         toggled: impl Fn() -> bool + 'static,
-        on_click_msg: EditorMessages<Data>,
+        on_click_callback: impl Fn() -> EditorMessages<Data> + 'static,
     ) -> Result<(), EditorError> {
         let btn = ToolbarButton {
             icon,
             identifier,
             tooltip,
-            on_click_msg,
+            on_click_callback: Rc::new(on_click_callback),
             selected: Some(Box::new(toggled))
         };
 
@@ -116,11 +117,7 @@ where
         }
     }
 
-    fn view_button(&self, button: &ToolbarButton<Data>, _ctx: &Context<App<Data>>) -> Html {
-        //let mu = button.on_click_msg.clone();
-        //let on_click = ctx.link().callback(|e| mu);
-        //let identifier = button.identifier.clone();
-
+    fn view_button(&self, button: &ToolbarButton<Data>, ctx: &Context<App<Data>>) -> Html {
         let mut classes = classes!();
         if let Some(selected_callback) = &button.selected {
             if selected_callback() {
@@ -128,7 +125,8 @@ where
             }
         }
 
-        let onclick = Callback::from(move |_| { /*on_click.emit(identifier.clone())*/ });
+        let callback = Rc::clone(&button.on_click_callback);
+        let onclick = ctx.link().callback(move |_| (*callback)() );
         html! {
             <li>
             <button onclick={onclick} class={classes}>
@@ -239,7 +237,7 @@ pub struct ToolbarButton<Data> {
     pub icon: &'static str,
     pub identifier: &'static str,
     pub tooltip: String,
-    pub on_click_msg: EditorMessages<Data>,
+    pub on_click_callback: Rc<dyn Fn() -> EditorMessages<Data>>,
     pub selected: Option<Box<dyn Fn() -> bool>>
 }
 

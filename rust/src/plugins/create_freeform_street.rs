@@ -91,7 +91,7 @@ impl Plugin<Map> for CreateFreeformStreet {
             "mumu",
             "Create Freeform Streets".to_string(),
             move || { *enabled.as_ref().borrow() },
-            EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()),
+            move || { EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()) },
         )?;
 
         Ok(())

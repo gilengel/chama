@@ -95,7 +95,7 @@ impl Plugin<Map> for DeleteStreet {
             "mumu",
             "Delete Streets".to_string(),
             move || { *enabled.as_ref().borrow() },
-            EditorMessages::ActivatePlugin(DeleteStreet::identifier()),
+            move || { EditorMessages::ActivatePlugin(DeleteStreet::identifier()) },
         )?;
 
 

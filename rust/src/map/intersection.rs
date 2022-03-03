@@ -6,7 +6,6 @@ use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     renderer::apply_style,
     style::{InteractiveElementStyle, Style},
-    InformationLayer,
 };
 use rust_macro::ElementId;
 use uuid::Uuid;
@@ -78,17 +77,14 @@ impl Intersection {
         }
     }
 
-    pub fn render(
-        &self,
-        context: &CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
-    ) -> Result<(), JsValue> {
+    pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         context.begin_path();
         context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
 
         apply_style(self.style(), context);
         context.fill();
 
+        /*
         let num = self.connected_streets.len();
         if additional_information_layer.contains(&InformationLayer::Debug) && num != 2 {
             context.set_fill_style(&"#FFFFFF".into());
@@ -115,6 +111,7 @@ impl Intersection {
                 y += 16.0;
             }
         }
+        */
 
         Ok(())
     }

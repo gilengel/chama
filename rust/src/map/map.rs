@@ -50,20 +50,20 @@ impl Renderer for Map {
     fn render(
         &self,
         context: &CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
+        _: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
         //context.translate(camera.x as f64, camera.y as f64)?;
 
         for (_, district) in &self.districts {
-            district.render(&context, additional_information_layer)?;
+            district.render(&context)?;
         }
 
         for (_, street) in &self.streets {
-            street.render(&context, additional_information_layer)?;
+            street.render(&context)?;
         }
 
         for (_, intersection) in &self.intersections {
-            intersection.render(&context, additional_information_layer)?;
+            intersection.render(&context)?;
         }
 
         //context.set_transform(1., 0., 0., 1., 0., 0.)?;
@@ -304,6 +304,10 @@ impl Map {
 
     pub fn intersections_keys<'a>(&'a self) -> Keys<'a, Uuid, Intersection> {
         self.intersections.keys()
+    }
+
+    pub fn districts(&self) -> &HashMap<Uuid, District> {
+        &self.districts
     }
 
     pub fn streets(&self) -> &HashMap<Uuid, Street> {

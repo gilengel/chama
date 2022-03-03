@@ -1,7 +1,7 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::rc::Rc;
 use thiserror::Error;
 use wasm_bindgen::JsCast;
@@ -26,8 +26,24 @@ macro_rules! keys {
     ($($x:expr),*) => (vec![$($x.to_string()),*]);
 }
 
+#[macro_export]
+macro_rules! plugins_vec {
+    ($($x:expr),*) => (vec![$(Box::new($x)),*]);
+}
+
 pub enum EditorMessages<Data> {
-    AddPlugin((&'static str, Box<dyn PluginWithOptions<Data> + 'static>)),
+    AddPlugin(
+        (
+            &'static str,
+            Box<dyn PluginWithOptions<Data> + 'static>
+        ),
+    ),
+    AddPlugins(
+        Vec<(
+            &'static str,
+            Box<dyn PluginWithOptions<Data> + 'static>
+        )>,
+    ),
     PluginOptionUpdated((&'static str, &'static str, Box<dyn Any>)),
     ActivatePlugin(&'static str),
 
@@ -252,7 +268,7 @@ where
     _additional_information_layers: Vec<InformationLayer>,
 
     /// All plugins that implement the editor logic and functionality
-    plugins: HashMap<PluginId, Box<dyn PluginWithOptions<Data>>>,
+    plugins: BTreeMap<PluginId, Box<dyn PluginWithOptions<Data>>>,
 
     /// Toolbars added by plugins
     toolbars: Toolbars<Data>,
@@ -332,7 +348,7 @@ where
     fn create(_ctx: &yew::Context<Self>) -> Self {
         App {
             data: Data::default(),
-            plugins: HashMap::new(),
+            plugins: BTreeMap::new(),
             shortkeys: HashMap::new(),
             toolbars: Toolbars::new(),
             _additional_information_layers: Vec::new(),
@@ -378,6 +394,19 @@ where
                 self.plugins.insert(key, plugin);
 
                 ctx.link().send_message(EditorMessages::ActivatePlugin(key))
+            }
+            EditorMessages::AddPlugins(plugins) => {
+                //self.plugins.reserve(plugins.len());
+
+                for (key, mut plugin) in plugins {
+                    if let Err(e) = plugin.startup(self) {
+                        error!("{}", e)
+                    }
+
+                    self.plugins.insert(key, plugin);
+
+                    ctx.link().send_message(EditorMessages::ActivatePlugin(key))
+                }       
             }
             EditorMessages::MouseMove(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
@@ -529,20 +558,6 @@ where
             {
                 self.toolbars.view(ctx)
             }
-
-            /*
-            <Toolbar>
-            {
-
-                for self.modes.iter().filter(|(_, (_, button))| button.is_some()).map(|(id, (_, button))| {
-                    html!{
-                        self.view_mode_button(ctx, id, button)
-                    }
-                })
-
-            }
-            </Toolbar>
-            */
         </main>
         }
     }
@@ -594,15 +609,13 @@ where
 
         context.clear_rect(0.0, 0.0, 2000.0, 2000.0);
 
-        self.data.render(context, &vec![]).unwrap();
-
         for plugin in self
             .plugins
             .values()
             .into_iter()
             .filter(|plugin| plugin.enabled())
         {
-            plugin.render(context);
+            plugin.render(context, &self.data);
         }
 
         let handle = {
@@ -631,14 +644,24 @@ impl<Data> GenericEditor<Data>
 where
     Data: Renderer + Default + 'static,
 {
+    pub fn add_plugins(&mut self, plugins: Vec<(&'static str, Box<dyn PluginWithOptions<Data>>)>)
+    //where
+    //    P: PluginWithOptions<Data> + 'static,
+    {
+        self.app_handle.send_message(EditorMessages::AddPlugins(
+            plugins
+        ));
+    }
+
     pub fn add_plugin<P>(&mut self, plugin: P)
     where
         P: PluginWithOptions<Data> + 'static,
-    {
+    {        
         self.app_handle.send_message(EditorMessages::AddPlugin((
             P::identifier(),
             Box::new(plugin),
         )));
+        
     }
 }
 

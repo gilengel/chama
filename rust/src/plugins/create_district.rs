@@ -13,7 +13,7 @@ use rust_editor::{
 };
 use uuid::Uuid;
 
-#[editor_plugin(specific_to=Map, execution=Exclusive)]
+#[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
 pub struct CreateDistrict {
     #[option(skip)]
     hovered_street: Option<Uuid>,
@@ -23,7 +23,7 @@ impl Plugin<Map> for CreateDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<CreateDistrict>(keys!["Control", "d"])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.edit.modes", ToolbarPosition::Left)?;
+        let toolbar = editor.get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)?;
 
         let enabled = Rc::clone(&self.__enabled);
         toolbar.add_toggle_button(

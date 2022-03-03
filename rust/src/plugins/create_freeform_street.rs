@@ -16,7 +16,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::map::map::Map;
 
-#[editor_plugin(specific_to=Map, execution=Exclusive)]
+#[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {
     #[option(skip)]
     raw_points: Vec<Coordinate<f64>>,
@@ -81,7 +81,7 @@ impl Plugin<Map> for CreateFreeformStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<CreateFreeformStreet>(keys!["Control", "a"])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.edit.modes", ToolbarPosition::Left)?;
+        let toolbar = editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
 
         let enabled = Rc::clone(&self.__enabled);
 
@@ -149,7 +149,7 @@ impl Plugin<Map> for CreateFreeformStreet {
         self.raw_points.clear();
     }
 
-    fn render(&self, context: &CanvasRenderingContext2d) {
+    fn render(&self, context: &CanvasRenderingContext2d, _: &Map) {
         if self.brush_active && !self.raw_points.is_empty() {
             /*
             let offset = match get_plugin::<Map, Modes, Camera>(plugins) {

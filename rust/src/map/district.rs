@@ -8,7 +8,6 @@ use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     renderer::PrimitiveRenderer,
     style::{InteractiveElementStyle, Style},
-    InformationLayer,
 };
 use rust_macro::ElementId;
 use serde::{Deserialize, Serialize};
@@ -85,7 +84,6 @@ impl District {
     pub fn render(
         &self,
         context: &CanvasRenderingContext2d,
-        _additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
         let mut it = self.polygon.exterior().points_iter();
         let start = it.next().unwrap();

@@ -106,7 +106,7 @@ where
     ) {
     }
 
-    fn render(&self, _context: &CanvasRenderingContext2d) {}
+    fn render(&self, context: &CanvasRenderingContext2d, data: &Data) {}
 
     /// Is used to implement behaviour of the state if the user released a pressed mouse button
     /// inside the specified html element by the statemachine.

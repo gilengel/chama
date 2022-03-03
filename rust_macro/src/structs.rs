@@ -47,10 +47,3 @@ pub(crate) struct EditorPluginArgs {
     pub args: Vec<EditorPluginArg>,
 }
 
-#[derive(Debug)]
-pub(crate) struct ShortKeyExpr {
-    pub(crate) ctrl: bool,
-    pub(crate) shift: bool,
-    pub(crate) alt: bool,
-    pub(crate) key: String
-}

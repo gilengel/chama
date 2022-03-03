@@ -2,17 +2,16 @@
 
 use proc_macro_error::abort;
 
-use quote::ToTokens;
 use syn::parse::{ParseStream, Parse};
 use syn::punctuated::Punctuated;
-use syn::{DeriveInput, Meta, Data, Fields, Token, Error, Lit, Expr, ExprBinary};
+use syn::{DeriveInput, Meta, Data, Fields, Token, Error, Lit};
 use syn::spanned::Spanned;
 
 
 
 
 use crate::attribute_type;
-use crate::structs::{Attribute, VisibleAttribute, HiddenAttribute, GenericParam, EditorPluginArg, EditorPluginArgs, PluginAttribute, ShortKeyExpr};
+use crate::structs::{Attribute, VisibleAttribute, HiddenAttribute, GenericParam, EditorPluginArg, EditorPluginArgs, PluginAttribute};
 
 pub(crate) fn parse_attr(attr: &syn::Attribute) -> (Vec<Meta>, bool) {
     if attr.path.is_ident("option") {

@@ -25,12 +25,12 @@ pub struct Grid {
     //enabled: bool,
 }
 
-impl<T> Plugin<T> for Grid
+impl<Data> Plugin<Data> for Grid
 where
-    T: Renderer + Default + 'static,
+    Data: Renderer + Default + 'static,
 
 {
-    fn render(&self, context: &CanvasRenderingContext2d) {
+    fn render(&self, context: &CanvasRenderingContext2d, _: &Data) {
         if self.offset == 0 {
             return;
         }

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
-    prelude::{Centroid, Contains, EuclideanDistance},
+    prelude::{Contains, EuclideanDistance},
     Coordinate, Line, LineString, Point, Polygon,
 };
 use rust_editor::{
@@ -13,7 +13,6 @@ use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
     renderer::PrimitiveRenderer,
     style::{InteractiveElementStyle, Style},
-    InformationLayer,
 };
 use rust_macro::ElementId;
 use serde::{Deserialize, Serialize};
@@ -203,12 +202,12 @@ impl Street {
     pub fn render(
         &self,
         context: &CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
     ) -> Result<(), JsValue> {
         self.polygon.render(self.style(), &context)?;
 
         //self.line.render(self.style(), &context);
 
+        /*
         if additional_information_layer.contains(&InformationLayer::Debug) {
             let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
 
@@ -253,6 +252,7 @@ impl Street {
             context.stroke();
             context.restore();
         }
+        */
 
         Ok(())
     }

@@ -46,6 +46,48 @@
 
   $padding: 4px;
 
+
+
+
+
+  /// MATERIAL COMPONENTS
+  $snackbar-height: 48px;
+  $snackbar-padding: 16px;
+  .md-snackbar {
+    position: absolute;
+    background-color: #d64933;
+    display: block;
+
+    width: 344px;
+    line-height: $snackbar-height;
+    height: $snackbar-height;
+    padding-left: $snackbar-padding;
+    padding-right: $snackbar-padding;
+    border-radius: 4px;
+    bottom: $snackbar-padding * 1.5;
+  }
+
+  .left {
+    left: $snackbar-padding * 1.5;
+  }
+
+  .center {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .right {
+    right: $snackbar-padding * 1.5;
+  }
+
+  /// MATERIAL COMPONENTS
+
+
+
+
+
+
+
   body {
     font-family: "Heebo", sans-serif;
   }

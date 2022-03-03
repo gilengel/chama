@@ -1,8 +1,8 @@
+use crate::ui::snackbar::{Snackbar, SnackbarPosition};
 use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
-use std::collections::{HashMap, BTreeMap};
-use std::rc::Rc;
+use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
@@ -15,11 +15,11 @@ use crate::{error, InformationLayer};
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent};
-use yew::{classes, html, AppHandle, Component, Context, Html, NodeRef, Properties};
+use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use crate::plugins::camera::Renderer;
 
-use super::toolbar::ToolbarPosition;
+use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
 
 #[macro_export]
 macro_rules! keys {
@@ -32,18 +32,8 @@ macro_rules! plugins_vec {
 }
 
 pub enum EditorMessages<Data> {
-    AddPlugin(
-        (
-            &'static str,
-            Box<dyn PluginWithOptions<Data> + 'static>
-        ),
-    ),
-    AddPlugins(
-        Vec<(
-            &'static str,
-            Box<dyn PluginWithOptions<Data> + 'static>
-        )>,
-    ),
+    AddPlugin((&'static str, Box<dyn PluginWithOptions<Data> + 'static>)),
+    AddPlugins(Vec<(&'static str, Box<dyn PluginWithOptions<Data> + 'static>)>),
     PluginOptionUpdated((&'static str, &'static str, Box<dyn Any>)),
     ActivatePlugin(&'static str),
 
@@ -69,192 +59,6 @@ pub enum EditorError {
 
     #[error("toolbar with id {:?} is already registered.", id)]
     ToolbarExists { id: &'static str },
-}
-
-pub struct Toolbar<Data> {
-    pub id: &'static str,
-    pub buttons: Vec<ToolbarButton<Data>>,
-}
-
-impl<Data> Toolbar<Data> {
-    pub fn add_button(
-        &mut self,
-        icon: &'static str,
-        identifier: &'static str,
-        tooltip: String,
-        on_click_callback: impl Fn() -> EditorMessages<Data> + 'static,
-    ) -> Result<(), EditorError> {
-        let btn = ToolbarButton {
-            icon,
-            identifier,
-            tooltip,
-            on_click_callback: Rc::new(on_click_callback),
-            selected: None,
-        };
-
-        self.buttons.push(btn);
-
-        Ok(())
-    }
-
-    pub fn add_toggle_button(
-        &mut self,
-        icon: &'static str,
-        identifier: &'static str,
-        tooltip: String,
-        toggled: impl Fn() -> bool + 'static,
-        on_click_callback: impl Fn() -> EditorMessages<Data> + 'static,
-    ) -> Result<(), EditorError> {
-        let btn = ToolbarButton {
-            icon,
-            identifier,
-            tooltip,
-            on_click_callback: Rc::new(on_click_callback),
-            selected: Some(Box::new(toggled)),
-        };
-
-        self.buttons.push(btn);
-
-        Ok(())
-    }
-}
-
-struct Toolbars<Data> {
-    toolbars: HashMap<ToolbarPosition, Vec<Toolbar<Data>>>,
-}
-
-impl<Data> Toolbars<Data>
-where
-    Data: Renderer + Default,
-{
-    pub fn new() -> Self {
-        Toolbars {
-            toolbars: HashMap::new(),
-        }
-    }
-
-    fn view_button(&self, button: &ToolbarButton<Data>, ctx: &Context<App<Data>>) -> Html {
-        let mut classes = classes!();
-        if let Some(selected_callback) = &button.selected {
-            if selected_callback() {
-                classes.push("selected");
-            }
-        }
-
-        let callback = Rc::clone(&button.on_click_callback);
-        let onclick = ctx.link().callback(move |_| (*callback)());
-        html! {
-            <li>
-            <button onclick={onclick} class={classes}>
-              <span class="material-icons">{button.icon}</span>
-
-            </button>
-            <span class="tooltip">{&button.tooltip}</span>
-          </li>
-        }
-    }
-    fn view_toolbar(&self, toolbar: &Toolbar<Data>, ctx: &Context<App<Data>>) -> Html {
-        html! {
-            <ul class="toolbar">
-                {
-                    for toolbar.buttons.iter().map(|button| {
-                        self.view_button(button, ctx)
-                    })
-                }
-            </ul>
-        }
-    }
-    fn view_toolbars_at_pos(&self, pos: &ToolbarPosition, ctx: &Context<App<Data>>) -> Html {
-        if !self.toolbars.contains_key(pos) {
-            return html! {};
-        }
-
-        let id = pos.to_string();
-
-        html! {
-            <div id={id}>
-            {
-                for self.toolbars.get(pos).unwrap().iter().map(|toolbar| self.view_toolbar(toolbar, ctx))
-            }
-            </div>
-        }
-    }
-    pub fn view(&self, ctx: &Context<App<Data>>) -> Html {
-        let positions = vec![
-            ToolbarPosition::Left,
-            ToolbarPosition::Right,
-            ToolbarPosition::Top,
-            ToolbarPosition::Bottom,
-        ];
-
-        html! {
-            for positions.iter().map(|pos| self.view_toolbars_at_pos(pos, ctx))
-        }
-    }
-
-    pub fn add_toolbar<'a>(
-        &'a mut self,
-        toolbar_id: &'static str,
-        position: ToolbarPosition,
-    ) -> Result<&'a mut Toolbar<Data>, EditorError> {
-        for (_, toolbars) in &mut self.toolbars {
-            if let Some(_) = toolbars.iter_mut().find(|toolbar| toolbar.id == toolbar_id) {
-                return Err(EditorError::ToolbarExists { id: toolbar_id });
-            }
-        }
-
-        let toolbar = Toolbar {
-            id: toolbar_id,
-            buttons: vec![],
-        };
-
-        if !self.toolbars.contains_key(&position) {
-            self.toolbars.insert(position.clone(), vec![toolbar]);
-        } else {
-            self.toolbars.get_mut(&position).unwrap().push(toolbar);
-        }
-
-        let toolbar = self
-            .toolbars
-            .get_mut(&position)
-            .unwrap()
-            .last_mut()
-            .unwrap();
-
-        Ok(toolbar)
-    }
-
-    pub fn index_and_position_of_toolbar(
-        &self,
-        id: &'static str,
-    ) -> Result<(ToolbarPosition, usize), EditorError> {
-        let mut result = self
-            .toolbars
-            .iter()
-            .map(|(pos, toolbars)| {
-                (
-                    (*pos).clone(),
-                    toolbars.iter().position(|toolbar| toolbar.id == id),
-                )
-            })
-            .collect::<Vec<(ToolbarPosition, Option<usize>)>>();
-        result.retain(|(_, x)| x.is_some());
-
-        if result.is_empty() {
-            return Err(EditorError::ToolbarDoesNotExists { id });
-        }
-
-        let (pos, index) = result.first().unwrap();
-        let result = ((*pos).clone(), index.unwrap());
-        Ok(result)
-    }
-}
-pub struct ToolbarButton<Data> {
-    pub icon: &'static str,
-    pub identifier: &'static str,
-    pub tooltip: String,
-    pub on_click_callback: Rc<dyn Fn() -> EditorMessages<Data>>,
-    pub selected: Option<Box<dyn Fn() -> bool>>,
 }
 
 pub struct App<Data>
@@ -406,7 +210,7 @@ where
                     self.plugins.insert(key, plugin);
 
                     ctx.link().send_message(EditorMessages::ActivatePlugin(key))
-                }       
+                }
             }
             EditorMessages::MouseMove(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
@@ -648,20 +452,18 @@ where
     //where
     //    P: PluginWithOptions<Data> + 'static,
     {
-        self.app_handle.send_message(EditorMessages::AddPlugins(
-            plugins
-        ));
+        self.app_handle
+            .send_message(EditorMessages::AddPlugins(plugins));
     }
 
     pub fn add_plugin<P>(&mut self, plugin: P)
     where
         P: PluginWithOptions<Data> + 'static,
-    {        
+    {
         self.app_handle.send_message(EditorMessages::AddPlugin((
             P::identifier(),
             Box::new(plugin),
         )));
-        
     }
 }
 

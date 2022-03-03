@@ -1,4 +1,3 @@
-use crate::ui::snackbar::{Snackbar, SnackbarPosition};
 use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
@@ -310,8 +309,10 @@ where
             EditorMessages::Render(_) => {
                 self.render(ctx.link());
             }
-            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {
+            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {                
                 let plugin = self.get_plugin_by_key_mut(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
+                
+                
                 plugin.update_property(attribute, value);
             }
             EditorMessages::ActivatePlugin(plugin_id) => {

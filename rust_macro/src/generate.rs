@@ -269,7 +269,7 @@ fn produce_ui_impl(
     elements.push(quote! { </div> });
     callbacks.push(enabled_checkbox.1);
 
-    arms.push(quote! { "__enabled" => { /*if let Some(value) = value.as_ref().downcast_ref::<bool>() { self.__enabled = *value }*/ }});
+    arms.push(quote! { "__enabled" => { if let Some(value) = value.as_ref().downcast_ref::<bool>() { *self.__enabled.borrow_mut() = *value } }});
 
     // Now for all attributes defined be the plugin developer
     for (attr, ty, metas) in attrs {

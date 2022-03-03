@@ -422,33 +422,36 @@ impl Map {
     ) -> Box<dyn Action<Map>> {
         let mut action = MultiAction::new();
 
-        let mut start_id = Uuid::default();
-        match self.get_intersection_at_position(&start, snapping_offset, &vec![]) {
-            Some(intersection) => start_id = intersection,
+        let start_id = match self.get_intersection_at_position(&start, snapping_offset, &vec![]) {
+            Some(intersection) => intersection,
             None => match self.get_street_at_position(start, &vec![]) {
                 Some(street_id) => {
                     let split_action = self.split_street(*start, &street_id);
-                    start_id = split_action.intersection_id.unwrap();
+                    let id = split_action.intersection_id.unwrap();
 
                     action.actions.push(Box::new(split_action));
+
+                    id
                 }
-                None => {
-                    start_id = self.add_intersection(Intersection::new(*start));
-                }
+                None => self.add_intersection(Intersection::new(*start))
+                
             },
         };
 
-        let mut end_id = Uuid::default();
-        match self.get_intersection_at_position(&end, snapping_offset, &vec![]) {
-            Some(intersection) => end_id = intersection,
-            None => match self.get_street_at_position(end, &vec![]) {
-                Some(street_id) => {
-                    let split_action = self.split_street(*end, &street_id);
-                    end_id = split_action.intersection_id.unwrap();
+        let end_id = match self.get_intersection_at_position(&end, snapping_offset, &vec![]) {
+            Some(intersection) => intersection,
+            None => {
+                match self.get_street_at_position(end, &vec![]) {
+                    Some(street_id) => {
+                        let split_action = self.split_street(*end, &street_id);
+                        let id = split_action.intersection_id.unwrap();
+                        
+                        action.actions.push(Box::new(split_action));
 
-                    action.actions.push(Box::new(split_action));
+                        id                        
+                    }
+                    None => self.add_intersection(Intersection::new(*end)),
                 }
-                None => end_id = self.add_intersection(Intersection::new(*end)),
             },
         };
 

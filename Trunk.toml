@@ -1,0 +1,13 @@
+[build]
+# The index HTML file to drive the bundling process.
+target = "ui/index.html"
+# The output dir for all final assets.
+dist = "ui/dist"
+# The public URL from which assets are to be served.
+public_url = "/"
+
+#[watch]
+# Paths to watch, defaults to build target parent folder.
+#path = ["backend/src", "frontend/src"]
+# Paths to ignore.
+#ignore = []

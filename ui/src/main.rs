@@ -9,8 +9,6 @@ use rust_editor::plugins::undo::Undo;
 
 use plugins::create_freeform_street::CreateFreeformStreet;
 use rust_editor::ui::app::x_launch;
-use rust_macro::launch;
-use wasm_bindgen::prelude::wasm_bindgen;
 
 mod map;
 mod plugins;

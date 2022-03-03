@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "ui",
+    "rust_editor",
+    "rust_internal",
+    "rust_macro"
+]

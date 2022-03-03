@@ -25,7 +25,7 @@ pub trait PrimitiveRenderer {
 
 impl PrimitiveRenderer for Polygon<f64> {
     fn render(&self, style: &Style, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
-        let mut it = self.exterior().points_iter();
+        let mut it = self.exterior().points();
 
         if let Some(start) = it.next() {
             context.begin_path();
@@ -112,7 +112,7 @@ impl PrimitiveRenderer for MultiPoint<f64> {
 
 impl PrimitiveRenderer for LineString<f64> {
     fn render(&self, style: &Style, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
-        let mut it = self.points_iter();
+        let mut it = self.points();
 
         if let Some(start) = it.next() {
             context.begin_path();

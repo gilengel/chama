@@ -1,109 +1,74 @@
-*Psst — looking for a more complete solution? Check out [SvelteKit](https://kit.svelte.dev), the official framework for building web applications of all sizes, with a beautiful development experience and flexible filesystem-based routing.*
+# Yew Trunk Template
 
-*Looking for a shareable component template instead? You can [use SvelteKit for that as well](https://kit.svelte.dev/docs#packaging) or the older [sveltejs/component-template](https://github.com/sveltejs/component-template)*
+This is a fairly minimal template for a Yew app that's built with [Trunk].
 
----
+## Usage
 
-# svelte app
+For a more thorough explanation of Trunk and its features, please head over to the [repository][trunk].
 
-This is a project template for [Svelte](https://svelte.dev) apps. It lives at https://github.com/sveltejs/template.
+### Installation
 
-To create a new project based on this template using [degit](https://github.com/Rich-Harris/degit):
+If you don't already have it installed, it's time to install Rust: <https://www.rust-lang.org/tools/install>.
+The rest of this guide assumes a typical Rust installation which contains both `rustup` and Cargo.
 
-```bash
-npx degit sveltejs/template svelte-app
-cd svelte-app
-```
-
-*Note that you will need to have [Node.js](https://nodejs.org) installed.*
-
-
-## Get started
-
-Install the dependencies...
+To compile Rust to WASM, we need to have the `wasm32-unknown-unknown` target installed.
+If you don't already have it, install it with the following command:
 
 ```bash
-cd svelte-app
-npm install
+rustup target add wasm32-unknown-unknown
 ```
 
-...then start [Rollup](https://rollupjs.org):
+Now that we have our basics covered, it's time to install the star of the show: [Trunk].
+Simply run the following command to install it:
 
 ```bash
-npm run dev
+cargo install trunk wasm-bindgen-cli
 ```
 
-Navigate to [localhost:8080](http://localhost:8080). You should see your app running. Edit a component file in `src`, save it, and reload the page to see your changes.
+That's it, we're done!
 
-By default, the server will only respond to requests from localhost. To allow connections from other computers, edit the `sirv` commands in package.json to include the option `--host 0.0.0.0`.
-
-If you're using [Visual Studio Code](https://code.visualstudio.com/) we recommend installing the official extension [Svelte for VS Code](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode). If you are using other editors you may need to install a plugin in order to get syntax highlighting and intellisense.
-
-## Building and running in production mode
-
-To create an optimised version of the app:
+### Running
 
 ```bash
-npm run build
+trunk serve
 ```
 
-You can run the newly built app with `npm run start`. This uses [sirv](https://github.com/lukeed/sirv), which is included in your package.json's `dependencies` so that the app will work when you deploy to platforms like [Heroku](https://heroku.com).
+Rebuilds the app whenever a change is detected and runs a local server to host it.
 
+There's also the `trunk watch` command which does the same thing but without hosting it.
 
-## Single-page app mode
-
-By default, sirv will only respond to requests that match files in `public`. This is to maximise compatibility with static fileservers, allowing you to deploy your app anywhere.
-
-If you're building a single-page app (SPA) with multiple routes, sirv needs to be able to respond to requests for *any* path. You can make it so by editing the `"start"` command in package.json:
-
-```js
-"start": "sirv public --single"
-```
-
-## Using TypeScript
-
-This template comes with a script to set up a TypeScript development environment, you can run it immediately after cloning the template with:
+### Release
 
 ```bash
-node scripts/setupTypeScript.js
+trunk build --release
 ```
 
-Or remove the script via:
+This builds the app in release mode similar to `cargo build --release`.
+You can also pass the `--release` flag to `trunk serve` if you need to get every last drop of performance.
 
-```bash
-rm scripts/setupTypeScript.js
-```
+Unless overwritten, the output will be located in the `dist` directory.
 
-If you want to use `baseUrl` or `path` aliases within your `tsconfig`, you need to set up `@rollup/plugin-alias` to tell Rollup to resolve the aliases. For more info, see [this StackOverflow question](https://stackoverflow.com/questions/63427935/setup-tsconfig-path-in-svelte).
+## Using this template
 
-## Deploying to the web
+There are a few things you have to adjust when adopting this template.
 
-### With [Vercel](https://vercel.com)
+### Remove example code
 
-Install `vercel` if you haven't already:
+The code in [src/main.rs](src/main.rs) specific to the example is limited to only the `view` method.
+There is, however, a fair bit of Sass in [index.scss](index.scss) you can remove.
 
-```bash
-npm install -g vercel
-```
+### Update metadata
 
-Then, from within your project folder:
+Update the `name`, `version`, `description` and `repository` fields in the [Cargo.toml](Cargo.toml) file.
+The [index.html](index.html) file also contains a `<title>` tag that needs updating.
 
-```bash
-cd public
-vercel deploy --name my-project
-```
+Finally, you should update this very `README` file to be about your app.
 
-### With [surge](https://surge.sh/)
+### License
 
-Install `surge` if you haven't already:
+The template ships with both the Apache and MIT license.
+If you don't want to have your app dual licensed, just remove one (or both) of the files and update the `license` field in `Cargo.toml`.
 
-```bash
-npm install -g surge
-```
+There are two empty spaces in the MIT license you need to fill out: `` and `Gil Engel <gil.engel@web.de>`.
 
-Then, from within your project folder:
-
-```bash
-npm run build
-surge public my-project.surge.sh
-```
+[trunk]: https://github.com/thedodd/trunk

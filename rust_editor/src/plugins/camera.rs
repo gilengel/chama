@@ -17,7 +17,11 @@ pub trait Renderer {
 
 #[editor_plugin]
 pub struct Camera {
-    #[option(skip, label = "Camera Position", description = "Enables / Disables the grid")]
+    #[option(
+        skip,
+        label = "Camera Position",
+        description = "Enables / Disables the grid"
+    )]
     position: Coordinate<f64>,
 
     #[option(
@@ -58,12 +62,11 @@ impl Camera {
     }
 }
 
-impl<T> Plugin<T> for Camera
+impl<Data> Plugin<Data> for Camera
 where
-    T: Renderer + Default + 'static,
-
+    Data: Renderer + Default + 'static,
 {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut T) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut Data) {
         self.active = button == 1;
     }
 
@@ -71,7 +74,7 @@ where
         &mut self,
         _mouse_pos: Coordinate<f64>,
         mouse_movement: Coordinate<f64>,
-        _data: &mut T,
+        _data: &mut Data,
     ) {
         if !self.active {
             return;
@@ -80,7 +83,7 @@ where
         self.position = self.position + mouse_movement;
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut T) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut Data) {
         if self.active && button == 1 {
             self.active = false;
         }

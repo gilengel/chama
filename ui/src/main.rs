@@ -16,8 +16,7 @@ mod map;
 mod plugins;
 //mod systems;
 
-#[launch]
-fn editor() {
+fn main() {
     let mut editor = x_launch::<Map>();
 
     editor.add_plugin(Undo::<Map>::default());

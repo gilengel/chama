@@ -109,7 +109,7 @@ pub(crate) fn generate_option_element(
     let default = generate_default_arm(&attr_ident, &ty, &metas);
 
     let label = attr.label.clone();
-    //let description = attr.description;
+    let description = attr.description.clone();
 
     let number_types: Vec<&str> = vec![
         "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
@@ -147,7 +147,7 @@ pub(crate) fn generate_option_element(
                 on_value_change={#callback_name}
             />
 
-            /*<label class="description">{#description}</label>*/
+            <label class="description">{#description}</label>
         </div>};
     } else if ty.to_string() == "bool" {
         result.element = quote! {

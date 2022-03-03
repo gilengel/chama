@@ -60,6 +60,8 @@ pub enum EditorError {
     ToolbarExists { id: &'static str },
 }
 
+pub type Plugins<Data> = BTreeMap<PluginId, Box<dyn PluginWithOptions<Data>>>;
+
 pub struct App<Data>
 where
     Data: Renderer + Default + 'static,
@@ -71,7 +73,7 @@ where
     _additional_information_layers: Vec<InformationLayer>,
 
     /// All plugins that implement the editor logic and functionality
-    plugins: BTreeMap<PluginId, Box<dyn PluginWithOptions<Data>>>,
+    plugins: Plugins<Data>,
 
     /// Toolbars added by plugins
     toolbars: Toolbars<Data>,
@@ -87,6 +89,8 @@ where
     /// Internally stores the pressed keys as registered by native web events.
     /// Keys are pushed to the end so the vec is sorted from oldest pressed key to newest
     pressed_keys: Vec<String>,
+
+    canvas_size: Coordinate<i32>,
 }
 
 impl<Data> App<Data>
@@ -161,6 +165,7 @@ where
             context: None,
 
             pressed_keys: Vec::new(),
+            canvas_size: Coordinate { x: 1920, y: 1080 },
         }
     }
 
@@ -180,6 +185,11 @@ where
             let handle = {
                 let link = ctx.link().clone();
                 request_animation_frame(move |time| link.send_message(EditorMessages::Render(time)))
+            };
+
+            self.canvas_size = Coordinate {
+                x: canvas.offset_width(),
+                y: canvas.offset_height(),
             };
 
             // A reference to the handle must be stored, otherwise it is dropped and the render won't
@@ -309,10 +319,9 @@ where
             EditorMessages::Render(_) => {
                 self.render(ctx.link());
             }
-            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {                
+            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {
                 let plugin = self.get_plugin_by_key_mut(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
-                
-                
+
                 plugin.update_property(attribute, value);
             }
             EditorMessages::ActivatePlugin(plugin_id) => {
@@ -412,7 +421,12 @@ where
     pub fn render(&mut self, link: &Scope<Self>) {
         let context = self.context.as_ref().unwrap();
 
-        context.clear_rect(0.0, 0.0, 2000.0, 2000.0);
+        context.clear_rect(
+            0.0,
+            0.0,
+            self.canvas_size.x.into(),
+            self.canvas_size.y.into(),
+        );
 
         for plugin in self
             .plugins

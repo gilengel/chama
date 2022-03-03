@@ -1,25 +1,25 @@
 [package]
-name = "rust_editor"
+name = "trunk-template"
 version = "0.1.0"
 edition = "2021"
+description = "Template for starting a Yew project using Trunk"
+readme = "README.md"
+repository = "https://github.com/yewstack/yew-trunk-minimal-template"
+license = "MIT OR Apache-2.0"
+keywords = ["yew", "trunk"]
+categories = ["gui", "wasm", "web-programming"]
 
-
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-js-sys = "0.3.55"
-wasm-bindgen = "0.2.78"
-console_error_panic_hook = "0.1.7"
-geo-types = "0.7.2"
 geo = { version = "0.19.0", features = ["use-serde"] }
-uuid = { version = "0.8.2", features = ["v4", "wasm-bindgen", "serde"] }
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
-gloo = "0.6.0"
-enum-as-inner = "0.4.0"
+uuid = { version = "0.8.2", features = ["v4", "wasm-bindgen", "serde"] }
+rust_editor = { path = "../rust_editor" }
 rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }
 yew = { git = "https://github.com/yewstack/yew", branch = "master" }
-gloo-render = "0.1"
-thiserror = "1.0"
+wasm-bindgen = "0.2.78"
 
 [dependencies.web-sys]
 version = "0.3.4"
@@ -51,4 +51,3 @@ features = [
   'DomTokenList',
   'EventListener'
 ]
-

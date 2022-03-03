@@ -1,6 +1,6 @@
 use rust_macro::editor_plugin;
 
-use crate::actions::Action;
+use crate::{actions::Action};
 
 use super::{camera::Renderer, plugin::Plugin};
 
@@ -20,21 +20,21 @@ where
     }
 }
 
-impl<T> Plugin<T> for Redo<T>
+impl<Data> Plugin<Data> for Redo<Data>
 where
-    T: Renderer + Default + 'static,
+    Data: Renderer + Default + 'static,
 
 {
 
-    fn mouse_down(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut T) {}
+    fn mouse_down(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut Data) {}
 
     fn mouse_move(
         &mut self,
         _mouse_pos: geo::Coordinate<f64>,
         _mouse_movement: geo::Coordinate<f64>,
-        _data: &mut T,
+        _data: &mut Data
     ) {
     }
 
-    fn mouse_up(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut T) {}    
+    fn mouse_up(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut Data) {}    
 }

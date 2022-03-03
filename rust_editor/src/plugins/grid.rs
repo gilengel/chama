@@ -21,8 +21,6 @@ pub struct Grid {
         description = "Subdivisions between offset"
     )]
     subdivisions: u8,
-    //#[option(default=true, label="Grid Enabled", description="Enables / Disables the grid")]
-    //enabled: bool,
 }
 
 impl<Data> Plugin<Data> for Grid

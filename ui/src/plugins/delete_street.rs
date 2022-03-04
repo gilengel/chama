@@ -1,7 +1,12 @@
 use geo::Coordinate;
 use rust_editor::{
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::plugin::{Plugin, PluginWithOptions}, keys, ui::{app::{EditorError, Shortkey}, toolbar::ToolbarPosition},
+    keys,
+    plugins::plugin::{Plugin, PluginWithOptions},
+    ui::{
+        app::{EditorError, Shortkey},
+        toolbar::ToolbarPosition,
+    },
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -22,89 +27,104 @@ impl DeleteStreet {
     }
 
     fn connected_streets(&self, start: Uuid, map: &Map) -> Vec<Uuid> {
-        let mut street = start;
-        let mut forward = true;
-
-        let mut streets: Vec<Uuid> = vec![];
-
-        let mut side = Side::Left;
-
-        let mut next = match map.street(&street).unwrap().get_next(side) {
-            Some(id) => Some(id),
-            None => None,
-        };
-
-        while next.is_some()
-            && next.unwrap() != start
-            && map
-                .intersection(&map.street(&street).unwrap().end)
-                .unwrap()
-                .get_connected_streets()
-                .len()
-                == 2
-        {
-            streets.push(street);
-
-            {
-                let street = map.street(&street).unwrap();
-
-                if forward {
-                    next = match street.get_next(side) {
-                        Some(id) => Some(id),
-                        None => None,
-                    };
-                } else {
-                    next = match street.get_previous(side) {
-                        Some(id) => Some(id),
-                        None => None,
-                    };
-                }
-
-                if next.is_some()
-                    && ((street.start == map.street(&next.unwrap()).unwrap().start)
-                        || (street.end == map.street(&next.unwrap()).unwrap().end))
-                {
-                    forward = !forward;
-
-                    side = match side {
-                        Side::Left => Side::Right,
-                        Side::Right => Side::Left,
-                    }
-                }
-            }
-
-            if let Some(next) = next {
-                street = next;
-            }
+        enum Direction {
+            Forward,
+            Backward,
         }
 
-        streets.push(street);
+        let muu = |direction: Direction| {
+            let mut street = start;
+            let mut forward = true;
 
-        streets
+            let mut streets: Vec<Uuid> = vec![];
+
+            let mut side = Side::Left;
+            let mut next = match direction {
+                Direction::Forward => map.street(&street).unwrap().get_next(side),
+                Direction::Backward => map.street(&street).unwrap().get_previous(side),
+            };
+
+            while next.is_some()
+                && next.unwrap() != start
+                && map
+                    .intersection(&map.street(&street).unwrap().end)
+                    .unwrap()
+                    .get_connected_streets()
+                    .len()
+                    == 2
+            {
+                streets.push(street);
+
+                {
+                    let street = map.street(&street).unwrap();
+
+                    match direction {
+                        Direction::Forward => {
+                            if forward {
+                                next = street.get_next(side);
+                            } else {
+                                next = street.get_previous(side);
+                            }
+                        }
+                        Direction::Backward => {
+                            if forward {
+                                next = street.get_previous(side);
+                            } else {
+                                next = street.get_next(side);
+                            }
+                        }
+                    };
+
+                    if next.is_some()
+                        && ((street.start == map.street(&next.unwrap()).unwrap().start)
+                            || (street.end == map.street(&next.unwrap()).unwrap().end))
+                    {
+                        forward = !forward;
+
+                        side = match side {
+                            Side::Left => Side::Right,
+                            Side::Right => Side::Left,
+                        }
+                    }
+                }
+
+                if let Some(next) = next {
+                    street = next;
+                }
+            }
+
+            streets
+        };
+
+        let mut a = muu(Direction::Backward);
+        a.extend(muu(Direction::Forward).iter().copied());
+
+        a
     }
 }
 impl Plugin<Map> for DeleteStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<DeleteStreet>(keys!["Control", "s"])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?; 
+        let toolbar =
+            editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
 
         let enabled = Rc::clone(&self.__enabled);
         toolbar.add_toggle_button(
             "delete_outline",
             "mumu",
             "Delete Streets".to_string(),
-            move || { *enabled.as_ref().borrow() },
-            move || { EditorMessages::ActivatePlugin(DeleteStreet::identifier()) },
+            move || *enabled.as_ref().borrow(),
+            move || EditorMessages::ActivatePlugin(DeleteStreet::identifier()),
         )?;
-
 
         Ok(())
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>) {
         if *key == keys!["Control", "s"] {
-            ctx.link().send_message(EditorMessages::ActivatePlugin(DeleteStreet::identifier()));
+            ctx.link()
+                .send_message(EditorMessages::ActivatePlugin(DeleteStreet::identifier()));
         }
     }
 

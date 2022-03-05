@@ -4,7 +4,7 @@ use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{plugins::{camera::Renderer, plugin::PluginWithOptions}, InformationLayer};
+use crate::{plugins::{plugin::PluginWithOptions}, InformationLayer};
 
 
 /// Editing functionality is encapsuled into different states. Each state is responsible to render the map and all additional information needed.
@@ -16,8 +16,6 @@ use crate::{plugins::{camera::Renderer, plugin::PluginWithOptions}, InformationL
 
 #[allow(unused_variables)]
 pub trait System<Data>
-where
-    Data: Renderer,
 {
     /// Is used to implement behaviour of the state if the user clicked inside the specified
     /// html element by the statemachine.
@@ -70,8 +68,6 @@ where
         additional_information_layer: &Vec<InformationLayer>,
         plugins: &HashMap<&'static str, Box<dyn PluginWithOptions<Data>>>
     ) -> Result<(), JsValue> {
-        data.render(context, additional_information_layer)?;
-
         Ok(())
     }
 

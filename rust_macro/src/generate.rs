@@ -340,8 +340,8 @@ pub(crate) fn produce(
 ) -> TokenStream2 {
     let (where_clause_plugins_with_options, where_clause_any_plugin) = if param.ty == "Data" {
         (
-            quote! { where Data: Renderer + Default + 'static },
-            quote! { where Data: Renderer + Default + 'static },
+            quote! { where Data: Default + 'static },
+            quote! { where Data: Default + 'static },
         )
     } else {
         (quote! {}, quote! {})

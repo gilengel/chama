@@ -5,12 +5,11 @@ use rust_internal::PluginExecutionBehaviour;
 use web_sys::CanvasRenderingContext2d;
 use yew::{html, Context, Html};
 
-use crate::plugins::camera::Renderer;
 use crate::ui::app::{App, EditorError, Shortkey};
 
 pub trait AnyPlugin<Data>: Plugin<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
 
 {
     fn as_any(&self) -> &dyn Any;
@@ -49,7 +48,7 @@ pub enum SpecialKey {
 #[allow(unused_variables)]
 pub trait PluginWithOptions<Data>: AnyPlugin<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
     
 {
     /// Renders the ui elements for all plugin options
@@ -82,7 +81,7 @@ where
 #[allow(unused_variables)]
 pub trait Plugin<Data>
 where
-    Data: Renderer + Default,
+    Data:  Default,
 
 {
     /// Is used to implement behaviour of the state if the user clicked inside the specified

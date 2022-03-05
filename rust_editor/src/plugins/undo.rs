@@ -2,7 +2,7 @@ use rust_macro::editor_plugin;
 
 use crate::actions::Action;
 
-use super::{camera::Renderer, plugin::Plugin};
+use super::plugin::Plugin;
 
 #[editor_plugin(skip)]
 pub struct Undo<Data> {
@@ -10,10 +10,7 @@ pub struct Undo<Data> {
     pub stack: Vec<Box<dyn Action<Data>>>,
 }
 
-impl<T> Undo<T>
-where
-    T: Renderer,
-{
+impl<T> Undo<T> {
     pub fn push(&mut self, action: Box<dyn Action<T>>) {
         self.stack.push(action);
     }
@@ -21,7 +18,7 @@ where
 
 impl<Data> Plugin<Data> for Undo<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data: Default + 'static,
 {
     fn mouse_down(&mut self, _mouse_pos: geo::Coordinate<f64>, _button: u32, _data: &mut Data) {}
 

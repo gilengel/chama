@@ -16,8 +16,6 @@ use geo::Coordinate;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
-use crate::plugins::camera::Renderer;
-
 use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
 
 #[macro_export]
@@ -64,7 +62,7 @@ pub type Plugins<Data> = BTreeMap<PluginId, Box<dyn PluginWithOptions<Data>>>;
 
 pub struct App<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
 {
     /// Holds the displayed data
     data: Data,
@@ -95,7 +93,7 @@ where
 
 impl<Data> App<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
 {
     pub fn add_shortkey<T>(&mut self, keys: Shortkey) -> Result<(), EditorError>
     where
@@ -147,7 +145,7 @@ pub struct EditorProps {}
 
 impl<Data> Component for App<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
 {
     type Message = EditorMessages<Data>;
     type Properties = EditorProps;
@@ -228,36 +226,21 @@ where
                     y: e.movement_y() as f64,
                 };
 
-                for plugin in self
-                    .plugins
-                    .values_mut()
-                    .into_iter()
-                    .filter(|plugin| plugin.enabled())
-                {
+                for plugin in enabled_plugins(&mut self.plugins) {
                     plugin.mouse_move(mouse_pos, mouse_diff, &mut self.data);
                 }
             }
             EditorMessages::MouseDown(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
-                for plugin in self
-                    .plugins
-                    .values_mut()
-                    .into_iter()
-                    .filter(|plugin| plugin.enabled())
-                {
+                for plugin in enabled_plugins(&mut self.plugins) {
                     plugin.mouse_down(mouse_pos, e.button() as u32, &mut self.data);
                 }
             }
             EditorMessages::MouseUp(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
-                for plugin in self
-                    .plugins
-                    .values_mut()
-                    .into_iter()
-                    .filter(|plugin| plugin.enabled())
-                {
+                for plugin in enabled_plugins(&mut self.plugins) {
                     plugin.mouse_up(mouse_pos, e.button() as u32, &mut self.data);
                 }
             }
@@ -284,12 +267,7 @@ where
                     }
                 }
 
-                for plugin in self
-                    .plugins
-                    .values_mut()
-                    .into_iter()
-                    .filter(|plugin| plugin.enabled())
-                {
+                for plugin in enabled_plugins(&mut self.plugins) {
                     plugin.key_down(&e.key()[..], &mut self.data);
                 }
             }
@@ -307,12 +285,7 @@ where
                     special_keys.push(SpecialKey::Shift);
                 }
 
-                for plugin in self
-                    .plugins
-                    .values_mut()
-                    .into_iter()
-                    .filter(|plugin| plugin.enabled())
-                {
+                for plugin in enabled_plugins(&mut self.plugins) {
                     plugin.key_up(&e.key()[..], &mut self.data);
                 }
             }
@@ -377,13 +350,27 @@ where
     }
 }
 
+fn enabled_plugins<'a, Data>(
+    plugins: &'a mut Plugins<Data>,
+) -> Vec<&'a mut Box<dyn PluginWithOptions<Data>>>
+where
+    Data: Default +  'static,
+{
+    plugins
+        .iter_mut()
+        .enumerate()
+        .filter(|(_, (_, plugin))| plugin.enabled())
+        .map(|(_, (_, plugin))| plugin)
+        .collect()
+}
+
 impl<Data> App<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
 {
     fn get_plugin_by_key_mut(&mut self, key: &str) -> Option<&mut dyn PluginWithOptions<Data>>
     where
-        Data: Renderer + 'static,
+        Data:  'static,
     {
         if let Some(plugin) = self.plugins.get_mut(key) {
             return Some(&mut **plugin);
@@ -395,7 +382,7 @@ where
     pub fn get_plugin<P>(&self) -> Option<&P>
     where
         P: PluginWithOptions<Data> + 'static,
-        Data: Renderer + 'static,
+        Data:  'static,
     {
         for (_, plugin) in &self.plugins {
             if let Some(p) = plugin.as_ref().as_any().downcast_ref::<P>() {
@@ -428,12 +415,7 @@ where
             self.canvas_size.y.into(),
         );
 
-        for plugin in self
-            .plugins
-            .values()
-            .into_iter()
-            .filter(|plugin| plugin.enabled())
-        {
+        for plugin in enabled_plugins(&mut self.plugins) {
             plugin.render(context, &self.data);
         }
 
@@ -449,7 +431,7 @@ where
 
 pub struct GenericEditor<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
 {
     app_handle: AppHandle<App<Data>>,
 }
@@ -461,7 +443,7 @@ pub struct ModeProps {
 
 impl<Data> GenericEditor<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
 {
     pub fn add_plugins(&mut self, plugins: Vec<(&'static str, Box<dyn PluginWithOptions<Data>>)>)
     //where
@@ -484,7 +466,7 @@ where
 
 pub fn x_launch<Data>() -> GenericEditor<Data>
 where
-    Data: Renderer + Default + 'static,
+    Data:  Default + 'static,
 {
     GenericEditor {
         app_handle: yew::start_app::<App<Data>>(),

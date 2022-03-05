@@ -4,17 +4,12 @@ use geo::{Coordinate, Line, LineString, Polygon, Rect};
 use rust_editor::actions::{Action, MultiAction, Redo, Undo};
 use rust_editor::gizmo::{GetPosition, Id, SetId, SetPosition};
 use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
-use rust_editor::plugins::camera::Renderer;
-use rust_editor::InformationLayer;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
-
-use wasm_bindgen::JsValue;
-use web_sys::CanvasRenderingContext2d;
 
 use super::district::District;
 use super::intersection::Intersection;
@@ -43,32 +38,6 @@ impl Default for Map {
 
             bounding_box: Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. }),
         }
-    }
-}
-
-impl Renderer for Map {
-    fn render(
-        &self,
-        context: &CanvasRenderingContext2d,
-        _: &Vec<InformationLayer>,
-    ) -> Result<(), JsValue> {
-        //context.translate(camera.x as f64, camera.y as f64)?;
-
-        for (_, district) in &self.districts {
-            district.render(&context)?;
-        }
-
-        for (_, street) in &self.streets {
-            street.render(&context)?;
-        }
-
-        for (_, intersection) in &self.intersections {
-            intersection.render(&context)?;
-        }
-
-        //context.set_transform(1., 0., 0., 1., 0., 0.)?;
-
-        Ok(())
     }
 }
 

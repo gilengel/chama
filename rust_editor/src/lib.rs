@@ -19,7 +19,7 @@ pub enum InformationLayer {
 pub fn get_plugin<'a, Data, Modes, P>(plugins: &'a HashMap<&'static str, Box<(dyn PluginWithOptions<Data> + 'static)>>) -> Option<&'a P>
 where
     P: PluginWithOptions<Data> + 'static,
-    Data: Default + Renderer + 'static,
+    Data: Default +  'static,
 {
     let id = P::identifier();
     if plugins.contains_key(id) {
@@ -33,7 +33,7 @@ where
 
 pub fn get_plugin_mut<Data>(_plugins: &mut Vec<Box<dyn PluginWithOptions<Data>>>) -> Option<&mut Modes>
 where
-    Data: Renderer + 'static,
+    Data:  'static,
 {
     todo!()
 }

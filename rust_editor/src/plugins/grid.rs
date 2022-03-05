@@ -1,4 +1,4 @@
-use super::{camera::Renderer, plugin::Plugin};
+use super::plugin::Plugin;
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
 
@@ -25,8 +25,7 @@ pub struct Grid {
 
 impl<Data> Plugin<Data> for Grid
 where
-    Data: Renderer + Default + 'static,
-
+    Data: Default + 'static,
 {
     fn render(&self, context: &CanvasRenderingContext2d, _: &Data) {
         if self.offset == 0 {

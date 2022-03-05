@@ -1,19 +1,7 @@
 use geo::Coordinate;
 use rust_macro::editor_plugin;
-use wasm_bindgen::JsValue;
-use web_sys::CanvasRenderingContext2d;
-
-use crate::InformationLayer;
 
 use super::plugin::Plugin;
-
-pub trait Renderer {
-    fn render(
-        &self,
-        context: &CanvasRenderingContext2d,
-        additional_information_layer: &Vec<InformationLayer>,
-    ) -> Result<(), JsValue>;
-}
 
 #[editor_plugin]
 pub struct Camera {
@@ -64,7 +52,7 @@ impl Camera {
 
 impl<Data> Plugin<Data> for Camera
 where
-    Data: Renderer + Default + 'static,
+    Data: Default + 'static,
 {
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut Data) {
         self.active = button == 1;

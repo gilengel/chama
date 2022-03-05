@@ -6,7 +6,7 @@ use geo::{
 };
 use rust_editor::{
     gizmo::{Id, SetPosition},
-    plugins::{camera::Renderer, plugin::PluginWithOptions},
+    plugins::{plugin::PluginWithOptions},
     renderer::PrimitiveRenderer,
     style::Style,
     system::System,

@@ -2,7 +2,6 @@ use std::{rc::Rc, collections::HashMap, fmt};
 
 use yew::{html, Context, Html, classes};
 
-use crate::plugins::camera::Renderer;
 
 use super::{app::{App, EditorMessages, EditorError}, toolbar_button::ToolbarButton};
 
@@ -79,7 +78,7 @@ pub(crate) struct Toolbars<Data> {
 
 impl<Data> Toolbars<Data>
 where
-    Data: Renderer + Default,
+    Data:  Default,
 {
     pub fn new() -> Self {
         Toolbars {

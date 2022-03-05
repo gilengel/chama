@@ -9,7 +9,7 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::{error, InformationLayer};
+use crate::error;
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
@@ -21,11 +21,6 @@ use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
 #[macro_export]
 macro_rules! keys {
     ($($x:expr),*) => (vec![$($x.to_string()),*]);
-}
-
-#[macro_export]
-macro_rules! plugins_vec {
-    ($($x:expr),*) => (vec![$(Box::new($x)),*]);
 }
 
 pub enum EditorMessages<Data> {
@@ -62,13 +57,10 @@ pub type Plugins<Data> = BTreeMap<PluginId, Box<dyn PluginWithOptions<Data>>>;
 
 pub struct App<Data>
 where
-    Data:  Default + 'static,
+    Data: Default + 'static,
 {
     /// Holds the displayed data
     data: Data,
-
-    /// TODO not needed right now - should be moved into a plugin
-    _additional_information_layers: Vec<InformationLayer>,
 
     /// All plugins that implement the editor logic and functionality
     plugins: Plugins<Data>,
@@ -93,7 +85,7 @@ where
 
 impl<Data> App<Data>
 where
-    Data:  Default + 'static,
+    Data: Default + 'static,
 {
     pub fn add_shortkey<T>(&mut self, keys: Shortkey) -> Result<(), EditorError>
     where
@@ -145,7 +137,7 @@ pub struct EditorProps {}
 
 impl<Data> Component for App<Data>
 where
-    Data:  Default + 'static,
+    Data: Default + 'static,
 {
     type Message = EditorMessages<Data>;
     type Properties = EditorProps;
@@ -156,7 +148,6 @@ where
             plugins: BTreeMap::new(),
             shortkeys: HashMap::new(),
             toolbars: Toolbars::new(),
-            _additional_information_layers: Vec::new(),
 
             canvas_ref: NodeRef::default(),
             _render_loop: None,
@@ -354,7 +345,7 @@ fn enabled_plugins<'a, Data>(
     plugins: &'a mut Plugins<Data>,
 ) -> Vec<&'a mut Box<dyn PluginWithOptions<Data>>>
 where
-    Data: Default +  'static,
+    Data: Default + 'static,
 {
     plugins
         .iter_mut()
@@ -366,11 +357,11 @@ where
 
 impl<Data> App<Data>
 where
-    Data:  Default + 'static,
+    Data: Default + 'static,
 {
     fn get_plugin_by_key_mut(&mut self, key: &str) -> Option<&mut dyn PluginWithOptions<Data>>
     where
-        Data:  'static,
+        Data: 'static,
     {
         if let Some(plugin) = self.plugins.get_mut(key) {
             return Some(&mut **plugin);
@@ -382,7 +373,7 @@ where
     pub fn get_plugin<P>(&self) -> Option<&P>
     where
         P: PluginWithOptions<Data> + 'static,
-        Data:  'static,
+        Data: 'static,
     {
         for (_, plugin) in &self.plugins {
             if let Some(p) = plugin.as_ref().as_any().downcast_ref::<P>() {
@@ -431,7 +422,7 @@ where
 
 pub struct GenericEditor<Data>
 where
-    Data:  Default + 'static,
+    Data: Default + 'static,
 {
     app_handle: AppHandle<App<Data>>,
 }
@@ -443,7 +434,7 @@ pub struct ModeProps {
 
 impl<Data> GenericEditor<Data>
 where
-    Data:  Default + 'static,
+    Data: Default + 'static,
 {
     pub fn add_plugins(&mut self, plugins: Vec<(&'static str, Box<dyn PluginWithOptions<Data>>)>)
     //where
@@ -466,7 +457,7 @@ where
 
 pub fn x_launch<Data>() -> GenericEditor<Data>
 where
-    Data:  Default + 'static,
+    Data: Default + 'static,
 {
     GenericEditor {
         app_handle: yew::start_app::<App<Data>>(),

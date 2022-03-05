@@ -1,6 +1,8 @@
 use geo::Coordinate;
 use rust_macro::editor_plugin;
 
+use crate::ui::app::PluginsVec;
+
 use super::plugin::Plugin;
 
 #[editor_plugin]
@@ -54,7 +56,7 @@ impl<Data> Plugin<Data> for Camera
 where
     Data: Default + 'static,
 {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut Data) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut Data, _: &PluginsVec<Data>) {
         self.active = button == 1;
     }
 

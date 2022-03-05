@@ -6,7 +6,7 @@ use rust_editor::{
     renderer::apply_style,
     style::Style,
     ui::{
-        app::{EditorError, Shortkey},
+        app::{EditorError, Shortkey, PluginsVec},
         toolbar::ToolbarPosition,
     },
 };
@@ -95,7 +95,7 @@ impl Plugin<Map> for CreateFreeformStreet {
 
         Ok(())
     }
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _map: &mut Map) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut Map, _: &PluginsVec<Map>) {
         if button == 0 {
             self.brush_active = true;
         }

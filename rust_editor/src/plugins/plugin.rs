@@ -5,12 +5,11 @@ use rust_internal::PluginExecutionBehaviour;
 use web_sys::CanvasRenderingContext2d;
 use yew::{html, Context, Html};
 
-use crate::ui::app::{App, EditorError, Shortkey};
+use crate::ui::app::{App, EditorError, PluginsVec, Shortkey};
 
 pub trait AnyPlugin<Data>: Plugin<Data>
 where
-    Data:  Default + 'static,
-
+    Data: Default + 'static,
 {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
@@ -48,8 +47,7 @@ pub enum SpecialKey {
 #[allow(unused_variables)]
 pub trait PluginWithOptions<Data>: AnyPlugin<Data>
 where
-    Data:  Default + 'static,
-    
+    Data: Default + 'static,
 {
     /// Renders the ui elements for all plugin options
     fn view_options(&self, _context: &Context<App<Data>>) -> Html {
@@ -81,8 +79,7 @@ where
 #[allow(unused_variables)]
 pub trait Plugin<Data>
 where
-    Data:  Default,
-
+    Data: Default,
 {
     /// Is used to implement behaviour of the state if the user clicked inside the specified
     /// html element by the statemachine.
@@ -90,7 +87,14 @@ where
     /// * `x` - x coordinate of the cursor where the click occured
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, data: &mut Data) {}
+    fn mouse_down(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: u32,
+        data: &mut Data,
+        plugins: &PluginsVec<Data>,
+    ) {
+    }
 
     /// Is used to implement behaviour of the state if the user moved the cursor inside the
     /// specified html element by the statemaschine.
@@ -101,7 +105,7 @@ where
         &mut self,
         mouse_pos: Coordinate<f64>,
         mouse_movement: Coordinate<f64>,
-        data: &mut Data
+        data: &mut Data,
     ) {
     }
 
@@ -129,10 +133,10 @@ where
     fn key_up(&mut self, key: &str, _data: &mut Data) {}
 
     /// Is triggered if a shortkey is pressed that is registered with the associated plugin. Notice the difference to key_down or key_press function:
-    /// While key_down or key_press react on single key events, shortkey_pressed is not a native web event instead pressed keys are aggregated by the 
+    /// While key_down or key_press react on single key events, shortkey_pressed is not a native web event instead pressed keys are aggregated by the
     /// editor and checked against registered shortkeys. If the pressed shortkey exists in one plugin and the plugin is active than only this function
     /// is called.
-    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Data>>){}
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Data>>) {}
 
     /// Called once before the plugin is added to the editor list of plugins. You can use this it to add additional ui elements such as toolbars (and buttons) or
     /// register shortkeys for the plugin.

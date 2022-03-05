@@ -128,8 +128,6 @@ impl Plugin<Map> for DeleteStreet {
         }
     }
 
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _map: &mut Map) {}
-
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,

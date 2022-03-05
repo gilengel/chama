@@ -1,7 +1,9 @@
 use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
+use std::rc::Rc;
 use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
@@ -9,8 +11,9 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::error;
+use crate::{error, log};
 
+use crate::plugins::undo::Undo;
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent};
@@ -24,8 +27,8 @@ macro_rules! keys {
 }
 
 pub enum EditorMessages<Data> {
-    AddPlugin((&'static str, Box<dyn PluginWithOptions<Data> + 'static>)),
-    AddPlugins(Vec<(&'static str, Box<dyn PluginWithOptions<Data> + 'static>)>),
+    AddPlugin((&'static str, Rc<RefCell<dyn PluginWithOptions<Data> + 'static>>)),
+    AddPlugins(Vec<(&'static str, Rc<RefCell<dyn PluginWithOptions<Data> + 'static>>)>),
     PluginOptionUpdated((&'static str, &'static str, Box<dyn Any>)),
     ActivatePlugin(&'static str),
 
@@ -53,7 +56,8 @@ pub enum EditorError {
     ToolbarExists { id: &'static str },
 }
 
-pub type Plugins<Data> = BTreeMap<PluginId, Box<dyn PluginWithOptions<Data>>>;
+pub type Plugins<Data> = BTreeMap<PluginId, Rc<RefCell<dyn PluginWithOptions<Data>>>>;
+pub type PluginsVec<Data> = HashMap<PluginId, Rc<RefCell<dyn PluginWithOptions<Data>>>>;
 
 pub struct App<Data>
 where
@@ -189,8 +193,8 @@ where
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            EditorMessages::AddPlugin((key, mut plugin)) => {
-                if let Err(e) = plugin.startup(self) {
+            EditorMessages::AddPlugin((key, plugin)) => {
+                if let Err(e) = plugin.borrow_mut().startup(self) {
                     error!("{}", e)
                 }
                 self.plugins.insert(key, plugin);
@@ -200,8 +204,8 @@ where
             EditorMessages::AddPlugins(plugins) => {
                 //self.plugins.reserve(plugins.len());
 
-                for (key, mut plugin) in plugins {
-                    if let Err(e) = plugin.startup(self) {
+                for (key, plugin) in plugins {
+                    if let Err(e) = plugin.borrow_mut().startup(self) {
                         error!("{}", e)
                     }
 
@@ -217,22 +221,28 @@ where
                     y: e.movement_y() as f64,
                 };
 
-                for plugin in enabled_plugins(&mut self.plugins) {
-                    plugin.mouse_move(mouse_pos, mouse_diff, &mut self.data);
+                for (_, plugin) in enabled_plugins(&mut self.plugins) {
+                    plugin.borrow_mut().mouse_move(mouse_pos, mouse_diff, &mut self.data);
                 }
             }
             EditorMessages::MouseDown(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
-                for plugin in enabled_plugins(&mut self.plugins) {
-                    plugin.mouse_down(mouse_pos, e.button() as u32, &mut self.data);
+                let enabled_plugins = enabled_plugins(&mut self.plugins);
+                for (_, plugin)  in &enabled_plugins {
+                    plugin.borrow_mut().mouse_down(mouse_pos, e.button() as u32, &mut self.data, &enabled_plugins);    
                 }
+
+
+                let camera = enabled_plugins.get("Undo").unwrap().borrow().as_any().downcast_ref::<Undo::<Data>>().unwrap();
+                log!("IT worked :O")
+
             }
             EditorMessages::MouseUp(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
-                for plugin in enabled_plugins(&mut self.plugins) {
-                    plugin.mouse_up(mouse_pos, e.button() as u32, &mut self.data);
+                for (_, plugin)  in enabled_plugins(&mut self.plugins) {
+                    plugin.borrow_mut().mouse_up(mouse_pos, e.button() as u32, &mut self.data);
                 }
             }
             EditorMessages::KeyDown(e) => {
@@ -253,13 +263,14 @@ where
                             self.plugins
                                 .get_mut(plugin_id)
                                 .unwrap()
+                                .borrow_mut()
                                 .shortkey_pressed(shortkey, ctx);
                         }
                     }
                 }
 
-                for plugin in enabled_plugins(&mut self.plugins) {
-                    plugin.key_down(&e.key()[..], &mut self.data);
+                for (_, plugin)  in enabled_plugins(&mut self.plugins) {
+                    plugin.borrow_mut().key_down(&e.key()[..], &mut self.data);
                 }
             }
             EditorMessages::KeyUp(e) => {
@@ -276,17 +287,16 @@ where
                     special_keys.push(SpecialKey::Shift);
                 }
 
-                for plugin in enabled_plugins(&mut self.plugins) {
-                    plugin.key_up(&e.key()[..], &mut self.data);
+                for (_, plugin)  in enabled_plugins(&mut self.plugins) {
+                    plugin.borrow_mut().key_up(&e.key()[..], &mut self.data);
                 }
             }
             EditorMessages::Render(_) => {
                 self.render(ctx.link());
             }
-            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {
-                let plugin = self.get_plugin_by_key_mut(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
-
-                plugin.update_property(attribute, value);
+            EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {                
+                let plugin = self.plugins.get(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
+                plugin.borrow_mut().update_property(attribute, value);
             }
             EditorMessages::ActivatePlugin(plugin_id) => {
                 if !self.plugins.contains_key(plugin_id) {
@@ -299,14 +309,15 @@ where
 
                 if let Some((_, exclusive_active_plugin)) =
                     self.plugins.iter_mut().find(|(_, x)| {
+                        let x = x.borrow();
                         x.enabled()
                             && x.execution_behaviour() == &PluginExecutionBehaviour::Exclusive
                     })
                 {
-                    exclusive_active_plugin.disable();
+                    exclusive_active_plugin.borrow_mut().disable();
                 }
 
-                self.plugins.get_mut(plugin_id).unwrap().enable();
+                self.plugins.get_mut(plugin_id).unwrap().borrow_mut().enable();
             }
         }
 
@@ -328,7 +339,7 @@ where
             <Dialog>
             {
                 for self.plugins.iter().map(|(_, plugin)| {
-                    plugin.view_options(ctx)
+                    plugin.borrow().view_options(ctx)
                 })
             }
             </Dialog>
@@ -339,56 +350,51 @@ where
         </main>
         }
     }
+
+    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+        true
+    }
+
+    fn destroy(&mut self, ctx: &Context<Self>) {}
 }
 
-fn enabled_plugins<'a, Data>(
-    plugins: &'a mut Plugins<Data>,
-) -> Vec<&'a mut Box<dyn PluginWithOptions<Data>>>
+fn enabled_plugins<Data>(
+    plugins: &Plugins<Data>,
+) -> PluginsVec<Data>
 where
     Data: Default + 'static,
 {
     plugins
-        .iter_mut()
-        .enumerate()
-        .filter(|(_, (_, plugin))| plugin.enabled())
-        .map(|(_, (_, plugin))| plugin)
+        .iter()
+        .filter(|(_, plugin)| plugin.borrow().enabled())
+        .map(|(id, plugin)| (*id, Rc::clone(plugin)))
         .collect()
 }
+
+
+pub fn plugin<P, Data>(plugins: &PluginsVec<Data>) -> Option<&P> where P: PluginWithOptions<Data> + 'static, Data: Default + 'static {
+    if let Some(plugin) = plugins.get(P::identifier()) {
+        return Some(plugins.get(P::identifier()).unwrap().borrow().as_any().downcast_ref::<P>().unwrap())
+    }
+    
+    None
+}
+
 
 impl<Data> App<Data>
 where
     Data: Default + 'static,
 {
-    fn get_plugin_by_key_mut(&mut self, key: &str) -> Option<&mut dyn PluginWithOptions<Data>>
-    where
-        Data: 'static,
-    {
-        if let Some(plugin) = self.plugins.get_mut(key) {
-            return Some(&mut **plugin);
-        }
-
-        None
-    }
-
-    pub fn get_plugin<P>(&self) -> Option<&P>
-    where
-        P: PluginWithOptions<Data> + 'static,
-        Data: 'static,
-    {
-        for (_, plugin) in &self.plugins {
-            if let Some(p) = plugin.as_ref().as_any().downcast_ref::<P>() {
-                return Some(p);
-            }
-        }
-
-        None
-    }
-
     fn mouse_pos(&self, x: u32, y: u32) -> Coordinate<f64> {
+        /*
+        TODO
         let offset = match self.get_plugin::<Camera>() {
             Some(x) => Coordinate { x: x.x(), y: x.y() },
             None => Coordinate { x: 0., y: 0. },
         };
+         */
+
+        let offset = Coordinate { x: 0., y: 0. };
 
         return Coordinate {
             x: x as f64 - offset.x,
@@ -406,8 +412,8 @@ where
             self.canvas_size.y.into(),
         );
 
-        for plugin in enabled_plugins(&mut self.plugins) {
-            plugin.render(context, &self.data);
+        for (_, plugin) in enabled_plugins(&mut self.plugins) {
+            plugin.borrow_mut().render(context, &self.data);
         }
 
         let handle = {
@@ -436,21 +442,13 @@ impl<Data> GenericEditor<Data>
 where
     Data: Default + 'static,
 {
-    pub fn add_plugins(&mut self, plugins: Vec<(&'static str, Box<dyn PluginWithOptions<Data>>)>)
-    //where
-    //    P: PluginWithOptions<Data> + 'static,
-    {
-        self.app_handle
-            .send_message(EditorMessages::AddPlugins(plugins));
-    }
-
     pub fn add_plugin<P>(&mut self, plugin: P)
     where
         P: PluginWithOptions<Data> + 'static,
     {
         self.app_handle.send_message(EditorMessages::AddPlugin((
             P::identifier(),
-            Box::new(plugin),
+            Rc::new(RefCell::new(plugin)),
         )));
     }
 }

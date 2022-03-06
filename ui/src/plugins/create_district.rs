@@ -56,13 +56,13 @@ impl Plugin<Map> for CreateDistrict {
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _button: u32, map: &mut Map) {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _button: u32, app: &mut App<Map>) {
         if let Some(hovered_street_id) = self.hovered_street {
-            let hovered_street = map.street(&hovered_street_id).unwrap();
+            let hovered_street = app.data().street(&hovered_street_id).unwrap();
             let side = hovered_street.get_side_of_position(&mouse_pos);
 
-            if let Some(district) = create_district_for_street(side, hovered_street_id, map) {
-                map.add_district(district);
+            if let Some(district) = create_district_for_street(side, hovered_street_id, app.data_mut()) {
+                app.data_mut().add_district(district);
             }
         }
     }

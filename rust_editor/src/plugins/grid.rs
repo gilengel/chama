@@ -27,7 +27,7 @@ impl<Data> Plugin<Data> for Grid
 where
     Data: Default + 'static,
 {
-    fn render(&self, context: &CanvasRenderingContext2d, _: &Data) {
+    fn render(&self, context: &CanvasRenderingContext2d, _: &App<Data>) {
         if self.offset == 0 {
             return;
         }

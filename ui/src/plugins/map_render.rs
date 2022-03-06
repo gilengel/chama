@@ -10,7 +10,8 @@ pub struct MapRender {
 }
 
 impl Plugin<Map> for MapRender {
-    fn render(&self, context: &CanvasRenderingContext2d, data: &Map) {
+    fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Map>) {
+        let data = editor.data();
         for (_, district) in data.districts() {
             district.render(context).unwrap();
         }

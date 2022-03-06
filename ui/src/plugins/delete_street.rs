@@ -147,10 +147,10 @@ impl Plugin<Map> for DeleteStreet {
         }
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, app: &mut App<Map>) {
         if let Some(hovered_streets) = &self.hovered_streets {
             for street in hovered_streets {
-                map.remove_street(&street);
+                app.data_mut().remove_street(&street);
             }
         }
     }

@@ -65,9 +65,9 @@ impl Plugin<Map> for DeleteDistrict {
         }
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _button: u32, map: &mut Map) {
-        if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
-            map.remove_district(&hovered_district);
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _button: u32, app: &mut App<Map>) {
+        if let Some(hovered_district) = app.data().get_district_at_position(&mouse_pos) {
+            app.data_mut().remove_district(&hovered_district);
             self.hovered_district = None
         }
     }

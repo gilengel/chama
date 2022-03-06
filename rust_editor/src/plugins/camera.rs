@@ -73,7 +73,7 @@ where
         self.position = self.position + mouse_movement;
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _data: &mut Data) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut App<Data>) {
         if self.active && button == 1 {
             self.active = false;
         }

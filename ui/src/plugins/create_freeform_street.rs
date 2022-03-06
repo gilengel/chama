@@ -120,7 +120,7 @@ impl Plugin<Map> for CreateFreeformStreet {
         }
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, map: &mut Map) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, app: &mut App<Map>) {
         // Only proceed if the left button was released
         if button != 0 {
             return;
@@ -137,7 +137,7 @@ impl Plugin<Map> for CreateFreeformStreet {
                 .map(|x| Coordinate { x: x.x(), y: x.y() })
                 .collect(),
         );
-        action.execute(map);
+        action.execute(app.data_mut());
 
         /*
         // If an undo plugin is registered store the action into it to make in undoable
@@ -149,7 +149,7 @@ impl Plugin<Map> for CreateFreeformStreet {
         self.raw_points.clear();
     }
 
-    fn render(&self, context: &CanvasRenderingContext2d, _: &Map) {
+    fn render(&self, context: &CanvasRenderingContext2d, _: &App<Map>) {
         if self.brush_active && !self.raw_points.is_empty() {
             /*
             let offset = match get_plugin::<Map, Modes, Camera>(plugins) {

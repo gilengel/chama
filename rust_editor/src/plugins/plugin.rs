@@ -109,7 +109,7 @@ where
     ) {
     }
 
-    fn render(&self, context: &CanvasRenderingContext2d, data: &Data) {}
+    fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Data>) {}
 
     /// Is used to implement behaviour of the state if the user released a pressed mouse button
     /// inside the specified html element by the statemachine.
@@ -118,19 +118,19 @@ where
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
     /// * `data` - The data hold by the editor
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, _data: &mut Data) {}
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, editor: &mut App<Data>) {}
 
     /// React to a key held down on a keyboard.  
     ///
     /// * 'key' the value of the pressed key. [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
     /// * `data` - The data hold by the editor
-    fn key_down(&mut self, key: &str, _data: &mut Data) {}
+    fn key_down(&mut self, key: &str, editor: &mut App<Data>) {}
 
     /// React to a key released on a keyboard.  
     ///
     /// * 'key' the value of the released key. [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
     /// * `data` - The data hold by the editor
-    fn key_up(&mut self, key: &str, _data: &mut Data) {}
+    fn key_up(&mut self, key: &str, editor: &mut App<Data>) {}
 
     /// Is triggered if a shortkey is pressed that is registered with the associated plugin. Notice the difference to key_down or key_press function:
     /// While key_down or key_press react on single key events, shortkey_pressed is not a native web event instead pressed keys are aggregated by the

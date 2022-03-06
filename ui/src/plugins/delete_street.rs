@@ -131,9 +131,9 @@ impl Plugin<Map> for DeleteStreet {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        _mouse_movement: Coordinate<f64>,
-        map: &mut Map,
+        _mouse_movement: Coordinate<f64>, editor: &mut App<Map>
     ) {
+        let map = editor.data_mut();
         self.clean_hovered_street_state(map);
 
         if let Some(hovered_street) = map.get_street_at_position(&mouse_pos, &vec![]) {

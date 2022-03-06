@@ -1,12 +1,12 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    keys,
+    keys, log,
     plugins::plugin::{Plugin, PluginWithOptions},
     renderer::apply_style,
     style::Style,
     ui::{
-        app::{EditorError, Shortkey, PluginsVec},
+        app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
     },
 };
@@ -16,7 +16,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::map::map::Map;
 
-#[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
+#[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {
     #[option(skip)]
     raw_points: Vec<Coordinate<f64>>,
@@ -26,6 +26,15 @@ pub struct CreateFreeformStreet {
 
     #[option(skip)]
     brush_active: bool,
+
+    #[option(
+        default = 4.,
+        min = 0.,
+        max = 10.,
+        label = "Simplification Factor",
+        description = "Muu"
+    )]
+    simplification_factor: f64,
 }
 
 struct CreateFreeFormStreetAction {
@@ -81,7 +90,8 @@ impl Plugin<Map> for CreateFreeformStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<CreateFreeformStreet>(keys!["Control", "a"])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
+        let toolbar =
+            editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
 
         let enabled = Rc::clone(&self.__enabled);
 
@@ -95,7 +105,7 @@ impl Plugin<Map> for CreateFreeformStreet {
 
         Ok(())
     }
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut Map, _: &PluginsVec<Map>) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &App<Map>) {
         if button == 0 {
             self.brush_active = true;
         }
@@ -105,7 +115,7 @@ impl Plugin<Map> for CreateFreeformStreet {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
-        _data: &mut Map,
+        _: &mut App<Map>,
     ) {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
@@ -126,10 +136,14 @@ impl Plugin<Map> for CreateFreeformStreet {
             return;
         }
 
+        log!("{}", self.simplification_factor);
+
         self.brush_active = false;
 
         let line_string = LineString(self.raw_points.clone());
-        let points = line_string.simplify(&4.0).into_points();
+        let points = line_string
+            .simplify(&self.simplification_factor)
+            .into_points();
 
         let mut action = CreateFreeFormStreetAction::new(
             points
@@ -151,24 +165,13 @@ impl Plugin<Map> for CreateFreeformStreet {
 
     fn render(&self, context: &CanvasRenderingContext2d, _: &App<Map>) {
         if self.brush_active && !self.raw_points.is_empty() {
-            /*
-            let offset = match get_plugin::<Map, Modes, Camera>(plugins) {
-                Some(x) => Coordinate { x: x.x(), y: x.y() },
-                None => Coordinate { x: 0., y: 0. },
-            };
-            */
-            let offset = Coordinate { x: 0., y: 0. };
-
             context.begin_path();
-            context.move_to(
-                self.raw_points[0].x + offset.x,
-                self.raw_points[0].y + offset.y,
-            );
+            context.move_to(self.raw_points[0].x, self.raw_points[0].y);
 
             for point in self.raw_points.iter().skip(1) {
-                context.line_to(point.x + offset.x, point.y + offset.y);
+                context.line_to(point.x, point.y);
                 context.stroke();
-                context.move_to(point.x + offset.x, point.y + offset.y);
+                context.move_to(point.x, point.y);
             }
 
             context.close_path();

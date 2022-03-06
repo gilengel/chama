@@ -5,7 +5,7 @@ use rust_internal::PluginExecutionBehaviour;
 use web_sys::CanvasRenderingContext2d;
 use yew::{html, Context, Html};
 
-use crate::ui::app::{App, EditorError, PluginsVec, Shortkey};
+use crate::ui::app::{App, EditorError, Shortkey};
 
 pub trait AnyPlugin<Data>: Plugin<Data>
 where
@@ -87,14 +87,7 @@ where
     /// * `x` - x coordinate of the cursor where the click occured
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
-    fn mouse_down(
-        &mut self,
-        mouse_pos: Coordinate<f64>,
-        button: u32,
-        data: &mut Data,
-        plugins: &PluginsVec<Data>,
-    ) {
-    }
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, editor: &App<Data>) {}
 
     /// Is used to implement behaviour of the state if the user moved the cursor inside the
     /// specified html element by the statemaschine.
@@ -105,7 +98,7 @@ where
         &mut self,
         mouse_pos: Coordinate<f64>,
         mouse_movement: Coordinate<f64>,
-        data: &mut Data,
+        editor: &mut App<Data>,
     ) {
     }
 

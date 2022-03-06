@@ -1,13 +1,11 @@
-use rust_editor::{plugins::plugin::Plugin};
+use rust_editor::plugins::plugin::Plugin;
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::map::map::Map;
 
 #[editor_plugin(skip, specific_to=Map)]
-pub struct MapRender {
-
-}
+pub struct MapRender {}
 
 impl Plugin<Map> for MapRender {
     fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Map>) {
@@ -22,6 +20,6 @@ impl Plugin<Map> for MapRender {
 
         for (_, intersection) in data.intersections() {
             intersection.render(&context).unwrap();
-        }        
+        }
     }
 }

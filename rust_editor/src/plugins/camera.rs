@@ -1,7 +1,6 @@
 use geo::Coordinate;
 use rust_macro::editor_plugin;
 
-use crate::ui::app::PluginsVec;
 
 use super::plugin::Plugin;
 
@@ -15,7 +14,7 @@ pub struct Camera {
     position: Coordinate<f64>,
 
     #[option(
-        default = true,
+        default = false,
         label = "Camera Enabled",
         description = "Enables / Disables the grid"
     )]
@@ -56,15 +55,15 @@ impl<Data> Plugin<Data> for Camera
 where
     Data: Default + 'static,
 {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut Data, _: &PluginsVec<Data>) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &App<Data>) {
         self.active = button == 1;
     }
 
     fn mouse_move(
         &mut self,
-        _mouse_pos: Coordinate<f64>,
+        _: Coordinate<f64>,
         mouse_movement: Coordinate<f64>,
-        _data: &mut Data,
+        _: &mut App<Data>
     ) {
         if !self.active {
             return;

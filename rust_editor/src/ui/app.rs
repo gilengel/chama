@@ -8,9 +8,10 @@ use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
+use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::{error};
+use crate::error;
 
 use crate::ui::dialog::Dialog;
 use geo::Coordinate;
@@ -105,6 +106,31 @@ where
 
     pub fn data_mut(&mut self) -> &mut Data {
         &mut self.data
+    }
+
+    pub fn plugin<'a, Plugin, F>(&self, mut f: F)
+    where
+        Plugin: PluginWithOptions<Data> + Default + 'static,
+        F: FnMut(&Plugin),
+    {
+        if let Some(plugin) = self.plugins.get(Plugin::identifier()) {
+            let plugin = plugin.as_ref().borrow_mut();
+            let plugin = plugin.as_any().downcast_ref::<Plugin>().unwrap();
+
+            f(plugin);
+        }
+    }
+
+    pub fn plugin_mut<'a, Plugin>(&mut self, f: fn(&Plugin))
+    where
+        Plugin: PluginWithOptions<Data> + 'static,
+    {
+        if let Some(plugin) = self.plugins.get_mut(Plugin::identifier()) {
+            let plugin = plugin.as_ref().borrow_mut();
+            let plugin = plugin.as_any().downcast_ref::<Plugin>().unwrap();
+
+            f(plugin);
+        }
     }
 
     pub fn add_shortkey<T>(&mut self, keys: Shortkey) -> Result<(), EditorError>
@@ -241,7 +267,7 @@ where
                     plugin
                         .as_ref()
                         .borrow_mut()
-                        .mouse_move(mouse_pos, mouse_diff, &mut self.data);
+                        .mouse_move(mouse_pos, mouse_diff, self);
                 }
             }
             EditorMessages::MouseDown(e) => {
@@ -249,23 +275,20 @@ where
 
                 let enabled_plugins = enabled_plugins(&mut self.plugins);
                 for (_, plugin) in &enabled_plugins {
-                    plugin.as_ref().borrow_mut().mouse_down(
-                        mouse_pos,
-                        e.button() as u32,
-                        &mut self.data,
-                        &enabled_plugins,
-                    );
+                    plugin
+                        .as_ref()
+                        .borrow_mut()
+                        .mouse_down(mouse_pos, e.button() as u32, self);
                 }
             }
             EditorMessages::MouseUp(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
-                    plugin.as_ref().borrow_mut().mouse_up(
-                        mouse_pos,
-                        e.button() as u32,
-                        self
-                    );
+                    plugin
+                        .as_ref()
+                        .borrow_mut()
+                        .mouse_up(mouse_pos, e.button() as u32, self);
                 }
             }
             EditorMessages::KeyDown(e) => {
@@ -294,10 +317,7 @@ where
                 }
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
-                    plugin
-                        .as_ref()
-                        .borrow_mut()
-                        .key_down(&e.key()[..], self);
+                    plugin.as_ref().borrow_mut().key_down(&e.key()[..], self);
                 }
             }
             EditorMessages::KeyUp(e) => {
@@ -315,10 +335,7 @@ where
                 }
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
-                    plugin
-                        .as_ref()
-                        .borrow_mut()
-                        .key_up(&e.key()[..], self);
+                    plugin.as_ref().borrow_mut().key_up(&e.key()[..], self);
                 }
             }
             EditorMessages::Render(_) => {
@@ -416,15 +433,11 @@ where
     Data: Default + 'static,
 {
     fn mouse_pos(&self, x: u32, y: u32) -> Coordinate<f64> {
-        /*
-        TODO
-        let offset = match self.get_plugin::<Camera>() {
-            Some(x) => Coordinate { x: x.x(), y: x.y() },
-            None => Coordinate { x: 0., y: 0. },
-        };
-         */
-
-        let offset = Coordinate { x: 0., y: 0. };
+        let mut offset: Coordinate<f64> = Coordinate { x: 0., y: 0. };
+            
+        self.plugin(|camera: &Camera| {            
+            offset = Coordinate { x: camera.x(), y: camera.y() };
+        });    
 
         return Coordinate {
             x: x as f64 - offset.x,
@@ -435,12 +448,19 @@ where
     pub fn render(&mut self, link: &Scope<Self>) {
         let context = self.context.as_ref().unwrap();
 
+        context.set_transform(1., 0., 0., 1., 0., 0.).unwrap();
+        
+
         context.clear_rect(
             0.0,
             0.0,
             self.canvas_size.x.into(),
             self.canvas_size.y.into(),
         );
+
+        self.plugin(|camera: &Camera| {            
+            context.translate(camera.x(), camera.y()).unwrap();
+        });
 
         for (_, plugin) in enabled_plugins(&mut self.plugins) {
             plugin.as_ref().borrow_mut().render(context, self);

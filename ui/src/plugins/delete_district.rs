@@ -49,17 +49,16 @@ impl Plugin<Map> for DeleteDistrict {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        _mouse_movement: Coordinate<f64>,
-        map: &mut Map,
+        _mouse_movement: Coordinate<f64>, editor: &mut App<Map>
     ) {
         if let Some(old_hovered_district) = self.hovered_district {
             let old_hovered_district: &mut District =
-                map.district_mut(&old_hovered_district).unwrap();
+            editor.data_mut().district_mut(&old_hovered_district).unwrap();
             old_hovered_district.set_state(InteractiveElementState::Normal);
         }
 
-        if let Some(hovered_district) = map.get_district_at_position(&mouse_pos) {
-            let hovered_district: &mut District = map.district_mut(&hovered_district).unwrap();
+        if let Some(hovered_district) = editor.data().get_district_at_position(&mouse_pos) {
+            let hovered_district: &mut District = editor.data_mut().district_mut(&hovered_district).unwrap();
             hovered_district.set_state(InteractiveElementState::Hover);
             self.hovered_district = Some(hovered_district.id());
         }

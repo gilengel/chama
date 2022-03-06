@@ -23,7 +23,8 @@ impl Plugin<Map> for CreateDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<CreateDistrict>(keys!["Control", "d"])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)?;
+        let toolbar =
+            editor.get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)?;
 
         let enabled = Rc::clone(&self.__enabled);
         toolbar.add_toggle_button(
@@ -48,9 +49,9 @@ impl Plugin<Map> for CreateDistrict {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
-        map: &mut Map,
+        editor: &mut App<Map>,
     ) {
-        match map.get_nearest_street_to_position(&mouse_pos) {
+        match editor.data().get_nearest_street_to_position(&mouse_pos) {
             Some(street) => self.hovered_street = Some(street.id()),
             None => self.hovered_street = None,
         }
@@ -61,7 +62,9 @@ impl Plugin<Map> for CreateDistrict {
             let hovered_street = app.data().street(&hovered_street_id).unwrap();
             let side = hovered_street.get_side_of_position(&mouse_pos);
 
-            if let Some(district) = create_district_for_street(side, hovered_street_id, app.data_mut()) {
+            if let Some(district) =
+                create_district_for_street(side, hovered_street_id, app.data_mut())
+            {
                 app.data_mut().add_district(district);
             }
         }

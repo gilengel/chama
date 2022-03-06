@@ -391,6 +391,8 @@ where
         <main>
             <canvas ref={self.canvas_ref.clone()} width="2560" height="1440" {onmousedown} {onmouseup} {onmousemove} {onkeyup} {onkeydown} tabindex="0"></canvas>
 
+            /*
+            TODO reenable options for plugins
             <Dialog>
             {
                 for self.plugins.iter().map(|(_, plugin)| {
@@ -398,6 +400,7 @@ where
                 })
             }
             </Dialog>
+            */
 
             {
                 self.toolbars.view(ctx)

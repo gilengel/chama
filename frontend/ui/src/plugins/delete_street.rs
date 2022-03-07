@@ -11,6 +11,7 @@ use rust_editor::{
 use rust_macro::editor_plugin;
 use uuid::Uuid;
 
+use crate::map::intersection::Intersection;
 use crate::map::{intersection::Side, map::Map, street::Street};
 
 #[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
@@ -20,6 +21,93 @@ pub struct DeleteStreet {
 }
 
 impl DeleteStreet {
+    fn iter<'a, FnNextIntersection, FnNextStreet>(
+        &self,
+        start: Uuid,
+        map: &'a Map,
+        fn_next_intersection: FnNextIntersection,
+        fn_next_street: FnNextStreet,
+    ) -> Vec<Uuid>
+    where
+        FnNextIntersection: Fn(&Uuid) -> Option<&'a Intersection>,
+        FnNextStreet: Fn(bool, &Street, Side) -> Option<Uuid>,
+    {
+        let mut street = start;
+        let mut forward = true;
+
+        let mut streets: Vec<Uuid> = vec![street];
+
+        let mut side = Side::Left;
+        let mut next = fn_next_street(forward, map.street(&street).unwrap(), side);
+
+        while next.is_some()
+            && next.unwrap() != start
+            && fn_next_intersection(&street)
+                .unwrap()
+                .get_connected_streets()
+                .len()
+                <= 2
+        {
+            streets.push(street);
+
+            {
+                let street = map.street(&street).unwrap();
+
+                next = fn_next_street(forward, street, side);
+
+                if next.is_some()
+                    && ((street.start == map.street(&next.unwrap()).unwrap().start)
+                        || (street.end == map.street(&next.unwrap()).unwrap().end))
+                {
+                    forward = !forward;
+
+                    side = match side {
+                        Side::Left => Side::Right,
+                        Side::Right => Side::Left,
+                    }
+                }
+            }
+
+            if let Some(next) = next {
+                street = next;
+            }
+        }
+
+        streets.push(street);
+
+        streets
+    }
+
+    fn iter_backward(&self, start: Uuid, map: &Map) -> Vec<Uuid> {
+        self.iter(
+            start,
+            map,
+            |uuid| map.intersection(&map.street(&uuid).unwrap().start),
+            |forward, street, side| {
+                if forward {
+                    street.get_previous(side)
+                } else {
+                    street.get_next(side)
+                }
+            },
+        )
+    }
+
+    fn iter_forward(&self, start: Uuid, map: &Map) -> Vec<Uuid> {
+        self.iter(
+            start,
+            map,
+            |uuid| map.intersection(&map.street(&uuid).unwrap().end),
+            |forward, street, side| {
+                if forward {
+                    street.get_next(side)
+                } else {
+                    street.get_previous(side)
+                }
+            },
+        )
+    }
+
     fn clean_hovered_street_state(&self, map: &mut Map) {
         for (_, street) in map.streets_mut() {
             street.set_state(InteractiveElementState::Normal);
@@ -27,79 +115,10 @@ impl DeleteStreet {
     }
 
     fn connected_streets(&self, start: Uuid, map: &Map) -> Vec<Uuid> {
-        enum Direction {
-            Forward,
-            Backward,
-        }
+        let mut streets = self.iter_backward(start, map);
+        streets.append(&mut self.iter_forward(start, map));
 
-        let muu = |direction: Direction| {
-            let mut street = start;
-            let mut forward = true;
-
-            let mut streets: Vec<Uuid> = vec![];
-
-            let mut side = Side::Left;
-            let mut next = match direction {
-                Direction::Forward => map.street(&street).unwrap().get_next(side),
-                Direction::Backward => map.street(&street).unwrap().get_previous(side),
-            };
-
-            while next.is_some()
-                && next.unwrap() != start
-                && map
-                    .intersection(&map.street(&street).unwrap().end)
-                    .unwrap()
-                    .get_connected_streets()
-                    .len()
-                    == 2
-            {
-                streets.push(street);
-
-                {
-                    let street = map.street(&street).unwrap();
-
-                    match direction {
-                        Direction::Forward => {
-                            if forward {
-                                next = street.get_next(side);
-                            } else {
-                                next = street.get_previous(side);
-                            }
-                        }
-                        Direction::Backward => {
-                            if forward {
-                                next = street.get_previous(side);
-                            } else {
-                                next = street.get_next(side);
-                            }
-                        }
-                    };
-
-                    if next.is_some()
-                        && ((street.start == map.street(&next.unwrap()).unwrap().start)
-                            || (street.end == map.street(&next.unwrap()).unwrap().end))
-                    {
-                        forward = !forward;
-
-                        side = match side {
-                            Side::Left => Side::Right,
-                            Side::Right => Side::Left,
-                        }
-                    }
-                }
-
-                if let Some(next) = next {
-                    street = next;
-                }
-            }
-
-            streets
-        };
-
-        let mut a = muu(Direction::Backward);
-        a.extend(muu(Direction::Forward).iter().copied());
-
-        a
+        streets
     }
 }
 impl Plugin<Map> for DeleteStreet {
@@ -131,7 +150,8 @@ impl Plugin<Map> for DeleteStreet {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        _mouse_movement: Coordinate<f64>, editor: &mut App<Map>
+        _mouse_movement: Coordinate<f64>,
+        editor: &mut App<Map>,
     ) {
         let map = editor.data_mut();
         self.clean_hovered_street_state(map);

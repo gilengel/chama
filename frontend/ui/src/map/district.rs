@@ -176,16 +176,10 @@ fn enclosed(side: Side, street: Uuid, map: &mut Map) -> Enclosed {
             let street = map.street(&street).unwrap();
 
             if forward {
-                next = match street.get_next(side) {
-                    Some(id) => Some(id),
-                    None => None,
-                };
+                next = street.get_next(side);
                 points.push(street.start());
             } else {
-                next = match street.get_previous(side) {
-                    Some(id) => Some(id),
-                    None => None,
-                };
+                next = street.get_previous(side);
                 points.push(street.end());
             }
 

@@ -122,7 +122,7 @@ impl Plugin<Map> for CreateFreeformStreet {
         }
     }
 
-    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>) {
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
         if *key == keys!["Control", "a"] {
             ctx.link().send_message(EditorMessages::ActivatePlugin(
                 CreateFreeformStreet::identifier(),

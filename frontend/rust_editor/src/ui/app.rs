@@ -44,6 +44,7 @@ pub enum EditorMessages<Data> {
     MouseUp(MouseEvent),
     KeyDown(KeyboardEvent),
     KeyUp(KeyboardEvent),
+    ShortkeyPressed(Shortkey),
     Render(f64),
 }
 
@@ -104,6 +105,10 @@ where
 
     pub fn data_mut(&mut self) -> &mut Data {
         &mut self.data
+    }
+
+    pub fn set_data(&mut self, data: Data) {
+        self.data = data
     }
 
     pub fn plugin<'a, Plugin, F>(&self, mut f: F)
@@ -301,15 +306,10 @@ where
                     None => self.pressed_keys.push(e.key()),
                 }
 
-                for (plugin_id, shortkeys) in self.shortkeys.iter_mut() {
+                for shortkeys in self.shortkeys.values() {
                     for shortkey in shortkeys {
                         if self.pressed_keys.ends_with(shortkey) {
-                            self.plugins
-                                .get_mut(plugin_id)
-                                .unwrap()
-                                .as_ref()
-                                .borrow_mut()
-                                .shortkey_pressed(shortkey, ctx);
+                            ctx.link().send_message(EditorMessages::ShortkeyPressed(shortkey.clone()));
                         }
                     }
                 }
@@ -334,6 +334,15 @@ where
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
                     plugin.as_ref().borrow_mut().key_up(&e.key()[..], self);
+                }
+            }
+            EditorMessages::ShortkeyPressed(shortkey) => {
+                for (plugin_id, shortkeys) in self.shortkeys.clone().iter() {
+                    if shortkeys.contains(&shortkey) {
+                        let plugin = Rc::clone(self.plugins.get(plugin_id).unwrap());
+                        let mut plugin = plugin.as_ref().borrow_mut();
+                        plugin.shortkey_pressed(&shortkey, ctx, self);
+                    }
                 }
             }
             EditorMessages::Render(_) => {
@@ -435,10 +444,13 @@ where
 {
     fn mouse_pos(&self, x: u32, y: u32) -> Coordinate<f64> {
         let mut offset: Coordinate<f64> = Coordinate { x: 0., y: 0. };
-            
-        self.plugin(|camera: &Camera| {            
-            offset = Coordinate { x: camera.x(), y: camera.y() };
-        });    
+
+        self.plugin(|camera: &Camera| {
+            offset = Coordinate {
+                x: camera.x(),
+                y: camera.y(),
+            };
+        });
 
         return Coordinate {
             x: x as f64 - offset.x,
@@ -450,7 +462,6 @@ where
         let context = self.context.as_ref().unwrap();
 
         context.set_transform(1., 0., 0., 1., 0., 0.).unwrap();
-        
 
         context.clear_rect(
             0.0,
@@ -459,7 +470,7 @@ where
             self.canvas_size.y.into(),
         );
 
-        self.plugin(|camera: &Camera| {            
+        self.plugin(|camera: &Camera| {
             context.translate(camera.x(), camera.y()).unwrap();
         });
 

@@ -39,7 +39,7 @@ impl Plugin<Map> for DeleteDistrict {
         Ok(())
     }
 
-    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>) {
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
         if *key == keys!["Control", "f"] {
             ctx.link()
                 .send_message(EditorMessages::ActivatePlugin(DeleteDistrict::identifier()));

@@ -123,7 +123,7 @@ impl DeleteStreet {
 }
 impl Plugin<Map> for DeleteStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        editor.add_shortkey::<DeleteStreet>(keys!["Control", "s"])?;
+        editor.add_shortkey::<DeleteStreet>(keys!["Control", "2"])?;
 
         let toolbar =
             editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
@@ -140,8 +140,8 @@ impl Plugin<Map> for DeleteStreet {
         Ok(())
     }
 
-    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>) {
-        if *key == keys!["Control", "s"] {
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
+        if *key == keys!["Control", "2"] {
             ctx.link()
                 .send_message(EditorMessages::ActivatePlugin(DeleteStreet::identifier()));
         }

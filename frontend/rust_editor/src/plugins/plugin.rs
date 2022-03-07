@@ -129,7 +129,7 @@ where
     /// While key_down or key_press react on single key events, shortkey_pressed is not a native web event instead pressed keys are aggregated by the
     /// editor and checked against registered shortkeys. If the pressed shortkey exists in one plugin and the plugin is active than only this function
     /// is called.
-    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Data>>) {}
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Data>>, editor: &mut App<Data>) {}
 
     /// Called once before the plugin is added to the editor list of plugins. You can use this it to add additional ui elements such as toolbars (and buttons) or
     /// register shortkeys for the plugin.

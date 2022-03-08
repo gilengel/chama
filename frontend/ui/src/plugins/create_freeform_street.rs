@@ -145,20 +145,21 @@ impl Plugin<Map> for CreateFreeformStreet {
             .simplify(&self.simplification_factor)
             .into_points();
 
-        let mut action = CreateFreeFormStreetAction::new(
+        let action = Rc::new(RefCell::new(CreateFreeFormStreetAction::new(
             points
                 .iter()
                 .map(|x| Coordinate { x: x.x(), y: x.y() })
                 .collect(),
-        );
-        action.execute(app.data_mut());
+        )));
+        action.borrow_mut().execute(app.data_mut());
 
-        /*
-        // If an undo plugin is registered store the action into it to make in undoable
-        if let Some(undo) = get_plugin_mut::<Map, rust_editor::plugins::undo::Undo<Map>>(plugins) {
-            undo.push(Box::new(action));
-        }
-        */
+        
+        // TODO here we create the action twice there must be a better way to do this:
+        // so far we cannot impl the derive clone trait since the size of the action
+        // is not known.
+        app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
+            undo.push( Rc::clone(&action));
+        });
 
         self.raw_points.clear();
     }

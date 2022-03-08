@@ -14,6 +14,7 @@ pub trait Undo<T> {
     }
 }
 
+
 pub trait Action<T>: Undo<T> + Redo<T> + Send + Sync {
     fn execute(&mut self, map: &mut T) {
         self.redo(map);

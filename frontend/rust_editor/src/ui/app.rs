@@ -124,13 +124,14 @@ where
         }
     }
 
-    pub fn plugin_mut<'a, Plugin>(&mut self, f: fn(&Plugin))
+    pub fn plugin_mut<'a, Plugin, F>(&mut self, mut f: F)
     where
-        Plugin: PluginWithOptions<Data> + 'static,
+        Plugin: PluginWithOptions<Data> + Default + 'static,
+        F: FnMut(&mut Plugin),
     {
         if let Some(plugin) = self.plugins.get_mut(Plugin::identifier()) {
-            let plugin = plugin.as_ref().borrow_mut();
-            let plugin = plugin.as_any().downcast_ref::<Plugin>().unwrap();
+            let mut plugin = plugin.as_ref().borrow_mut();
+            let plugin = plugin.as_any_mut().downcast_mut::<Plugin>().unwrap();
 
             f(plugin);
         }

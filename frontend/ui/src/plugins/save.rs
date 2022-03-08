@@ -25,7 +25,7 @@ impl Plugin<Map> for Save {
             "save",
             "Save".to_string(),
             || false,
-            move || EditorMessages::ShortkeyPressed(keys!["Control", "s"]),
+            || EditorMessages::ShortkeyPressed(keys!["Control", "s"]),
         )?;
 
         Ok(())

@@ -24,7 +24,7 @@ impl Plugin<Map> for Load {
             "load",
             "Load".to_string(),
             || false,
-            move || EditorMessages::ShortkeyPressed(keys!["Control", "o"]),
+            || EditorMessages::ShortkeyPressed(keys!["Control", "o"]),
         )?;
 
         Ok(())

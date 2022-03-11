@@ -8,7 +8,6 @@ use geo::{
 
 use super::district::District;
 
-
 #[derive(Clone, Copy)]
 pub struct LineSegment {
     pub start: Point<f64>,
@@ -23,7 +22,7 @@ impl LineSegment {
         let length = start.euclidean_distance(&end);
         let vec = end - start;
         let norm = Point::new(vec.x() / length, vec.y() / length);
-        let perp = Point::new(-norm.y(),norm.x());
+        let perp = Point::new(-norm.y(), norm.x());
 
         LineSegment {
             start: start,
@@ -68,11 +67,14 @@ fn intersections(
     longest_segment: &LineSegment,
     segments: &Vec<LineSegment>,
 ) -> Vec<PolygonLineIntersection> {
-    let split_point = longest_segment.split_point() ;
+    let split_point = longest_segment.split_point();
 
     let mut intersections: Vec<PolygonLineIntersection> = Vec::new();
 
-    let line = Line::new(split_point + longest_segment.perp * 600.0, split_point + longest_segment.perp * -600.0);
+    let line = Line::new(
+        split_point + longest_segment.perp * 6000.0,
+        split_point + longest_segment.perp * -6000.0,
+    );
 
     for (line_segment_index, segment) in segments.iter().enumerate() {
         match line_intersection(line, segment.into()) {
@@ -87,7 +89,6 @@ fn intersections(
                 }),
                 LineIntersection::Collinear { intersection: _ } => continue,
             },
-            
         }
     }
 
@@ -103,10 +104,8 @@ fn calc_intersection_pairs(
     while let Some(line_intersection) = it.next() {
         match it.peek() {
             Some(x) => pairs.push((*line_intersection, **x)),
-            None => {},
+            None => {}
         };
-
-        
     }
 
     pairs
@@ -152,10 +151,9 @@ fn calc_split_polygons(
                     .push(intersection.intersection.into());
                 result[current_index].crossback = other_point_index;
 
-                    match result
-                    .iter()
-                    .position(|x| x.crossback.is_some() && x.crossback.unwrap() == intersection.line_segment_index)
-                {
+                match result.iter().position(|x| {
+                    x.crossback.is_some() && x.crossback.unwrap() == intersection.line_segment_index
+                }) {
                     Some(k) => {
                         if k == current_index {
                             continue;
@@ -187,11 +185,10 @@ fn calc_split_polygons(
         .collect()
 }
 
-
 fn foo(cnt: u32, polygon: &Polygon<f64>) -> Vec<Polygon<f64>> {
-    let mut polygons : Vec<Polygon<f64>> = Vec::new();
+    let mut polygons: Vec<Polygon<f64>> = Vec::new();
 
-    if cnt == 4 {
+    if cnt == 8 {
         polygons.push(polygon.clone());
         return polygons;
     }
@@ -214,11 +211,9 @@ fn foo(cnt: u32, polygon: &Polygon<f64>) -> Vec<Polygon<f64>> {
     }
 
     polygons
-
 }
 pub fn generate_houses(district: &District) -> Vec<Polygon<f64>> {
     assert!(!district.polygon().is_empty());
 
-    foo(0, district.polygon())    
+    foo(0, district.polygon())
 }
-

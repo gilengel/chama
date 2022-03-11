@@ -25,6 +25,7 @@ pub struct District {
     polygon: Polygon<f64>,
     style: InteractiveElementStyle,
     state: InteractiveElementState,
+    minimum_house_side: f64
 }
 
 impl Default for District {
@@ -50,6 +51,7 @@ impl Default for District {
                 },
             },
             state: InteractiveElementState::Normal,
+            minimum_house_side: 500.0
         }
     }
 }
@@ -107,7 +109,7 @@ impl District {
             context.stroke();
         }
 
-        let polygons = generate_houses(self);
+        let polygons = generate_houses(self, 500.0);
         for p in polygons {
             let style = Style {
                 border_width: 4,

@@ -13,10 +13,19 @@ use rust_editor::{
 };
 use uuid::Uuid;
 
-#[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
+#[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateDistrict {
     #[option(skip)]
     hovered_street: Option<Uuid>,
+
+    #[option(
+        default = 500.,
+        min = 0.,
+        max = 100000.,
+        label = "Minimum House Side",
+        description = "Muu"
+    )]
+    minimum_house_side: f64,
 }
 
 impl Plugin<Map> for CreateDistrict {

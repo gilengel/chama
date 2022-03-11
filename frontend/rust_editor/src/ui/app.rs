@@ -7,6 +7,7 @@ use std::rc::Rc;
 use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
+use crate::ui::dialog::Dialog;
 
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
@@ -399,8 +400,8 @@ where
         <main>
             <canvas ref={self.canvas_ref.clone()} width="2560" height="1440" {onmousedown} {onmouseup} {onmousemove} {onkeyup} {onkeydown} tabindex="0"></canvas>
 
-            /*
-            TODO reenable options for plugins
+            
+            //TODO reenable options for plugins
             <Dialog>
             {
                 for self.plugins.iter().map(|(_, plugin)| {
@@ -408,7 +409,7 @@ where
                 })
             }
             </Dialog>
-            */
+            
 
             {
                 self.toolbars.view(ctx)

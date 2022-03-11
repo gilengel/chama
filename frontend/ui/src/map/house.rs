@@ -3,7 +3,7 @@ use std::iter::Peekable;
 use geo::{
     dimensions::HasDimensions,
     line_intersection::{line_intersection, LineIntersection},
-    prelude::EuclideanDistance,
+    prelude::{EuclideanDistance, Area},
     winding_order::Winding,
     Coordinate, Line, LineString, Point, Polygon,
 };
@@ -11,19 +11,24 @@ use rust_editor::log;
 
 use super::district::District;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LineSegmentType {
+    Street,
+    Backside,
+}
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct LineSegment {
     pub start: Point<f64>,
     pub end: Point<f64>,
     pub norm: Point<f64>,
     pub perp: Point<f64>,
     pub length: f64,
-    pub street: bool
+    pub ty: LineSegmentType,
 }
 
 impl LineSegment {
-    pub fn new(start: Point<f64>, end: Point<f64>, street: bool) -> LineSegment {
+    pub fn new(start: Point<f64>, end: Point<f64>, ty: LineSegmentType) -> LineSegment {
         let length = start.euclidean_distance(&end);
         let vec = end - start;
         let norm = Point::new(vec.x() / length, vec.y() / length);
@@ -35,7 +40,7 @@ impl LineSegment {
             norm,
             perp,
             length,
-            street
+            ty,
         }
     }
 
@@ -65,16 +70,20 @@ fn longest_segment(segments: &Vec<LineSegment>) -> &LineSegment {
 }
 */
 fn longest_segment(segments: &Vec<LineSegment>) -> &LineSegment {
-    let adjacent_street_segments = segments.iter().filter(|segment| segment.street);
+    let adjacent_street_segments = segments
+        .iter()
+        .filter(|segment| segment.ty == LineSegmentType::Street);
 
     match adjacent_street_segments.max_by(|x, y| x.length.partial_cmp(&y.length).unwrap()) {
         Some(e) => e,
         None => {
             // Corner case for polygons without adjacency to any street
-            segments
+            let e = segments
                 .into_iter()
                 .max_by(|x, y| x.length.partial_cmp(&y.length).unwrap())
-                .unwrap()
+                .unwrap();
+
+            e
         }
     }
 }
@@ -83,7 +92,6 @@ fn longest_segment(segments: &Vec<LineSegment>) -> &LineSegment {
 struct PolygonLineIntersection {
     line_segment_index: usize,
     intersection: Coordinate<f64>,
-    adjacent_to_street: bool
 }
 
 fn intersections(
@@ -109,7 +117,6 @@ fn intersections(
                 } => intersections.push(PolygonLineIntersection {
                     line_segment_index,
                     intersection,
-                    adjacent_to_street: segment.street
                 }),
                 LineIntersection::Collinear { intersection: _ } => continue,
             },
@@ -136,7 +143,7 @@ fn calc_intersection_pairs(
 }
 
 struct Crossback {
-    pub points: Vec<(Point<f64>, bool)>,
+    pub points: Vec<(Point<f64>, PointType)>,
     pub crossback: Option<usize>,
 }
 
@@ -157,9 +164,10 @@ fn calc_split_polygons(
 
     // Iterate over the polygon in clock wise order
     for (i, (point, adjacent_to_street)) in polygon.iter().enumerate() {
-        
         // Normal case, current segment was not intersected and we only need to add the next point to the current polygon
-        result[current_index].points.push((*point, *adjacent_to_street));
+        result[current_index]
+            .points
+            .push((*point, *adjacent_to_street));
 
         // Special case, the current segment index matches an intersection therefore we need to jump to the crossback of it
         if let Some(intersection) = intersections.iter().find(|x| x.line_segment_index == i) {
@@ -176,7 +184,7 @@ fn calc_split_polygons(
 
                 result[current_index]
                     .points
-                    .push((intersection.intersection.into(), intersection.adjacent_to_street));
+                    .push((intersection.intersection.into(), PointType::Intersection));
                 result[current_index].crossback = other_point_index;
 
                 match result.iter().position(|x| {
@@ -202,7 +210,7 @@ fn calc_split_polygons(
 
                 result[current_index]
                     .points
-                    .push((intersection.intersection.into(), intersection.adjacent_to_street));
+                    .push((intersection.intersection.into(), PointType::Intersection));
             }
         }
     }
@@ -213,11 +221,11 @@ fn calc_split_polygons(
             let mut pts = x.points.clone();
             pts.push(*pts.first().unwrap());
 
-            let mut adjacencies : Vec<bool> = x.points.iter().map(|(_, x)| *x).collect();
-            adjacencies.push(*adjacencies.first().unwrap());
-            
+            //let mut adjacencies : Vec<bool> = x.points.iter().map(|(_, x)| *x).collect();
+            //adjacencies.push(*adjacencies.first().unwrap());
+
             //let polygon = Polygon::new(LineString::from(pts.clone()), vec![]);
-            log!("{:?}", adjacencies.contains(&false));
+            //log!("{:?}", adjacencies.contains(&false));
             //log!("B => {:?}", polygon.exterior().points_cw().collect::<Vec<Point<f64>>>());
             //log!("=====================");
             AnnotatedPolygon(pts)
@@ -225,35 +233,62 @@ fn calc_split_polygons(
         .collect()
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum PointType {
+    Street,
+    Intersection,
+}
 #[derive(Clone)]
-pub struct AnnotatedPolygon(Vec<(Point<f64>, bool)>);
+pub struct AnnotatedPolygon(Vec<(Point<f64>, PointType)>);
+
+
 
 impl AnnotatedPolygon {
     pub fn new_adjacent_to_streets(polygon: &Polygon<f64>) -> Self {
         let points: Vec<Point<f64>> = polygon.exterior().points_cw().collect();
-        AnnotatedPolygon(points.iter().map(|p| (*p, true)).collect())
+        AnnotatedPolygon(points.iter().map(|p| (*p, PointType::Street)).collect())
     }
 
-    pub fn iter(&self) -> Peekable<std::slice::Iter<'_, (geo::Point<f64>, bool)>> {
+    pub fn iter(&self) -> Peekable<std::slice::Iter<'_, (geo::Point<f64>, PointType)>> {
         self.0.iter().peekable()
+    }
+
+    pub fn size(&self) -> f64 {
+        let points : Vec<Point<f64>> = self.0.iter().map(|(x, _)| *x).collect();
+        let polygon = Polygon::new(LineString::from(points), vec![]);
+        polygon.unsigned_area()
     }
 }
 
-fn foo(cnt: u32, polygon: &AnnotatedPolygon) -> Vec<Polygon<f64>> {
+fn foo(cnt: u32, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<Polygon<f64>> {
     let mut polygons: Vec<Polygon<f64>> = Vec::new();
 
-    if cnt == 8 {
+    //log!("{}", polygon.size());
+    if polygon.size() < min_side_length * min_side_length {
         let pts: Vec<Point<f64>> = polygon.iter().map(|(pt, _)| *pt).collect();
         let polygon = Polygon::new(LineString::from(pts), vec![]);
         polygons.push(polygon);
         return polygons;
     }
+    if cnt == 10 {
+
+    }
 
     let mut segments: Vec<LineSegment> = vec![];
     let mut it = polygon.iter();
-    while let Some((start_pt, start_adjacent_to_street)) = it.next() {
-        if let Some((next_pt, end_adjacent_to_street)) = it.peek() {
-            segments.push(LineSegment::new(*start_pt, *next_pt, *start_adjacent_to_street && *end_adjacent_to_street));
+    while let Some((start_pt, start_pt_type)) = it.next() {
+        if let Some((next_pt, end_pt_type)) = it.peek() {
+            segments.push(LineSegment::new(
+                *start_pt,
+                *next_pt,
+                if *start_pt_type == PointType::Intersection
+                    && *end_pt_type == PointType::Intersection
+                {
+                    LineSegmentType::Backside
+                } else {
+                    LineSegmentType::Street
+                },
+            ));
         }
     }
 
@@ -261,14 +296,14 @@ fn foo(cnt: u32, polygon: &AnnotatedPolygon) -> Vec<Polygon<f64>> {
     let intersections = intersections(longest_segment, &segments);
 
     for sub_polygon in calc_split_polygons(&polygon, &intersections) {
-        polygons.append(&mut foo(cnt + 1, &sub_polygon.into()));
+        polygons.append(&mut foo(cnt + 1, &sub_polygon.into(), min_side_length));
     }
 
     polygons
 }
-pub fn generate_houses(district: &District) -> Vec<Polygon<f64>> {
+pub fn generate_houses(district: &District, min_side_length: f64) -> Vec<Polygon<f64>> {
     assert!(!district.polygon().is_empty());
 
     let a = AnnotatedPolygon::new_adjacent_to_streets(district.polygon());
-    foo(0, &a)
+    foo(0, &a, min_side_length)
 }

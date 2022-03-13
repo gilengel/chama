@@ -78,11 +78,13 @@ impl Intersection {
     }
 
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+        context.save();
         context.begin_path();
-        context.arc(self.position.x, self.position.y, 5.0, 0.0, 2.0 * PI)?;
+        context.arc(self.position.x, self.position.y, 1.0, 0.0, 2.0 * PI)?;
 
         apply_style(self.style(), context);
         context.fill();
+        context.restore();
 
         /*
         let num = self.connected_streets.len();

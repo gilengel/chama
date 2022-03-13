@@ -11,7 +11,6 @@ use geo::{
 use rust_editor::{
     gizmo::{GetPosition, Id, SetId},
     interactive_element::{InteractiveElement, InteractiveElementState},
-    renderer::PrimitiveRenderer,
     style::{InteractiveElementStyle, Style},
 };
 use rust_macro::ElementId;
@@ -201,9 +200,9 @@ impl Street {
 
     pub fn render(
         &self,
-        context: &CanvasRenderingContext2d,
+        _context: &CanvasRenderingContext2d,
     ) -> Result<(), JsValue> {
-        self.polygon.render(self.style(), &context)?;
+        //self.polygon.render(self.style(), &context)?;
 
         //self.line.render(self.style(), &context);
 

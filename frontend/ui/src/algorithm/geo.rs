@@ -6,9 +6,18 @@ use geo::{
     Coordinate, Line, LineString, Point, Polygon,
 };
 
-struct AnnotatedLine(Line<f64>, bool);
+type AnnotatedLine<'a> = (Line<f64>, &'a bool);
 
-struct AnnotatedPolygon(Polygon<f64>, Vec<bool>);
+impl AnnotatedPolygon {
+    pub(crate) fn lines(
+        &self,
+    ) -> Vec<AnnotatedLine> {
+        self.0.exterior().lines().zip(self.1.iter()).collect()
+    }
+}
+
+#[derive(Clone)]
+pub struct AnnotatedPolygon(pub Polygon<f64>, pub Vec<bool>);
 
 #[derive(Clone, Copy)]
 struct PolygonLineIntersection {
@@ -18,11 +27,11 @@ struct PolygonLineIntersection {
 
 fn intersections(
     intersecting_line: &Line<f64>,
-    lines: impl ExactSizeIterator + Iterator<Item = Line<f64>>,
+    lines: &Vec<AnnotatedLine>
 ) -> Vec<PolygonLineIntersection> {
     let mut intersections: Vec<PolygonLineIntersection> = Vec::new();
-    for (line_segment_index, segment) in lines.enumerate() {
-        match line_intersection(*intersecting_line, segment) {
+    for (line_segment_index, segment) in lines.iter().enumerate() {
+        match line_intersection(*intersecting_line, segment.0) {
             None => continue,
             Some(line_intersection) => match line_intersection {
                 LineIntersection::SinglePoint {
@@ -56,23 +65,21 @@ fn calc_intersection_pairs(
     pairs
 }
 
-struct Crossback {
-    pub lines: Vec<Line<f64>>,
+struct Crossback<'a> {
+    pub lines: Vec<(Line<f64>, &'a bool)>,
     pub crossback: Option<usize>,
 }
 
-pub fn split(polygon: &Polygon<f64>, line: &Line<f64>) -> Vec<Polygon<f64>> {
-    let intersections = intersections(line, polygon.exterior().lines());
+pub fn split(polygon: &AnnotatedPolygon, line: &Line<f64>) -> Vec<AnnotatedPolygon> {
+    let intersections = intersections(line, &polygon.lines());
 
     calc_split_polygons(polygon, &intersections)
 }
 
 fn calc_split_polygons(
-    polygon: &Polygon<f64>,
+    polygon: &AnnotatedPolygon,
     intersections: &Vec<PolygonLineIntersection>,
-) -> Vec<Polygon<f64>> {
-    let lines: Vec<Line<f64>> = polygon.exterior().lines().collect();
-
+) -> Vec<AnnotatedPolygon> {
     let mut result: Vec<Crossback> = Vec::new();
 
     let intersection_pairs = calc_intersection_pairs(intersections);
@@ -83,7 +90,9 @@ fn calc_split_polygons(
         lines: Vec::new(),
         crossback: None,
     });
-    for (i, line) in lines.iter().enumerate() {
+
+    let lines = polygon.lines();
+    for (i, (line, is_street)) in lines.iter().enumerate() {
         match intersections.iter().find(|x| x.line_segment_index == i) {
             Some(intersection) => {
                 let mut other_point_index: Option<usize> = None;
@@ -99,12 +108,12 @@ fn calc_split_polygons(
                     let start = if i == 0 {
                         line.start
                     } else {
-                        result[current_index].lines.last().unwrap().end
+                        result[current_index].lines.last().unwrap().0.end
                     };
 
                     result[current_index]
                         .lines
-                        .push(Line::new(start, intersection.intersection));
+                        .push((Line::new(start, intersection.intersection), lines[intersection.line_segment_index].1));
                     result[current_index].crossback = other_point_index;
 
                     match result.iter().position(|x| {
@@ -113,19 +122,19 @@ fn calc_split_polygons(
                     }) {
                         Some(k) => {
                             let line = Line::new(
-                                result[current_index].lines.last().unwrap().end,
-                                result[k].lines.first().unwrap().start,
+                                result[current_index].lines.last().unwrap().0.end,
+                                result[k].lines.first().unwrap().0.start,
                             );
 
-                            result[current_index].lines.push(line);
+                            result[current_index].lines.push((line, &false));
 
                             let opposide_line = Line::new(
-                                result[k].lines.last().unwrap().end,
-                                result[current_index].lines.last().unwrap().end,
+                                result[k].lines.last().unwrap().0.end,
+                                result[current_index].lines.last().unwrap().0.end,
                             );
 
                             current_index = k;
-                            result[current_index].lines.push(opposide_line);
+                            result[current_index].lines.push((opposide_line, &false));
                         }
                         None => {
                             result.push(Crossback {
@@ -138,18 +147,21 @@ fn calc_split_polygons(
 
                     result[current_index]
                         .lines
-                        .push(Line::new(intersection.intersection, line.end));
+                        .push((Line::new(intersection.intersection, line.end), lines[intersection.line_segment_index].1));
                 }
             }
-            None => result[current_index].lines.push(*line),
+            None => result[current_index].lines.push((line.clone(), is_street)),
         }
     }
 
     result
         .iter()
         .map(|x| {
-            let pts: Vec<Point<f64>> = x.lines.iter().map(|x| x.start_point()).collect();
-            Polygon::new(LineString::from(pts), vec![])
+            let pts: Vec<Point<f64>> = x.lines.iter().map(|x| x.0.start_point()).collect();
+            let poly = Polygon::new(LineString::from(pts), vec![]);
+            let is_street: Vec<bool> = x.lines.iter().map(|(_, x)| **x).collect();
+
+            AnnotatedPolygon(poly, is_street)
         })
         .collect()
 }
@@ -220,13 +232,13 @@ fn calc_split_polygons(
         .collect()
 }
 */
-pub fn longest_line(polygon: &Polygon<f64>) -> Line<f64> {
-    polygon
-        .exterior()
+pub fn longest_line(polygon: &AnnotatedPolygon) -> AnnotatedLine {
+    *polygon
         .lines()
+        .iter()
         .max_by(|x, y| {
-            x.euclidean_length()
-                .partial_cmp(&y.euclidean_length())
+            x.0.euclidean_length()
+                .partial_cmp(&y.0.euclidean_length())
                 .unwrap()
         })
         .unwrap()

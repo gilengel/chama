@@ -2,7 +2,7 @@ use geo::{euclidean_length::EuclideanLength, Line, Point, Polygon};
 use rand::{thread_rng, Rng};
 use rust_editor::style::Style;
 
-use crate::algorithm::geo::{inner_line, longest_line, split};
+use crate::algorithm::geo::{inner_line, longest_line, split, AnnotatedPolygon};
 
 use super::district::House;
 
@@ -34,6 +34,7 @@ fn matching_parent_line(polygon: AnnotatedPolygon, line: (&Line<f64>, bool)) -> 
 }
 */
 
+/*
 pub fn longest_muu(polygon: &Polygon<f64>) -> Line<f64> {
     let lines = polygon.exterior().lines();
     let streets: Vec<Line<f64>> = lines.filter(|line| inner_line(polygon, line)).collect();
@@ -47,16 +48,17 @@ pub fn longest_muu(polygon: &Polygon<f64>) -> Line<f64> {
         None => longest_line(polygon),
     }
 }
+*/
 
-fn muu(cnt: u32, polygon: &Polygon<f64>) -> Vec<Polygon<f64>> {
-    let mut polygons: Vec<Polygon<f64>> = Vec::new();
+fn muu(cnt: u32, polygon: &AnnotatedPolygon) -> Vec<AnnotatedPolygon> {
+    let mut polygons: Vec<AnnotatedPolygon> = Vec::new();
 
-    if cnt == 4 {
+    if cnt ==10 {
         polygons.push(polygon.clone());
         return polygons;
     }
 
-    let line = longest_line(&polygon); //longest_muu(polygon);
+    let line = longest_line(&polygon).0; //longest_muu(polygon);
     let vec = line.end_point() - line.start_point();
     let length = line.euclidean_length();
     let norm = Point::new(vec.x() / length, vec.y() / length);
@@ -64,6 +66,8 @@ fn muu(cnt: u32, polygon: &Polygon<f64>) -> Vec<Polygon<f64>> {
 
     let split_pt = line.start_point() + norm * length * 0.5;
     let split_line = Line::new(split_pt - perp * 6000.0, split_pt + perp * 6000.0);
+
+    
 
     for sub_polygon in split(&polygon, &split_line).iter_mut() {
         polygons.append(&mut muu(cnt + 1, &sub_polygon));
@@ -73,7 +77,7 @@ fn muu(cnt: u32, polygon: &Polygon<f64>) -> Vec<Polygon<f64>> {
 }
 
 pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64) -> Vec<House> {
-    let houses = muu(0, polygon);
+    let houses = muu(0, &AnnotatedPolygon(polygon.clone(), polygon.exterior().lines().map(|_| true).collect()));
     let polygons = houses
         .iter();
         //.filter(|p| polygon.contains(*p));
@@ -87,11 +91,9 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
             let g: u8 = rng.gen_range(0..255);
             let b: u8 = rng.gen_range(0..255);
 
-            let line_styles: Vec<Style> = sub_polygon
-                .exterior()
-                .lines()
-                .map(|line| {
-                    if inner_line(polygon, &line) {
+            let line_styles: Vec<Style> = sub_polygon.lines().iter()
+                .map(|(_, is_street)| {
+                    if **is_street {
                         return Style {
                             border_width: 4,
                             border_color: "#FFFFFF".to_string(),
@@ -108,7 +110,7 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
                 .collect();
 
             House {
-                polygon: sub_polygon.clone(),
+                polygon: sub_polygon.0.clone(),
                 line_styles: line_styles.clone(),
                 style: Style {
                     border_width: 2,

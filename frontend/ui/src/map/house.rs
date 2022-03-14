@@ -1,6 +1,6 @@
-use geo::{euclidean_length::EuclideanLength, Line, Point, Polygon, prelude::Area};
-use rand::{thread_rng, Rng};
-use rust_editor::style::Style;
+use geo::{euclidean_length::EuclideanLength, prelude::Area, Line, Point, Polygon};
+use rand::{thread_rng, Rng, prelude::ThreadRng};
+use rust_editor::{style::Style, log};
 
 use crate::algorithm::geo::{longest_line, split, AnnotatedPolygon};
 
@@ -50,7 +50,21 @@ pub fn longest_muu(polygon: &Polygon<f64>) -> Line<f64> {
 }
 */
 
-fn muu(cnt: u32, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<AnnotatedPolygon> {
+fn calculate_split_line(rng: &mut ThreadRng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Line<f64> {
+    let line = longest_line(&polygon, min_side_length).0; //longest_muu(polygon);
+    let vec = line.end_point() - line.start_point();
+    let length = line.euclidean_length();
+    let norm = Point::new(vec.x() / length, vec.y() / length);
+    let perp = Point::new(-norm.y(), norm.x());
+
+    let split_pt = line.start_point() + norm * length * rng.gen_range(0.3..0.7);
+
+    
+    
+    Line::new(split_pt - perp * 6000.0, split_pt + perp * 6000.0)
+}
+
+fn split_polygons_into_chunks(rng: &mut ThreadRng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<AnnotatedPolygon> {
     let mut polygons: Vec<AnnotatedPolygon> = Vec::new();
 
     if polygon.0.unsigned_area() < min_side_length * min_side_length {
@@ -58,36 +72,28 @@ fn muu(cnt: u32, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<Annota
         return polygons;
     }
 
-    let line = longest_line(&polygon, min_side_length).0; //longest_muu(polygon);
-    let vec = line.end_point() - line.start_point();
-    let length = line.euclidean_length();
-    let norm = Point::new(vec.x() / length, vec.y() / length);
-    let perp = Point::new(-norm.y(), norm.x());
-
-    let split_pt = line.start_point() + norm * length * 0.5;
-    let split_line = Line::new(split_pt - perp * 6000.0, split_pt + perp * 6000.0);
-
+    let split_line = calculate_split_line(rng, polygon, min_side_length);
     for sub_polygon in split(&polygon, &split_line).iter_mut() {
-        polygons.append(&mut muu(cnt + 1, &sub_polygon, min_side_length));
+        polygons.append(&mut split_polygons_into_chunks(rng, &sub_polygon, min_side_length));
     }
 
     polygons
 }
 
 pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64) -> Vec<House> {
-    let houses = muu(
-        0,
+    let mut rng = thread_rng();
+    let houses = split_polygons_into_chunks(
+        &mut rng,
         &AnnotatedPolygon(
             polygon.clone(),
             polygon.exterior().lines().map(|_| true).collect(),
         ),
-        min_side_length
+        min_side_length,
     );
     let polygons = houses.iter().filter(|polygon| !polygon.enclosed());
 
-    let mut rng = thread_rng();
+    
     polygons
-        
         .map(|sub_polygon| {
             let r: u8 = rng.gen_range(0..255);
             let g: u8 = rng.gen_range(0..255);
@@ -107,7 +113,7 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
 
                     Style {
                         border_width: 4,
-                        border_color: "#FF0000".to_string(),
+                        border_color: "#FFFFFF".to_string(),
                         background_color: "".to_string(),
                     }
                 })
@@ -119,55 +125,9 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
                 style: Style {
                     border_width: 2,
                     border_color: "#FFFFFF".to_string(),
-                    background_color: format!("rgba({},{},{}, 0.9)", r, g, b).to_string(),
+                    background_color: format!("rgba({},{},{}, 0.3)", r, g, b).to_string(),
                 },
             }
         })
         .collect()
-
-    //split(polygon)
-
-    /*
-        assert!(!polygon.is_empty());
-
-        let mut rng = thread_rng();
-
-        let a = AnnotatedPolygon::new_adjacent_to_streets(polygon);
-        foo(0, &a, min_side_length)
-            .iter()
-            .filter(|sub_polygon| !sub_polygon.enclosed_inner_polygon())
-            .map(|polygon| {
-                let pts: Vec<Point<f64>> = polygon.0.iter().map(|pt| pt.start.clone()).collect();
-
-                let styles: Vec<Style> = polygon
-                    .0
-                    .iter()
-                    .map(|_| Style {
-                        border_width: 0,
-                        border_color: "#FFFFFF".to_string(),
-                        background_color: "#FF0000".to_string(),
-                    })
-                    .collect();
-
-                let r = rng.gen_range(0..255);
-                let g = rng.gen_range(0..255);
-                let b = rng.gen_range(0..255);
-                House {
-                    polygon: Polygon::new(LineString::from(pts), vec![]),
-                    point_style: styles,
-                    style: Style {
-                        border_width: 1,
-                        border_color: "#FFFFFF".to_string(),
-                        background_color: format!("rgb({},{},{})", r, g, b).to_string(),
-                    },
-                }
-            })
-            .collect()
-    */
-    /*
-    // skip inner polygons for now
-    if enclosed_inner_polygon(polygon) {
-        return polygons;
-    }
-    */
 }

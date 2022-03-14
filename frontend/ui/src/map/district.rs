@@ -175,7 +175,7 @@ pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map) -> Op
 
     // Generate the houses
     let polygon = Polygon::new(LineString::from(district.points), vec![]);
-    let houses: Vec<House> = generate_houses_from_polygon(&polygon, 80.0);
+    let houses: Vec<House> = generate_houses_from_polygon(&polygon, 160.0);
 
     return Some(District {
         polygon,

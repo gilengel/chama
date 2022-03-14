@@ -1,18 +1,18 @@
 use geo::{
-    coords_iter::CoordsIter,
     euclidean_length::EuclideanLength,
     line_intersection::{line_intersection, LineIntersection},
-    prelude::Contains,
     Coordinate, Line, LineString, Point, Polygon,
 };
 
-type AnnotatedLine<'a> = (Line<f64>, &'a bool);
+type AnnotatedLine = (Line<f64>, bool);
 
 impl AnnotatedPolygon {
-    pub(crate) fn lines(
-        &self,
-    ) -> Vec<AnnotatedLine> {
-        self.0.exterior().lines().zip(self.1.iter()).collect()
+    pub(crate) fn lines(&self) -> Vec<AnnotatedLine> {
+        self.0
+            .exterior()
+            .lines()
+            .zip(self.1.clone().into_iter())
+            .collect()
     }
 }
 
@@ -27,7 +27,7 @@ struct PolygonLineIntersection {
 
 fn intersections(
     intersecting_line: &Line<f64>,
-    lines: &Vec<AnnotatedLine>
+    lines: &Vec<AnnotatedLine>,
 ) -> Vec<PolygonLineIntersection> {
     let mut intersections: Vec<PolygonLineIntersection> = Vec::new();
     for (line_segment_index, segment) in lines.iter().enumerate() {
@@ -111,9 +111,10 @@ fn calc_split_polygons(
                         result[current_index].lines.last().unwrap().0.end
                     };
 
-                    result[current_index]
-                        .lines
-                        .push((Line::new(start, intersection.intersection), lines[intersection.line_segment_index].1));
+                    result[current_index].lines.push((
+                        Line::new(start, intersection.intersection),
+                        &lines[intersection.line_segment_index].1,
+                    ));
                     result[current_index].crossback = other_point_index;
 
                     match result.iter().position(|x| {
@@ -145,9 +146,10 @@ fn calc_split_polygons(
                         }
                     }
 
-                    result[current_index]
-                        .lines
-                        .push((Line::new(intersection.intersection, line.end), lines[intersection.line_segment_index].1));
+                    result[current_index].lines.push((
+                        Line::new(intersection.intersection, line.end),
+                        &lines[intersection.line_segment_index].1,
+                    ));
                 }
             }
             None => result[current_index].lines.push((line.clone(), is_street)),
@@ -166,86 +168,20 @@ fn calc_split_polygons(
         .collect()
 }
 
-/*
-fn calc_split_polygons(
-    polygon: &Polygon<f64>,
-    intersections: &Vec<PolygonLineIntersection>,
-) -> Vec<Polygon<f64>> {
-    let points: Vec<Point<f64>> = polygon.exterior().points().collect();
-
-    let mut result: Vec<Crossback> = Vec::new();
-
-    let intersection_pairs = calc_intersection_pairs(intersections);
-
-    let mut current_index = 0;
-
-    result.push(Crossback {
-        points: Vec::new(),
-        crossback: None,
-    });
-    for (i, point) in points.iter().enumerate() {
-        result[current_index].points.push(*point);
-
-        if let Some(intersection) = intersections.iter().find(|x| x.line_segment_index == i) {
-            let mut other_point_index: Option<usize> = None;
-            for k in intersection_pairs.iter() {
-                if intersection.line_segment_index == k.0.line_segment_index {
-                    other_point_index = Some(k.1.line_segment_index);
-                }
-
-                if intersection.line_segment_index == k.1.line_segment_index {
-                    other_point_index = Some(k.0.line_segment_index);
-                }
-
-                result[current_index]
-                    .points
-                    .push(intersection.intersection.into());
-                result[current_index].crossback = other_point_index;
-
-                match result.iter().position(|x| {
-                    x.crossback.is_some() && x.crossback.unwrap() == intersection.line_segment_index
-                }) {
-                    Some(k) => {
-                        if result[k].crossback.unwrap() == intersection.line_segment_index {
-                            current_index = k;
-                        }
-                    }
-                    None => {
-                        result.push(Crossback {
-                            points: Vec::new(),
-                            crossback: None,
-                        });
-                        current_index = result.len() - 1;
-                    }
-                }
-
-                result[current_index]
-                    .points
-                    .push(intersection.intersection.into());
-            }
-        }
-    }
-
-    result
-        .iter()
-        .map(|x| Polygon::new(LineString::from(x.points.clone()), vec![]))
-        .collect()
-}
-*/
-pub fn longest_line(polygon: &AnnotatedPolygon) -> AnnotatedLine {
-    *polygon
-        .lines()
-        .iter()
-        .max_by(|x, y| {
+pub fn longest_line(polygon: &AnnotatedPolygon, min_side_length: f64) -> AnnotatedLine {
+    fn determine_longest_line<'a, It>(it: It) -> Option<&'a AnnotatedLine> where It: Iterator<Item = &'a (Line<f64>, bool)> {
+        it.max_by(|x, y| {
             x.0.euclidean_length()
                 .partial_cmp(&y.0.euclidean_length())
                 .unwrap()
         })
-        .unwrap()
-}
+    }
 
-pub fn inner_line(polygon: &Polygon<f64>, line: &Line<f64>) -> bool {
-    polygon.exterior().lines().any(|l| l.contains(line))
-        || polygon.exterior_coords_iter().any(|pt| pt == line.start)
-        || polygon.exterior_coords_iter().any(|pt| pt == line.end)
+    match determine_longest_line(polygon
+        .lines()
+        .iter()
+        .filter(|(line, is_street)| *is_street && line.euclidean_length() >= min_side_length)) {
+        Some(line) => *line,
+        None => *determine_longest_line(polygon.lines().iter()).unwrap(),
+    }
 }

@@ -16,6 +16,7 @@ use rust_editor::ui::app::x_launch;
 
 mod map;
 mod plugins;
+mod algorithm;
 //mod systems;
 
 fn main() {

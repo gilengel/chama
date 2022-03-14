@@ -2,11 +2,10 @@ use geo::{
     prelude::{Centroid, Contains},
     Coordinate, LineString, Polygon,
 };
-use rust_editor::gizmo::SetId;
+use rust_editor::{gizmo::SetId, renderer::PrimitiveRenderer};
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    renderer::PrimitiveRenderer,
     style::{InteractiveElementStyle, Style},
 };
 use rust_macro::ElementId;
@@ -15,15 +14,14 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d; // TODO
 
-use super::{map::Map, house::generate_houses_from_polygon};
+use super::{house::generate_houses_from_polygon, map::Map};
 use crate::map::intersection::Side;
-
 
 #[derive(Serialize, Deserialize)]
 pub struct House {
     pub polygon: Polygon<f64>,
-    pub point_style: Vec<Style>,
-    pub style: Style
+    pub line_styles: Vec<Style>,
+    pub style: Style,
 }
 
 #[derive(Serialize, Deserialize, ElementId)]
@@ -34,7 +32,7 @@ pub struct District {
     state: InteractiveElementState,
     minimum_house_side: f64,
 
-    houses: Vec<House>
+    houses: Vec<House>,
 }
 
 impl Default for District {
@@ -61,7 +59,7 @@ impl Default for District {
             },
             state: InteractiveElementState::Normal,
             minimum_house_side: 500.0,
-            houses: Vec::new()
+            houses: Vec::new(),
         }
     }
 }
@@ -93,10 +91,7 @@ impl District {
         &self.polygon
     }
 
-    pub fn render(
-        &self,
-        context: &CanvasRenderingContext2d,
-    ) -> Result<(), JsValue> {
+    pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         //let mut it = self.polygon.exterior().points();
         //let start = it.next().unwrap();
         //let style = self.style();
@@ -113,7 +108,7 @@ impl District {
         context.close_path();
         context.set_fill_style(&style.background_color.clone().into());
         context.fill();
-        
+
 
         if style.border_width > 0 {
             context.set_line_width(style.border_width.into());
@@ -122,13 +117,30 @@ impl District {
         }
         */
 
-        for p in &self.houses {
-            p.polygon.render(&p.style, context)?;
-            
-            for (pt, style) in p.polygon.exterior().points().zip(p.point_style.iter()) {
-                pt.render(&style, context)?;
+        /*
+        fn muu(ty: LineSegmentType) -> Style {
+            if ty == LineSegmentType::Street { Style {
+                border_width: 2,
+                border_color: "#C45D53".to_string(),
+                background_color: "#C45D53".to_string(),
+            }
+            } else {
+                Style {
+                    border_width: 2,
+                    border_color: "#C45D53".to_string(),
+                    background_color: "#C45D53".to_string(),
+                }
             }
         }
+*/
+        for p in &self.houses {
+            p.polygon.render(&p.style, context)?;
+
+            for (line, style) in p.polygon.exterior().lines().zip(p.line_styles.iter()) {
+                line.render(style, context)?;
+            }
+        }
+        
 
         context.restore();
 
@@ -161,11 +173,9 @@ pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map) -> Op
         return None;
     }
 
-
     // Generate the houses
     let polygon = Polygon::new(LineString::from(district.points), vec![]);
     let houses: Vec<House> = generate_houses_from_polygon(&polygon, 80.0);
-    
 
     return Some(District {
         polygon,

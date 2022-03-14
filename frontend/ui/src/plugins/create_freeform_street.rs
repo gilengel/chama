@@ -1,7 +1,7 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    keys, log,
+    keys,
     plugins::plugin::{Plugin, PluginWithOptions},
     renderer::apply_style,
     style::Style,
@@ -136,8 +136,6 @@ impl Plugin<Map> for CreateFreeformStreet {
             return;
         }
 
-        log!("{}", self.simplification_factor);
-
         self.brush_active = false;
 
         let line_string = LineString(self.raw_points.clone());
@@ -153,12 +151,11 @@ impl Plugin<Map> for CreateFreeformStreet {
         )));
         action.borrow_mut().execute(app.data_mut());
 
-        
         // TODO here we create the action twice there must be a better way to do this:
         // so far we cannot impl the derive clone trait since the size of the action
         // is not known.
         app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
-            undo.push( Rc::clone(&action));
+            undo.push(Rc::clone(&action));
         });
 
         self.raw_points.clear();

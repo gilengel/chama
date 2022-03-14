@@ -14,6 +14,10 @@ impl AnnotatedPolygon {
             .zip(self.1.clone().into_iter())
             .collect()
     }
+
+    pub(crate) fn enclosed(&self) -> bool {
+        self.1.iter().all(|is_street| !*is_street)
+    }
 }
 
 #[derive(Clone)]

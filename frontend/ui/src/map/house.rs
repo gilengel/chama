@@ -1,4 +1,4 @@
-use geo::{euclidean_length::EuclideanLength, Line, Point, Polygon};
+use geo::{euclidean_length::EuclideanLength, Line, Point, Polygon, prelude::Area};
 use rand::{thread_rng, Rng};
 use rust_editor::style::Style;
 
@@ -53,7 +53,7 @@ pub fn longest_muu(polygon: &Polygon<f64>) -> Line<f64> {
 fn muu(cnt: u32, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<AnnotatedPolygon> {
     let mut polygons: Vec<AnnotatedPolygon> = Vec::new();
 
-    if cnt == 6 {
+    if polygon.0.unsigned_area() < min_side_length * min_side_length {
         polygons.push(polygon.clone());
         return polygons;
     }
@@ -83,13 +83,11 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
         ),
         min_side_length
     );
-    let polygons = houses.iter();
-    //.filter(|p| polygon.contains(*p));
-    //.filter(|p| p.exterior().lines().all(|l| !inner_line(polygon, &l)));
+    let polygons = houses.iter().filter(|polygon| !polygon.enclosed());
 
     let mut rng = thread_rng();
     polygons
-        //.iter()
+        
         .map(|sub_polygon| {
             let r: u8 = rng.gen_range(0..255);
             let g: u8 = rng.gen_range(0..255);
@@ -121,7 +119,7 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
                 style: Style {
                     border_width: 2,
                     border_color: "#FFFFFF".to_string(),
-                    background_color: format!("rgba({},{},{}, 0.2)", r, g, b).to_string(),
+                    background_color: format!("rgba({},{},{}, 0.9)", r, g, b).to_string(),
                 },
             }
         })

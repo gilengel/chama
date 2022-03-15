@@ -12,9 +12,9 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::error;
+use crate::{error, log};
 use geo::Coordinate;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
@@ -405,12 +405,18 @@ where
         let onkeyup = ctx.link().callback(|e| EditorMessages::KeyUp(e));
         let onkeydown = ctx.link().callback(|e| EditorMessages::KeyDown(e));
 
+        let onpointermove = ctx.link().callback(|e: PointerEvent| { log!("{:?}", e.tilt_x()); EditorMessages::Render(0.0) });
+
         html! {
         <main>
-            <canvas ref={self.canvas_ref.clone()} width="2560" height="1440" {onmousedown} {onmouseup} {onmousemove} {onkeyup} {onkeydown} tabindex="0"></canvas>
+            <canvas ref={self.canvas_ref.clone()} width="2560" height="1440" 
+            {onmousedown} 
+            {onmouseup} 
+            {onmousemove} 
+            {onkeyup} 
+            {onkeydown} 
+            {onpointermove} tabindex="0"></canvas>
 
-
-            //TODO reenable options for plugins
             <Dialog>
             {
                 for self.plugins.iter().map(|(_, plugin)| {
@@ -438,16 +444,6 @@ where
         .map(|(id, plugin)| (*id, Rc::clone(plugin)))
         .collect()
 }
-
-/*
-pub fn plugin<P, Data>(plugins: &PluginsVec<Data>) -> Option<&P> where P: PluginWithOptions<Data> + 'static, Data: Default + 'static {
-    if let Some(plugin) = plugins.get(P::identifier()) {
-        return Some(plugins.get(P::identifier()).unwrap().borrow().as_any().downcast_ref::<P>().unwrap())
-    }
-
-    None
-}
-*/
 
 impl<Data> App<Data>
 where

@@ -1,6 +1,7 @@
 use geo::{euclidean_length::EuclideanLength, prelude::Area, Line, Point, Polygon};
-use rand::{thread_rng, Rng, prelude::ThreadRng};
-use rust_editor::{style::Style, log};
+use rand::{thread_rng, Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
+use rust_editor::{style::Style};
 
 use crate::algorithm::geo::{longest_line, split, AnnotatedPolygon};
 
@@ -50,7 +51,7 @@ pub fn longest_muu(polygon: &Polygon<f64>) -> Line<f64> {
 }
 */
 
-fn calculate_split_line(rng: &mut ThreadRng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Line<f64> {
+fn calculate_split_line(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Line<f64> {
     let line = longest_line(&polygon, min_side_length).0; //longest_muu(polygon);
     let vec = line.end_point() - line.start_point();
     let length = line.euclidean_length();
@@ -64,7 +65,7 @@ fn calculate_split_line(rng: &mut ThreadRng, polygon: &AnnotatedPolygon, min_sid
     Line::new(split_pt - perp * 6000.0, split_pt + perp * 6000.0)
 }
 
-fn split_polygons_into_chunks(rng: &mut ThreadRng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<AnnotatedPolygon> {
+fn split_polygons_into_chunks(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<AnnotatedPolygon> {
     let mut polygons: Vec<AnnotatedPolygon> = Vec::new();
 
     if polygon.0.unsigned_area() < min_side_length * min_side_length {
@@ -80,8 +81,10 @@ fn split_polygons_into_chunks(rng: &mut ThreadRng, polygon: &AnnotatedPolygon, m
     polygons
 }
 
-pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64) -> Vec<House> {
-    let mut rng = thread_rng();
+pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64, seed: <ChaCha8Rng as SeedableRng>::Seed) -> Vec<House> {
+    thread_rng().fill(&mut seed.clone());
+    let mut rng = ChaCha8Rng::from_seed(seed);
+
     let houses = split_polygons_into_chunks(
         &mut rng,
         &AnnotatedPolygon(
@@ -98,6 +101,8 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
             let r: u8 = rng.gen_range(0..255);
             let g: u8 = rng.gen_range(0..255);
             let b: u8 = rng.gen_range(0..255);
+
+            let rng_color = format!("rgba({},{},{}, 0.3)", r, g, b).to_string();
 
             let line_styles: Vec<Style> = sub_polygon
                 .lines()
@@ -125,7 +130,7 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
                 style: Style {
                     border_width: 2,
                     border_color: "#FFFFFF".to_string(),
-                    background_color: format!("rgba({},{},{}, 0.3)", r, g, b).to_string(),
+                    background_color: "rgba(255, 255, 255, 0.3)".to_string(),
                 },
             }
         })

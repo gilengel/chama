@@ -2,6 +2,8 @@ use geo::{
     prelude::{Centroid, Contains},
     Coordinate, LineString, Polygon,
 };
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use rust_editor::{gizmo::SetId, renderer::PrimitiveRenderer};
 use rust_editor::{
     gizmo::Id,
@@ -30,7 +32,8 @@ pub struct District {
     polygon: Polygon<f64>,
     style: InteractiveElementStyle,
     state: InteractiveElementState,
-    minimum_house_side: f64,
+    pub minimum_house_side: f64,
+    pub seed: <ChaCha8Rng as SeedableRng>::Seed,
 
     houses: Vec<House>,
 }
@@ -60,6 +63,7 @@ impl Default for District {
             state: InteractiveElementState::Normal,
             minimum_house_side: 500.0,
             houses: Vec::new(),
+            seed: Default::default()
         }
     }
 }
@@ -89,6 +93,10 @@ impl District {
 
     pub fn polygon(&self) -> &Polygon<f64> {
         &self.polygon
+    }
+
+    pub fn update_houses(&mut self) {
+        self.houses = generate_houses_from_polygon(&self.polygon, self.minimum_house_side, self.seed);
     }
 
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
@@ -154,7 +162,7 @@ struct Enclosed {
     points: Vec<Coordinate<f64>>,
 }
 
-pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map) -> Option<District> {
+pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map, minimum_house_side: f64, seed: <ChaCha8Rng as SeedableRng>::Seed) -> Option<District> {
     let district = enclosed(side, street, map);
 
     let factor = match side {
@@ -175,11 +183,12 @@ pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map) -> Op
 
     // Generate the houses
     let polygon = Polygon::new(LineString::from(district.points), vec![]);
-    let houses: Vec<House> = generate_houses_from_polygon(&polygon, 160.0);
+    let houses: Vec<House> = generate_houses_from_polygon(&polygon, minimum_house_side, seed);
 
     return Some(District {
         polygon,
         houses,
+        minimum_house_side,
         ..District::default()
     });
 }

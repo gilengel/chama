@@ -131,6 +131,8 @@ where
     /// is called.
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Data>>, editor: &mut App<Data>) {}
 
+    fn property_updated(&mut self, property: &str, editor: &mut App<Data>) {}
+
     /// Called once before the plugin is added to the editor list of plugins. You can use this it to add additional ui elements such as toolbars (and buttons) or
     /// register shortkeys for the plugin.
     fn startup(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {

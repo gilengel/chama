@@ -1,3 +1,4 @@
+use crate::ui::dialog::Dialog;
 use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
@@ -7,7 +8,6 @@ use std::rc::Rc;
 use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
-use crate::ui::dialog::Dialog;
 
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
@@ -311,7 +311,8 @@ where
                 for shortkeys in self.shortkeys.values() {
                     for shortkey in shortkeys {
                         if self.pressed_keys.ends_with(shortkey) {
-                            ctx.link().send_message(EditorMessages::ShortkeyPressed(shortkey.clone()));
+                            ctx.link()
+                                .send_message(EditorMessages::ShortkeyPressed(shortkey.clone()));
                         }
                     }
                 }
@@ -351,11 +352,19 @@ where
                 self.render(ctx.link());
             }
             EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {
-                let plugin = self.plugins.get(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin));
+                
+                    let plugin = Rc::clone(self.plugins.get(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin)));
+                    plugin
+                        .as_ref()
+                        .borrow_mut()
+                        .update_property(attribute, value);
+                
+
+
                 plugin
                     .as_ref()
                     .borrow_mut()
-                    .update_property(attribute, value);
+                    .property_updated(attribute, self);
             }
             EditorMessages::ActivatePlugin(plugin_id) => {
                 if !self.plugins.contains_key(plugin_id) {
@@ -400,7 +409,7 @@ where
         <main>
             <canvas ref={self.canvas_ref.clone()} width="2560" height="1440" {onmousedown} {onmouseup} {onmousemove} {onkeyup} {onkeydown} tabindex="0"></canvas>
 
-            
+
             //TODO reenable options for plugins
             <Dialog>
             {
@@ -409,7 +418,7 @@ where
                 })
             }
             </Dialog>
-            
+
 
             {
                 self.toolbars.view(ctx)

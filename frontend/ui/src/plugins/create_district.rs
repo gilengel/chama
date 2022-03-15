@@ -1,3 +1,5 @@
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use rust_macro::editor_plugin;
 
 use crate::{map::district::create_district_for_street, Map};
@@ -9,7 +11,7 @@ use rust_editor::{
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    },
+    }, log,
 };
 use uuid::Uuid;
 
@@ -26,10 +28,14 @@ pub struct CreateDistrict {
         description = "Muu"
     )]
     minimum_house_side: f64,
+
+    #[option(skip)]
+    seed: <ChaCha8Rng as SeedableRng>::Seed
 }
 
 impl Plugin<Map> for CreateDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
+        log!("{:?}", self.seed);
         editor.add_shortkey::<CreateDistrict>(keys!["Control", "d"])?;
 
         let toolbar =
@@ -45,6 +51,13 @@ impl Plugin<Map> for CreateDistrict {
         )?;
 
         Ok(())
+    }
+
+    fn property_updated(&mut self, property: &str, editor: &mut App<Map>) {
+        editor.data_mut().districts_mut().iter_mut().for_each(|(_, x)| {
+            x.minimum_house_side = self.minimum_house_side.clamp(20.0, 1000.0);
+            x.update_houses();
+        });
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
@@ -76,7 +89,7 @@ impl Plugin<Map> for CreateDistrict {
             let side = hovered_street.get_side_of_position(&mouse_pos);
 
             if let Some(district) =
-                create_district_for_street(side, hovered_street_id, app.data_mut())
+                create_district_for_street(side, hovered_street_id, app.data_mut(), self.minimum_house_side, self.seed)
             {
                 app.data_mut().add_district(district);
             }

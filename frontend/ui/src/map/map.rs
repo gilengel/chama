@@ -279,6 +279,10 @@ impl Map {
         &self.districts
     }
 
+    pub fn districts_mut(&mut self) -> &mut HashMap<Uuid, District> {
+        &mut self.districts
+    }
+
     pub fn streets(&self) -> &HashMap<Uuid, Street> {
         &self.streets
     }

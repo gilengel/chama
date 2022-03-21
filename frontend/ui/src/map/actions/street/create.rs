@@ -21,7 +21,7 @@ impl CreateStreet {
 
 impl Undo<Map> for CreateStreet {
     fn undo(&mut self, map: &mut Map) {
-        map.remove_street(&self.street_id);
+        map.remove_street(&self.street_id).execute(map);
     }
 }
 

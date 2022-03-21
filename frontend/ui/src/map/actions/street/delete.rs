@@ -25,7 +25,7 @@ impl DeleteStreet {
 
 impl Undo<Map> for DeleteStreet {
     fn undo(&mut self, map: &mut Map) {
-        map.create_street(&self.start, &self.end, 10.0);
+        map.create_street(&self.start, &self.end, 10.0).execute(map);
     }
 }
 
@@ -42,7 +42,7 @@ impl Redo<Map> for DeleteStreet {
             }
 
             if is_start_empty {
-                map.remove_intersection(&start_id);
+                self.action_stack.actions.push(map.remove_intersection(&start_id));
             } else {
                 map.update_intersection(&start_id);
             }
@@ -57,7 +57,7 @@ impl Redo<Map> for DeleteStreet {
             }
 
             if is_end_empty {
-                map.remove_intersection(&end_id);
+                self.action_stack.actions.push(map.remove_intersection(&end_id));
             } else {
                 map.update_intersection(&end_id);
             }

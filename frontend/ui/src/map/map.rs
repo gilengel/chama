@@ -1,10 +1,9 @@
 use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
-use rust_editor::actions::{Action, MultiAction, Redo, Undo};
-use rust_editor::gizmo::{GetPosition, Id, SetId, SetPosition};
+use rust_editor::actions::{Action, MultiAction};
+use rust_editor::gizmo::{GetPosition, Id};
 use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
-use rust_editor::log;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -12,10 +11,10 @@ use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
-use super::actions::create_intersection::CreateIntersection;
-use super::actions::create_street::CreateStreet;
-use super::actions::delete_intersection::DeleteIntersection;
-use super::actions::delete_street::DeleteStreet;
+use super::actions::intersection::create::CreateIntersection;
+use super::actions::street::create::CreateStreet;
+use super::actions::intersection::delete::DeleteIntersection;
+use super::actions::street::delete::DeleteStreet;
 use super::actions::split_street::SplitStreet;
 use super::district::District;
 use super::intersection::Intersection;

@@ -1,5 +1,3 @@
-use std::borrow::BorrowMut;
-
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction},

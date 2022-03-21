@@ -14,6 +14,7 @@ use std::collections::HashMap;
 
 use super::actions::create_intersection::CreateIntersection;
 use super::actions::create_street::CreateStreet;
+use super::actions::delete_intersection::DeleteIntersection;
 use super::actions::delete_street::DeleteStreet;
 use super::actions::split_street::SplitStreet;
 use super::district::District;
@@ -535,14 +536,10 @@ impl Map {
         Box::new(DeleteStreet::new(id.clone(), street.start(), street.end()))
     }
 
-    pub fn remove_intersection(&mut self, id: &Uuid) -> Option<Intersection> {
-        if let Some(removed) = self.intersections.remove(id) {
-            self.update_bounding_box();
+    pub fn remove_intersection(&mut self, id: &Uuid) -> Box<dyn Action<Map>> {
+        let intersection = self.intersection(id).unwrap();
 
-            return Some(removed);
-        }
-
-        None
+        Box::new(DeleteIntersection::new(intersection))
     }
 
     pub fn remove_district(&mut self, id: &Uuid) {

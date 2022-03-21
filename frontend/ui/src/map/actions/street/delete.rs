@@ -1,8 +1,8 @@
 use geo::Coordinate;
-use rust_editor::{actions::{MultiAction, Undo, Redo, Action}, gizmo::Id};
+use rust_editor::{actions::{MultiAction, Undo, Redo, Action}, gizmo::Id, log};
 use uuid::Uuid;
 
-use crate::map::map::Map;
+use crate::map::{map::Map, actions::intersection::remove_connected_street::RemoveConnectedStreet};
 
 pub(crate) struct DeleteStreet {
     action_stack: MultiAction<Map>,
@@ -35,7 +35,7 @@ impl Redo<Map> for DeleteStreet {
             let mut is_start_empty = false;
             let mut start_id = Uuid::default();
             if let Some(start) = map.intersections_mut().get_mut(&street.start) {
-                start.remove_connected_street(&self.street_id);
+                self.action_stack.actions.push(Box::new(RemoveConnectedStreet::new(start.id(), self.street_id)));
 
                 is_start_empty = start.get_connected_streets().is_empty();
                 start_id = start.id();
@@ -44,13 +44,13 @@ impl Redo<Map> for DeleteStreet {
             if is_start_empty {
                 self.action_stack.actions.push(map.remove_intersection(&start_id));
             } else {
-                map.update_intersection(&start_id);
+                self.action_stack.actions.push(map.update_intersection(&start_id));
             }
 
             let mut is_end_empty = false;
             let mut end_id = Uuid::default();
             if let Some(end) = map.intersections_mut().get_mut(&street.end) {
-                end.remove_connected_street(&self.street_id);
+                self.action_stack.actions.push(Box::new(RemoveConnectedStreet::new(end.id(), self.street_id)));
 
                 is_end_empty = end.get_connected_streets().is_empty();
                 end_id = end.id();
@@ -59,10 +59,50 @@ impl Redo<Map> for DeleteStreet {
             if is_end_empty {
                 self.action_stack.actions.push(map.remove_intersection(&end_id));
             } else {
-                map.update_intersection(&end_id);
+                self.action_stack.actions.push(map.update_intersection(&end_id));
             }
+
+            log!("size: {}", self.action_stack.actions.len());
+            self.action_stack.execute(map);
         }
     }
 }
 
 impl Action<Map> for DeleteStreet {}
+
+#[cfg(test)]
+mod tests {
+    use geo::Coordinate;
+    use rust_editor::{
+        actions::{Action, Redo, Undo},
+        gizmo::Id,
+    };
+    use uuid::Uuid;
+
+    use crate::{map::{actions::street::{create::CreateStreet, delete::DeleteStreet}, intersection::Intersection, map::Map}};
+
+    fn create_map() -> Map {
+        Map::new(100, 100)
+    }
+
+    fn add_street(start: Coordinate<f64>, end: Coordinate<f64>, map: &mut Map) {
+        map.create_street(&start, &end, 10.);
+    }
+
+
+
+    #[test]
+    fn street_delete_redo_works() {
+        let mut map = create_map();
+
+        let start = Coordinate { x: 100., y: 100. };
+        let end = Coordinate { x: 300., y: 100. };
+        add_street(start, end, &mut map);
+        assert_eq!(map.streets.len(), 1);
+    
+        let mut action = DeleteStreet::new(*map.streets.iter().next().unwrap().0, start, end);
+        action.redo(&mut map);
+
+        //assert_eq!(map.streets.len(), 0);
+    }
+}

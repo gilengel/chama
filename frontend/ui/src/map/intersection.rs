@@ -126,15 +126,19 @@ impl Intersection {
         Ok(())
     }
 
-    pub fn remove_connected_street(&mut self, id: &Uuid) {
+    
+    pub fn remove_connected_street(&mut self, id: &Uuid) -> Option<(Direction, Uuid)>{
         if let Some(index) = self
             .connected_streets
             .iter()
             .position(|x| x.1 == id.clone())
         {
-            self.connected_streets.remove(index);
+            return Some(self.connected_streets.remove(index));
         }
+
+        None
     }
+    
 
     pub fn add_incoming_street(&mut self, id: &Uuid) {
         self.connected_streets.push((Direction::In, *id));

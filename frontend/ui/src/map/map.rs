@@ -12,10 +12,12 @@ use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
 use super::actions::intersection::create::CreateIntersection;
+use super::actions::intersection::update::UpdateIntersection;
 use super::actions::street::create::CreateStreet;
 use super::actions::intersection::delete::DeleteIntersection;
 use super::actions::street::delete::DeleteStreet;
 use super::actions::split_street::SplitStreet;
+use super::actions::street::update::UpdateStreet;
 use super::district::District;
 use super::intersection::Intersection;
 use super::street::Street;
@@ -25,8 +27,8 @@ pub struct Map {
     width: u32,
     height: u32,
 
-    streets: HashMap<Uuid, Street>,
-    intersections: HashMap<Uuid, Intersection>,
+    pub(crate) streets: HashMap<Uuid, Street>,
+    pub(crate) intersections: HashMap<Uuid, Intersection>,
     districts: HashMap<Uuid, District>,
 
     bounding_box: Rect<f64>,
@@ -192,23 +194,18 @@ impl Map {
         id
     }
 
-    pub fn update_street(&mut self, id: &Uuid) {
-        if let Some(mut street) = self.streets.remove(id) {
-            street.update_geometry(&self.intersections, &self.streets);
-
-            self.streets.insert(street.id(), street);
-        }
+    pub fn update_street(&mut self, id: &Uuid) -> Box<UpdateStreet> {
+        let mut action = UpdateStreet::new(*id);
+        action.execute(self);
+    
+        Box::new(action)
     }
 
-    pub fn update_intersection(&mut self, id: &Uuid) {
-        if let Some(intersection) = self.intersections.get_mut(id) {
-            intersection.reorder(&mut self.streets);
+    pub fn update_intersection(&mut self, id: &Uuid) -> Box<dyn Action<Map>> {
+        let mut action = UpdateIntersection::new(*id);
+        action.execute(self);
 
-            let streets = intersection.get_connected_streets().clone();
-            for (_, id) in streets {
-                self.update_street(&id);
-            }
-        }
+        Box::new(action)
     }
 
     fn _create_street(

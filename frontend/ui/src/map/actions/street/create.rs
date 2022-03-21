@@ -1,4 +1,7 @@
-use rust_editor::{actions::{Action, Redo, Undo}, gizmo::{SetId, Id}};
+use rust_editor::{
+    actions::{Action, Redo, Undo},
+    gizmo::{Id, SetId},
+};
 use uuid::Uuid;
 
 use crate::map::{map::Map, street::Street};
@@ -43,7 +46,7 @@ impl Redo<Map> for CreateStreet {
             end.add_incoming_street(&street.id());
         }
 
-        Some(map.add_street(street));
+        map.add_street(street);
 
         map.update_intersection(&self.start_intersection_id);
         map.update_intersection(&self.end_intersection_id);
@@ -54,3 +57,46 @@ impl Redo<Map> for CreateStreet {
 }
 
 impl Action<Map> for CreateStreet {}
+
+#[cfg(test)]
+mod tests {
+    use geo::Coordinate;
+    use rust_editor::{
+        actions::{Action, Redo, Undo},
+        gizmo::Id,
+    };
+    use uuid::Uuid;
+
+    use crate::map::{actions::street::create::CreateStreet, intersection::Intersection, map::Map};
+
+    fn create_map() -> Map {
+        Map::new(100, 100)
+    }
+
+    fn add_intersection(position: Coordinate<f64>, map: &mut Map) -> Uuid {
+        let id = Uuid::new_v4();
+        let intersection = Intersection::new_with_id(position, id);
+
+        map.intersections.insert(intersection.id(), intersection);
+
+        id
+    }
+
+    fn straight_street_action(map: &mut Map) -> CreateStreet {
+        let start = add_intersection(Coordinate { x: 100., y: 100. }, map);
+        let end = add_intersection(Coordinate { x: 300., y: 100. }, map);
+
+        CreateStreet::new(start, end)
+    }
+
+    #[test]
+    fn street_redo_works() {
+        let mut map = create_map();
+
+        let mut action = straight_street_action(&mut map);
+        action.redo(&mut map);
+
+        assert_eq!(map.intersections.len(), 2);
+        assert_eq!(map.streets.len(), 1);
+    }
+}

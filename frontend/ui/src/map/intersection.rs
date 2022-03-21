@@ -77,6 +77,14 @@ impl Intersection {
         }
     }
 
+    pub fn new_with_id(position: Coordinate<f64>, id: Uuid) -> Intersection {
+        Intersection {
+            position, 
+            id,
+            ..Default::default()
+        }
+    }
+
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         context.save();
         context.begin_path();
@@ -156,20 +164,19 @@ impl Intersection {
         }
 
         let sort_ascending_by_angle = |a: &(Direction, Uuid), b: &(Direction, Uuid)| -> Ordering {
-            let street_1 = streets.get(&a.1).unwrap();
-            let street_2 = streets.get(&b.1).unwrap();
-
-            let norm_1 = norm_based_on_direction(a.0, &street_1);
-            let norm_2 = norm_based_on_direction(b.0, &street_2);
-
-            let angle_1 = angle(&norm_1);
-            let angle_2 = angle(&norm_2);
-            if angle_1 < angle_2 {
-                return Ordering::Less;
-            }
-
-            if angle_1 > angle_2 {
-                return Ordering::Greater;
+            if let (Some(street_1), Some(street_2)) = (streets.get(&a.1), streets.get(&b.1)) {
+                let norm_1 = norm_based_on_direction(a.0, &street_1);
+                let norm_2 = norm_based_on_direction(b.0, &street_2);
+    
+                let angle_1 = angle(&norm_1);
+                let angle_2 = angle(&norm_2);
+                if angle_1 < angle_2 {
+                    return Ordering::Less;
+                }
+    
+                if angle_1 > angle_2 {
+                    return Ordering::Greater;
+                }
             }
 
             Ordering::Equal
@@ -194,16 +201,17 @@ impl Intersection {
 
             match direction {
                 Direction::In => {
-                    let street_borrowed = streets.get_mut(&id).unwrap();
-                    street_borrowed.set_next(Side::Right, None);
-                    street_borrowed.set_next(Side::Left, None);
+                    if let Some(street_borrowed) = streets.get_mut(&id) {
+                        street_borrowed.set_next(Side::Right, None);
+                        street_borrowed.set_next(Side::Left, None);
 
-                    if street_borrowed.id() != *previous_street {
-                        street_borrowed.set_next(Side::Right, Some(*previous_street));
-                    }
+                        if street_borrowed.id() != *previous_street {
+                            street_borrowed.set_next(Side::Right, Some(*previous_street));
+                        }
 
-                    if street_borrowed.id() != *next_street {
-                        street_borrowed.set_next(Side::Left, Some(*next_street));
+                        if street_borrowed.id() != *next_street {
+                            street_borrowed.set_next(Side::Left, Some(*next_street));
+                        }
                     }
                 }
 

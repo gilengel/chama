@@ -11,7 +11,6 @@ use rust_editor::{
     },
 };
 use rust_macro::editor_plugin;
-use uuid::Uuid;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::map::map::Map;
@@ -63,8 +62,7 @@ impl Redo<Map> for CreateFreeFormStreetAction {
             return;
         }
 
-        let _intersections: Vec<Uuid> = vec![];
-
+        // skip the first n points if at that position already a street exists
         let mut index_to_be_skipped = 0;
         for (index, point) in self.raw_points.iter().enumerate() {
             if map.get_street_at_position(point, &vec![]).is_none() && index != 0 {
@@ -151,9 +149,6 @@ impl Plugin<Map> for CreateFreeformStreet {
         )));
         action.borrow_mut().execute(app.data_mut());
 
-        // TODO here we create the action twice there must be a better way to do this:
-        // so far we cannot impl the derive clone trait since the size of the action
-        // is not known.
         app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
             undo.push(Rc::clone(&action));
         });

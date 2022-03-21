@@ -11,7 +11,8 @@ use geo::{
 use rust_editor::{
     gizmo::{GetPosition, Id, SetId},
     interactive_element::{InteractiveElement, InteractiveElementState},
-    style::{InteractiveElementStyle, Style}, renderer::PrimitiveRenderer,
+    renderer::PrimitiveRenderer,
+    style::{InteractiveElementStyle, Style},
 };
 use rust_macro::ElementId;
 use serde::{Deserialize, Serialize};
@@ -173,40 +174,37 @@ impl Street {
         intersections: &HashMap<Uuid, Intersection>,
         streets: &HashMap<Uuid, Street>,
     ) {
-        let start = intersections.get(&self.start).unwrap();
-        let end = intersections.get(&self.end).unwrap();
-        self.line.start = start.position();
-        self.line.end = end.position();
-
-        let start = self.line.start;
-        let end = self.line.end;
-
-        let length = start.euclidean_distance(&end);
-        let vec = end - start;
-        self.norm = Coordinate {
-            x: vec.x / length,
-            y: vec.y / length,
-        };
-
-        let inverse_vec = start - end;
-        self.inverse_norm = Coordinate {
-            x: inverse_vec.x / length,
-            y: inverse_vec.y / length,
-        };
-
-        let pts = self.calc_polygon_points(streets);
-        self.polygon = Polygon::new(LineString::from(pts), vec![]);
+        if let (Some(start), Some(end)) = (intersections.get(&self.start), intersections.get(&self.end)) {
+            self.line.start = start.position();
+            self.line.end = end.position();
+    
+            let start = self.line.start;
+            let end = self.line.end;
+    
+            let length = start.euclidean_distance(&end);
+            let vec = end - start;
+            self.norm = Coordinate {
+                x: vec.x / length,
+                y: vec.y / length,
+            };
+    
+            let inverse_vec = start - end;
+            self.inverse_norm = Coordinate {
+                x: inverse_vec.x / length,
+                y: inverse_vec.y / length,
+            };
+    
+            let pts = self.calc_polygon_points(streets);
+            self.polygon = Polygon::new(LineString::from(pts), vec![]);
+        }
     }
 
-    pub fn render(
-        &self,
-        context: &CanvasRenderingContext2d,
-    ) -> Result<(), JsValue> {
+    pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         self.polygon.render(self.style(), &context)?;
 
         //self.line.render(self.style(), &context);
 
-        /* 
+        /*
         if additional_information_layer.contains(&InformationLayer::Debug) {
             let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
 
@@ -295,84 +293,85 @@ impl Street {
         points.push(s + offset);
 
         if let Some(next_left) = &self.left_next {
-            let next_left = streets.get(next_left).unwrap();
+            if let Some(next_left) = streets.get(next_left) {
+                let factor = if self.end == next_left.end { 1.0 } else { -1.0 };
 
-            let factor = if self.end == next_left.end { 1.0 } else { -1.0 };
+                let offset = next_left.start() + next_left.perp() * half_width * factor;
+                let start = points[1];
 
-            let offset = next_left.start() + next_left.perp() * half_width * factor;
-            let start = points[1];
-
-            if !self.are_norms_equal(&next_left) {
-                if let Some(intersection) =
-                    self.line_intersect_line(start, self.norm, offset, next_left.norm)
-                {
-                    points[2] = intersection;
+                if !self.are_norms_equal(&next_left) {
+                    if let Some(intersection) =
+                        self.line_intersect_line(start, self.norm, offset, next_left.norm)
+                    {
+                        points[2] = intersection;
+                    }
                 }
             }
         }
 
         if let Some(right_next) = &self.right_next {
-            let right_next = streets.get(right_next).unwrap();
+            if let Some(right_next) = streets.get(right_next) {
+                let factor = if self.end == right_next.end {
+                    -1.0
+                } else {
+                    1.0
+                };
 
-            let factor = if self.end == right_next.end {
-                -1.0
-            } else {
-                1.0
-            };
+                let offset = right_next.start() + right_next.perp() * half_width * factor;
+                let start = *points.last().unwrap();
 
-            let offset = right_next.start() + right_next.perp() * half_width * factor;
-            let start = *points.last().unwrap();
+                if !self.are_norms_equal(&right_next) {
+                    if let Some(intersection) =
+                        self.line_intersect_line(start, self.norm, offset, right_next.norm)
+                    {
+                        let pts_len = points.len();
 
-            if !self.are_norms_equal(&right_next) {
-                if let Some(intersection) =
-                    self.line_intersect_line(start, self.norm, offset, right_next.norm)
-                {
-                    let pts_len = points.len();
-
-                    points[pts_len - 2] = intersection;
+                        points[pts_len - 2] = intersection;
+                    }
                 }
             }
         }
 
         if let Some(previous_left) = &self.left_previous {
-            let previous_left = streets.get(previous_left).unwrap();
+            if let Some(previous_left) = streets.get(previous_left) {
+                let factor = if self.start == previous_left.start {
+                    1.0
+                } else {
+                    -1.0
+                };
 
-            let factor = if self.start == previous_left.start {
-                1.0
-            } else {
-                -1.0
-            };
+                let start = points[1];
+                let other_start =
+                    previous_left.start() + previous_left.perp() * half_width * factor;
 
-            let start = points[1];
-            let other_start = previous_left.start() + previous_left.perp() * half_width * factor;
-
-            if !self.are_norms_equal(&previous_left) {
-                if let Some(intersection) =
-                    self.line_intersect_line(start, self.norm, other_start, previous_left.norm)
-                {
-                    points[1] = intersection;
+                if !self.are_norms_equal(&previous_left) {
+                    if let Some(intersection) =
+                        self.line_intersect_line(start, self.norm, other_start, previous_left.norm)
+                    {
+                        points[1] = intersection;
+                    }
                 }
             }
         }
 
         if let Some(right_previous) = &self.right_previous {
-            let right_previous = streets.get(right_previous).unwrap();
+            if let Some(right_previous) = streets.get(right_previous) {
+                let factor = if self.start == right_previous.start {
+                    -1.0
+                } else {
+                    1.0
+                };
 
-            let factor = if self.start == right_previous.start {
-                -1.0
-            } else {
-                1.0
-            };
-
-            let offset = right_previous.start() + right_previous.perp() * half_width * factor;
-            if !self.are_norms_equal(&right_previous) {
-                if let Some(intersection) = self.line_intersect_line(
-                    *points.last().unwrap(),
-                    self.norm,
-                    offset,
-                    right_previous.norm,
-                ) {
-                    *points.last_mut().unwrap() = intersection;
+                let offset = right_previous.start() + right_previous.perp() * half_width * factor;
+                if !self.are_norms_equal(&right_previous) {
+                    if let Some(intersection) = self.line_intersect_line(
+                        *points.last().unwrap(),
+                        self.norm,
+                        offset,
+                        right_previous.norm,
+                    ) {
+                        *points.last_mut().unwrap() = intersection;
+                    }
                 }
             }
         }

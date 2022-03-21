@@ -2,16 +2,20 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_macro::editor_plugin;
 
-use crate::{map::district::create_district_for_street, Map};
+use crate::{
+    map::{district::create_district_for_street, intersection::Side},
+    Map,
+};
 use geo::Coordinate;
 use rust_editor::{
+    actions::{Action, Redo, Undo},
     gizmo::Id,
-    keys,
+    keys, log,
     plugins::plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, log,
+    },
 };
 use uuid::Uuid;
 
@@ -30,7 +34,60 @@ pub struct CreateDistrict {
     minimum_house_side: f64,
 
     #[option(skip)]
-    seed: <ChaCha8Rng as SeedableRng>::Seed
+    seed: <ChaCha8Rng as SeedableRng>::Seed,
+}
+
+struct CreateDistrictAction {
+    street: Uuid,
+    side: Side,
+    minimum_house_side: f64,
+    seed: <ChaCha8Rng as SeedableRng>::Seed,
+
+    district: Option<Uuid>
+}
+
+impl Redo<Map> for CreateDistrictAction {
+    fn redo(&mut self, map: &mut Map) {
+        if let Some(district) = create_district_for_street(
+            self.side,
+            self.street,
+            map,
+            self.minimum_house_side,
+            self.seed,
+        ) {
+            let id = district.id().clone();
+            map.add_district(district);
+
+            self.district = Some(id);
+        }
+    }
+}
+
+impl Undo<Map> for CreateDistrictAction {
+    fn undo(&mut self, map: &mut Map) {
+        if let Some(district) = self.district {
+            map.remove_district(&district);
+        }
+    }
+}
+
+impl Action<Map> for CreateDistrictAction {}
+
+impl CreateDistrictAction {
+    pub fn new(
+        street: Uuid,
+        side: Side,
+        minimum_house_side: f64,
+        seed: <ChaCha8Rng as SeedableRng>::Seed,
+    ) -> Self {
+        CreateDistrictAction {
+            street,
+            side,
+            minimum_house_side,
+            seed,
+            district: None
+        }
+    }
 }
 
 impl Plugin<Map> for CreateDistrict {
@@ -53,11 +110,15 @@ impl Plugin<Map> for CreateDistrict {
         Ok(())
     }
 
-    fn property_updated(&mut self, property: &str, editor: &mut App<Map>) {
-        editor.data_mut().districts_mut().iter_mut().for_each(|(_, x)| {
-            x.minimum_house_side = self.minimum_house_side.clamp(20.0, 1000.0);
-            x.update_houses();
-        });
+    fn property_updated(&mut self, _: &str, editor: &mut App<Map>) {
+        editor
+            .data_mut()
+            .districts_mut()
+            .iter_mut()
+            .for_each(|(_, x)| {
+                x.minimum_house_side = self.minimum_house_side.clamp(20.0, 1000.0);
+                x.update_houses();
+            });
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
@@ -85,14 +146,21 @@ impl Plugin<Map> for CreateDistrict {
         }
 
         if let Some(hovered_street_id) = self.hovered_street {
-            let hovered_street = app.data().street(&hovered_street_id).unwrap();
-            let side = hovered_street.get_side_of_position(&mouse_pos);
+            let mut create_district_action = CreateDistrictAction::new(
+                hovered_street_id,
+                app.data()
+                    .street(&hovered_street_id)
+                    .unwrap()
+                    .get_side_of_position(&mouse_pos),
+                self.minimum_house_side,
+                self.seed,
+            );
+            create_district_action.execute(app.data_mut());
 
-            if let Some(district) =
-                create_district_for_street(side, hovered_street_id, app.data_mut(), self.minimum_house_side, self.seed)
-            {
-                app.data_mut().add_district(district);
-            }
+            let action = Rc::new(RefCell::new(create_district_action));
+            app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
+                undo.push(Rc::clone(&action));
+            });
         }
     }
 }

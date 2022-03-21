@@ -98,11 +98,11 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
     
     polygons
         .map(|sub_polygon| {
-            let r: u8 = rng.gen_range(0..255);
-            let g: u8 = rng.gen_range(0..255);
-            let b: u8 = rng.gen_range(0..255);
+            //let r: u8 = rng.gen_range(0..255);
+            //let g: u8 = rng.gen_range(0..255);
+            //let b: u8 = rng.gen_range(0..255);
 
-            let rng_color = format!("rgba({},{},{}, 0.3)", r, g, b).to_string();
+            //let rng_color = format!("rgba({},{},{}, 0.3)", r, g, b).to_string();
 
             let line_styles: Vec<Style> = sub_polygon
                 .lines()

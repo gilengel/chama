@@ -4,6 +4,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use crate::map::map::Map;
 
+
 #[editor_plugin(skip, specific_to=Map)]
 pub struct MapRender {}
 

@@ -1,5 +1,8 @@
+use std::borrow::BorrowMut;
+
 use geo::Coordinate;
 use rust_editor::{
+    actions::{Action, MultiAction},
     interactive_element::{InteractiveElement, InteractiveElementState},
     keys,
     plugins::plugin::{Plugin, PluginWithOptions},
@@ -169,9 +172,16 @@ impl Plugin<Map> for DeleteStreet {
 
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, app: &mut App<Map>) {
         if let Some(hovered_streets) = &self.hovered_streets {
+            let action = Rc::new(RefCell::new(MultiAction::new()));
             for street in hovered_streets {
-                app.data_mut().remove_street(&street);
+                action.as_ref().borrow_mut().actions.push(app.data_mut().remove_street(street));
             }
+
+            action.as_ref().borrow_mut().execute(app.data_mut());
+
+            app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
+                undo.push(Rc::clone(&action));
+            });
         }
     }
 }

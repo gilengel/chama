@@ -1,8 +1,7 @@
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    gizmo::Id,
-    log,
+    gizmo::Id
 };
 use uuid::Uuid;
 
@@ -14,7 +13,6 @@ use crate::{
         },
         map::Map,
     },
-    plugins::create_district::CreateDistrict,
 };
 
 use super::create::CreateStreet;

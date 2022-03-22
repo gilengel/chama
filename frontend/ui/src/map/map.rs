@@ -201,7 +201,7 @@ impl Map {
         Box::new(action)
     }
 
-    pub fn update_intersection(&mut self, id: &Uuid) -> Box<dyn Action<Map>> {
+    pub fn update_intersection(&mut self, id: &Uuid) -> Box<UpdateIntersection> {
         let mut action = UpdateIntersection::new(*id);
         action.execute(self);
 

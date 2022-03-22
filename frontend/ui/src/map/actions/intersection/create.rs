@@ -11,9 +11,16 @@ pub(crate) struct CreateIntersection {
 
 impl CreateIntersection {
     pub fn new(position: Coordinate<f64>) -> Self {
+        CreateIntersection::new_with_id(
+            position,
+            Uuid::new_v4(),
+        )
+    }
+
+    pub fn new_with_id(position: Coordinate<f64>, id: Uuid) -> Self {
         CreateIntersection {
             position,
-            id: Uuid::new_v4(),
+            id
         }
     }
 }

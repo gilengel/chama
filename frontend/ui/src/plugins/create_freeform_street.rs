@@ -58,6 +58,8 @@ impl Undo<Map> for CreateFreeFormStreetAction {
 
 impl Redo<Map> for CreateFreeFormStreetAction {
     fn redo(&mut self, map: &mut Map) {
+        self.action_stack.actions.clear();
+        
         if self.raw_points.is_empty() {
             return;
         }

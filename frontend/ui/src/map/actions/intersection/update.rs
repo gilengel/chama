@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::map::{map::Map, intersection::Direction};
 
-pub(crate) struct UpdateIntersection {
+pub struct UpdateIntersection {
     id: Uuid,
     connected_streets: Option<Vec<(Direction, Uuid)>>
 }

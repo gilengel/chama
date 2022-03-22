@@ -52,10 +52,11 @@ impl Action<Map> for RemoveConnectedStreet {}
 #[cfg(test)]
 mod tests {
     use geo::Coordinate;
-    use rust_editor::{actions::{Redo, Undo}, gizmo::Id};
+    use rust_editor::{actions::{Redo, Undo, Action}, gizmo::Id};
+    use uuid::Uuid;
 
     use crate::map::{
-        actions::intersection::remove_connected_street::RemoveConnectedStreet,
+        actions::{intersection::remove_connected_street::RemoveConnectedStreet, street::create::CreateStreet},
         intersection::Intersection, map::Map,
     };
 
@@ -83,8 +84,21 @@ mod tests {
         intersection
     }
 
-    fn add_street(start: Coordinate<f64>, end: Coordinate<f64>, map: &mut Map) {
-        map.create_street(&start, &end, 10.);
+    fn add_intersection(position: Coordinate<f64>, map: &mut Map) -> Uuid {
+        let id = Uuid::new_v4();
+        let intersection = Intersection::new_with_id(position, id);
+
+        map.intersections.insert(intersection.id(), intersection);
+
+        id
+    }
+
+    fn add_street(start_pos: Coordinate<f64>, end_pos: Coordinate<f64>, map: &mut Map) {
+        let start_intersection_id = add_intersection(start_pos, map);
+        let end_intersection_id = add_intersection(end_pos, map);
+
+        let mut action = CreateStreet::new(start_intersection_id, start_pos, end_intersection_id, end_pos);
+        action.execute(map);
     }
 
     #[test]

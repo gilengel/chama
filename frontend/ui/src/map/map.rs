@@ -12,11 +12,11 @@ use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
 use super::actions::intersection::create::CreateIntersection;
-use super::actions::intersection::update::UpdateIntersection;
-use super::actions::street::create::CreateStreet;
 use super::actions::intersection::delete::DeleteIntersection;
-use super::actions::street::delete::DeleteStreet;
+use super::actions::intersection::update::UpdateIntersection;
 use super::actions::split_street::SplitStreet;
+use super::actions::street::create::CreateStreet;
+use super::actions::street::delete::DeleteStreet;
 use super::actions::street::update::UpdateStreet;
 use super::district::District;
 use super::intersection::Intersection;
@@ -197,7 +197,7 @@ impl Map {
     pub fn update_street(&mut self, id: &Uuid) -> Box<UpdateStreet> {
         let mut action = UpdateStreet::new(*id);
         action.execute(self);
-    
+
         Box::new(action)
     }
 
@@ -213,7 +213,14 @@ impl Map {
         start_intersection_id: Uuid,
         end_intersection_id: Uuid,
     ) -> CreateStreet {
-        let mut action = CreateStreet::new(start_intersection_id, end_intersection_id);
+        let mut action = CreateStreet::new(
+            start_intersection_id,
+            self.intersection(&start_intersection_id)
+                .unwrap()
+                .position(),
+            end_intersection_id,
+            self.intersection(&end_intersection_id).unwrap().position(),
+        );
 
         action.execute(self);
         action
@@ -526,7 +533,7 @@ impl Map {
         None
     }
 
-    pub fn remove_street(&mut self, id: &Uuid) -> Box<dyn Action<Map>> {
+    pub fn remove_street(&mut self, id: &Uuid) -> Box<DeleteStreet> {
         let street = self.street(id).unwrap();
 
         Box::new(DeleteStreet::new(id.clone(), street.start(), street.end()))

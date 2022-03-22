@@ -24,7 +24,7 @@ use geo::line_intersection::line_intersection;
 
 use super::intersection::{Intersection, Side};
 
-#[derive(Clone, Serialize, Deserialize, ElementId)]
+#[derive(Clone, Serialize, Deserialize, ElementId, Debug, PartialEq)]
 pub struct Street {
     id: Uuid,
 

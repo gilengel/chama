@@ -1,5 +1,5 @@
 use geo::{Coordinate, line_intersection::{LineIntersection, line_intersection}, Line};
-use rust_editor::{actions::{Action, Redo, Undo, MultiAction}, gizmo::GetPosition};
+use rust_editor::{actions::{Action, Redo, Undo, MultiAction}};
 use uuid::Uuid;
 
 use crate::map::{map::Map, street::Street};
@@ -96,6 +96,7 @@ impl Undo<Map> for SplitStreet {
 
 impl Redo<Map> for SplitStreet {
     fn redo(&mut self, map: &mut Map) {
+        /*
         let split_position =
             self.project_point_onto_middle_of_street(self.split_position, &self.street_id, &map);
 
@@ -112,7 +113,7 @@ impl Redo<Map> for SplitStreet {
             10.0,
         ));
 
-        /*
+        
         let mut new_intersection = Intersection::default();
         let new_intersection_id = new_intersection.id();
         new_intersection.set_position(split_position);

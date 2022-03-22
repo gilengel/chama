@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 
 /// Defines how an element will be displayed.
 pub struct Style {
@@ -25,7 +25,7 @@ impl Default for Style {
 }
 
 /// Defines multiple styles that can applied to an element based on the current state of it
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct InteractiveElementStyle {
     pub normal: Style,
     pub hover: Style,

@@ -25,7 +25,7 @@ impl Undo<Map> for RemoveConnectedStreet {
             .intersections_mut()
             .get_mut(&self.intersection_id)
             .unwrap();
-        
+
         match self.street_direction.unwrap() {
             Direction::In => intersection.add_incoming_street(&self.street_id),
             Direction::Out => intersection.add_outgoing_street(&self.street_id),
@@ -39,10 +39,89 @@ impl Redo<Map> for RemoveConnectedStreet {
             .intersections_mut()
             .get_mut(&self.intersection_id)
             .unwrap();
-        
-        let (direction, _) = intersection.remove_connected_street(&self.street_id).unwrap();
+
+        let (direction, _) = intersection
+            .remove_connected_street(&self.street_id)
+            .unwrap();
         self.street_direction = Some(direction);
     }
 }
 
 impl Action<Map> for RemoveConnectedStreet {}
+
+#[cfg(test)]
+mod tests {
+    use geo::Coordinate;
+    use rust_editor::{actions::{Redo, Undo}, gizmo::Id};
+
+    use crate::map::{
+        actions::intersection::remove_connected_street::RemoveConnectedStreet,
+        intersection::Intersection, map::Map,
+    };
+
+    fn create_map() -> Map {
+        let mut map = Map::new(100, 100);
+
+        let start = Coordinate { x: 100., y: 100. };
+        let intersection_pos = Coordinate { x: 300., y: 100. };
+        let end = Coordinate { x: 500., y: 100. };
+
+        add_street(start, intersection_pos, &mut map);
+        add_street(intersection_pos, end, &mut map);
+        assert_eq!(map.intersections.len(), 3);
+
+        map
+    }
+
+    fn find_intersection<'a>(map: &'a mut Map) -> &'a Intersection {
+        let (_, intersection) = map
+            .intersections
+            .iter()
+            .find(|(_, intersection)| intersection.get_connected_streets().len() == 2)
+            .unwrap();
+
+        intersection
+    }
+
+    fn add_street(start: Coordinate<f64>, end: Coordinate<f64>, map: &mut Map) {
+        map.create_street(&start, &end, 10.);
+    }
+
+    #[test]
+    fn remove_connected_street_redo_works() {
+        let mut map = create_map();
+        let intersection = find_intersection(&mut map);
+
+        let mut action = RemoveConnectedStreet::new(
+            intersection.id(),
+            map.streets.values().next().unwrap().id(),
+        );
+        action.redo(&mut map);
+
+        assert!(map
+            .intersections
+            .iter()
+            .all(|(_, x)| x.get_connected_streets().len() == 1));
+    }
+
+    #[test]
+    fn remove_connected_street_undo_works() {
+        let mut map = create_map();
+        let intersection = find_intersection(&mut map);
+
+        let mut action = RemoveConnectedStreet::new(
+            intersection.id(),
+            map.streets.values().next().unwrap().id(),
+        );
+        action.redo(&mut map);
+
+        assert!(map
+            .intersections
+            .iter()
+            .all(|(_, x)| x.get_connected_streets().len() == 1));
+
+        action.undo(&mut map);
+
+        find_intersection(&mut map);
+    }
+}

@@ -48,18 +48,13 @@ impl Action<Map> for DeleteIntersection {}
 mod tests {
     use geo::Coordinate;
     use rust_editor::{
-        actions::{Action, Redo, Undo},
+        actions::{Redo, Undo},
         gizmo::Id,
     };
     use uuid::Uuid;
 
     use crate::map::{
-        actions::{
-            intersection::delete::DeleteIntersection,
-            street::{create::CreateStreet, delete::DeleteStreet},
-        },
-        intersection::Intersection,
-        map::Map,
+        actions::intersection::delete::DeleteIntersection, intersection::Intersection, map::Map,
     };
 
     fn create_map() -> Map {

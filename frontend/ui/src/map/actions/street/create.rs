@@ -99,4 +99,16 @@ mod tests {
         assert_eq!(map.intersections.len(), 2);
         assert_eq!(map.streets.len(), 1);
     }
+
+    #[test]
+    fn street_undo_works() {
+        let mut map = create_map();
+
+        let mut action = straight_street_action(&mut map);
+        action.redo(&mut map);
+        action.undo(&mut map);
+
+        assert_eq!(map.intersections.len(), 0);
+        assert_eq!(map.streets.len(), 0);
+    }
 }

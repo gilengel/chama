@@ -10,8 +10,8 @@ use crate::map::{map::Map, street::Street};
 use super::{
     intersection::create::CreateIntersection,
     street::{
-        create::{CreateSingleStreet, CreateStreet},
-        delete::{DeleteStreet, SimpleDeleteStreet},
+        create::{CreateSingleStreet},
+        delete::{SimpleDeleteStreet},
     },
 };
 
@@ -20,7 +20,6 @@ pub struct SplitStreet {
 
     split_position: Coordinate<f64>,
     street_id: Uuid,
-    new_street_id: Uuid,
     intersection_id: Option<Uuid>,
 }
 
@@ -30,7 +29,6 @@ impl SplitStreet {
             split_position,
             street_id,
             intersection_id: None,
-            new_street_id: Uuid::new_v4(),
             action_stack: MultiAction::new(),
         }
     }
@@ -44,7 +42,6 @@ impl SplitStreet {
             split_position,
             street_id,
             intersection_id: Some(split_intersection_id),
-            new_street_id: Uuid::new_v4(),
             action_stack: MultiAction::new(),
         }
     }

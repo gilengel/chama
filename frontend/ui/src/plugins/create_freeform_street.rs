@@ -1,5 +1,4 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
-use rand::seq::index;
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     keys,
@@ -15,10 +14,7 @@ use rust_macro::editor_plugin;
 use uuid::Uuid;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::map::{
-    actions::{intersection::create::CreateIntersection, street::create::CreateStreet},
-    map::Map,
-};
+use crate::map::{actions::street::create::CreateStreet, map::Map};
 
 #[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {

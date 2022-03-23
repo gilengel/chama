@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
-    prelude::{Contains, EuclideanDistance},
+    prelude::{Contains, EuclideanDistance, Centroid},
     Coordinate, Line, LineString, Point, Polygon,
 };
 use rust_editor::{
@@ -174,26 +174,28 @@ impl Street {
         intersections: &HashMap<Uuid, Intersection>,
         streets: &HashMap<Uuid, Street>,
     ) {
-        if let (Some(start), Some(end)) = (intersections.get(&self.start), intersections.get(&self.end)) {
+        if let (Some(start), Some(end)) =
+            (intersections.get(&self.start), intersections.get(&self.end))
+        {
             self.line.start = start.position();
             self.line.end = end.position();
-    
+
             let start = self.line.start;
             let end = self.line.end;
-    
+
             let length = start.euclidean_distance(&end);
             let vec = end - start;
             self.norm = Coordinate {
                 x: vec.x / length,
                 y: vec.y / length,
             };
-    
+
             let inverse_vec = start - end;
             self.inverse_norm = Coordinate {
                 x: inverse_vec.x / length,
                 y: inverse_vec.y / length,
             };
-    
+
             let pts = self.calc_polygon_points(streets);
             self.polygon = Polygon::new(LineString::from(pts), vec![]);
         }
@@ -204,52 +206,48 @@ impl Street {
 
         //self.line.render(self.style(), &context);
 
-        /*
-        if additional_information_layer.contains(&InformationLayer::Debug) {
-            let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
+        let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
 
-            match &self.left_previous {
-                Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
-                None => owned_string.push_str("#,"),
-            }
-            match &self.right_previous {
-                Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
-                None => owned_string.push_str("#,"),
-            }
-            match &self.left_next {
-                Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
-                None => owned_string.push_str("#,"),
-            }
-            match &self.right_next {
-                Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
-                None => owned_string.push_str("#"),
-            }
-
-            if let Some(position) = self.polygon.exterior().centroid() {
-                context.set_fill_style(&"#FFFFFF".into());
-                context.fill_text(&owned_string, position.x(), position.y())?;
-            }
-
-            context.begin_path();
-            let mut it = self.polygon.exterior().points_iter();
-            let start: Coordinate<f64> = it.next().unwrap().into();
-            let p1 = start + self.norm * (self.line.euclidean_length() - 5.0);
-            let _p = start + self.norm * (self.line.euclidean_length() - self.width + 5.0);
-            let p2 = _p + self.perp() * (-self.width / 2.0 + 5.0);
-            let p3 = _p + self.perp() * (self.width / 2.0 - 5.0);
-            context.move_to(p1.x, p1.y);
-            context.line_to(p2.x, p2.y);
-            context.line_to(p3.x, p3.y);
-
-            context.close_path();
-
-            context.save();
-
-            context.set_stroke_style(&"#FFFFFF".into());
-            context.stroke();
-            context.restore();
+        match &self.left_previous {
+            Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
+            None => owned_string.push_str("#,"),
         }
-        */
+        match &self.right_previous {
+            Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
+            None => owned_string.push_str("#,"),
+        }
+        match &self.left_next {
+            Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
+            None => owned_string.push_str("#,"),
+        }
+        match &self.right_next {
+            Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
+            None => owned_string.push_str("#"),
+        }
+
+        if let Some(position) = self.polygon.exterior().centroid() {
+            context.set_fill_style(&"#FFFFFF".into());
+            context.fill_text(&owned_string, position.x(), position.y())?;
+        }
+
+        context.begin_path();
+        let mut it = self.polygon.exterior().points();
+        let start: Coordinate<f64> = it.next().unwrap().into();
+        let p1 = start + self.norm * (self.line.euclidean_length() - 5.0);
+        let _p = start + self.norm * (self.line.euclidean_length() - self.width + 5.0);
+        let p2 = _p + self.perp() * (-self.width / 2.0 + 5.0);
+        let p3 = _p + self.perp() * (self.width / 2.0 - 5.0);
+        context.move_to(p1.x, p1.y);
+        context.line_to(p2.x, p2.y);
+        context.line_to(p3.x, p3.y);
+
+        context.close_path();
+
+        context.save();
+
+        context.set_stroke_style(&"#FFFFFF".into());
+        context.stroke();
+        context.restore();
 
         Ok(())
     }

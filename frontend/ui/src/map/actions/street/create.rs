@@ -2,7 +2,6 @@ use geo::{Coordinate, Line};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     gizmo::{Id, SetId},
-    log,
 };
 use uuid::Uuid;
 
@@ -11,7 +10,6 @@ use crate::map::{
         intersection::{create::CreateIntersection, update::UpdateIntersection},
         split_street::SplitStreet,
     },
-    intersection::Intersection,
     map::Map,
     street::Street,
 };
@@ -35,8 +33,6 @@ impl CreateSingleStreet {
 impl Undo<Map> for CreateSingleStreet {
     fn undo(&mut self, map: &mut Map) {
         let street = map.streets.remove(&self.id).unwrap();
-        let start = map.intersection(&self.start_id).unwrap();
-        let end = map.intersection(&self.end_id).unwrap();
 
         map.intersection_mut(&street.start)
             .unwrap()
@@ -255,10 +251,7 @@ mod tests {
         id
     }
 
-    fn straight_street_action(map: &mut Map) -> CreateStreet {
-        let start = add_intersection(Coordinate { x: 100., y: 100. }, map);
-        let end = add_intersection(Coordinate { x: 300., y: 100. }, map);
-
+    fn straight_street_action() -> CreateStreet {
         CreateStreet::new(
             Coordinate { x: 100., y: 100. },
             Coordinate { x: 300., y: 100. },
@@ -270,7 +263,7 @@ mod tests {
     fn isolated_street_redo_works() {
         let mut map = create_map();
 
-        let mut action = straight_street_action(&mut map);
+        let mut action = straight_street_action();
         action.redo(&mut map);
 
         assert_eq!(map.intersections.len(), 2);
@@ -281,11 +274,7 @@ mod tests {
     fn connected_street_at_start_redo_works() {
         let mut map = create_map();
 
-        let start = add_intersection(Coordinate { x: 100., y: 100. }, &mut map);
         let middle = add_intersection(Coordinate { x: 300., y: 100. }, &mut map);
-        let end = add_intersection(Coordinate { x: 500., y: 100. }, &mut map);
-
-        let street = add_street(start, middle, &mut map);
 
         let mut action = CreateStreet::new(
             Coordinate { x: 300., y: 100. },
@@ -316,11 +305,7 @@ mod tests {
     fn connected_street_at_start_undo_works() {
         let mut map = create_map();
 
-        let start = add_intersection(Coordinate { x: 100., y: 100. }, &mut map);
         let middle = add_intersection(Coordinate { x: 300., y: 100. }, &mut map);
-        let end = add_intersection(Coordinate { x: 500., y: 100. }, &mut map);
-
-        let street = add_street(start, middle, &mut map);
 
         let mut action = CreateStreet::new(
             Coordinate { x: 300., y: 100. },
@@ -352,11 +337,8 @@ mod tests {
     fn connected_street_at_end_redo_works() {
         let mut map = create_map();
 
-        let start = add_intersection(Coordinate { x: 100., y: 100. }, &mut map);
         let middle = add_intersection(Coordinate { x: 300., y: 100. }, &mut map);
-        let end = add_intersection(Coordinate { x: 500., y: 100. }, &mut map);
 
-        let street = add_street(middle, end, &mut map);
         let mut action = CreateStreet::new(
             Coordinate { x: 100., y: 100. },
             Coordinate { x: 300., y: 100. },
@@ -386,7 +368,6 @@ mod tests {
     fn connected_street_at_end_undo_works() {
         let mut map = create_map();
 
-        let start = add_intersection(Coordinate { x: 100., y: 100. }, &mut map);
         let middle = add_intersection(Coordinate { x: 300., y: 100. }, &mut map);
         let end = add_intersection(Coordinate { x: 500., y: 100. }, &mut map);
 
@@ -506,7 +487,7 @@ mod tests {
     fn isolated_street_undo_works() {
         let mut map = create_map();
 
-        let mut action = straight_street_action(&mut map);
+        let mut action = straight_street_action();
         action.redo(&mut map);
         action.undo(&mut map);
 
@@ -518,7 +499,7 @@ mod tests {
     fn isolated_street_undo_multiple_times_works() {
         let mut map = create_map();
 
-        let mut action = straight_street_action(&mut map);
+        let mut action = straight_street_action();
 
         for _ in 0..10 {
             action.redo(&mut map);

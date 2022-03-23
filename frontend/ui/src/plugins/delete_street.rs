@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction},
@@ -12,13 +14,15 @@ use rust_editor::{
 use rust_macro::editor_plugin;
 use uuid::Uuid;
 
+use crate::map::actions::street::delete::DeleteStreet as ActionDeleteStreet;
+
 use crate::map::intersection::Intersection;
 use crate::map::{intersection::Side, map::Map, street::Street};
 
 #[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
 pub struct DeleteStreet {
     #[option(skip)]
-    hovered_streets: Option<Vec<Uuid>>,
+    hovered_streets: Option<HashSet<Uuid>>,
 }
 
 impl DeleteStreet {
@@ -28,7 +32,7 @@ impl DeleteStreet {
         map: &'a Map,
         fn_next_intersection: FnNextIntersection,
         fn_next_street: FnNextStreet,
-    ) -> Vec<Uuid>
+    ) -> HashSet<Uuid>
     where
         FnNextIntersection: Fn(&Uuid) -> Option<&'a Intersection>,
         FnNextStreet: Fn(bool, &Street, Side) -> Option<Uuid>,
@@ -36,7 +40,7 @@ impl DeleteStreet {
         let mut street = start;
         let mut forward = true;
 
-        let mut streets: Vec<Uuid> = vec![street];
+        let mut streets = HashSet::new();
 
         let mut side = Side::Left;
         let mut next = fn_next_street(forward, map.street(&street).unwrap(), side);
@@ -49,7 +53,7 @@ impl DeleteStreet {
                 .len()
                 <= 2
         {
-            streets.push(street);
+            streets.insert(street);
 
             {
                 let street = map.street(&street).unwrap();
@@ -74,12 +78,12 @@ impl DeleteStreet {
             }
         }
 
-        streets.push(street);
+        //streets.push(street);
 
         streets
     }
 
-    fn iter_backward(&self, start: Uuid, map: &Map) -> Vec<Uuid> {
+    fn iter_backward(&self, start: Uuid, map: &Map) -> HashSet<Uuid> {
         self.iter(
             start,
             map,
@@ -94,7 +98,7 @@ impl DeleteStreet {
         )
     }
 
-    fn iter_forward(&self, start: Uuid, map: &Map) -> Vec<Uuid> {
+    fn iter_forward(&self, start: Uuid, map: &Map) -> HashSet<Uuid> {
         self.iter(
             start,
             map,
@@ -115,11 +119,11 @@ impl DeleteStreet {
         }
     }
 
-    fn connected_streets(&self, start: Uuid, map: &Map) -> Vec<Uuid> {
-        let mut streets = self.iter_backward(start, map);
-        streets.append(&mut self.iter_forward(start, map));
-
-        streets
+    fn connected_streets(&self, start: Uuid, map: &Map) -> HashSet<Uuid> {
+        let a = self.iter_backward(start, map);
+        let b = self.iter_forward(start, map);
+        let union: HashSet<_> = a.union(&b).collect();
+        union.into_iter().map(|x| *x).collect()
     }
 }
 impl Plugin<Map> for DeleteStreet {
@@ -172,7 +176,10 @@ impl Plugin<Map> for DeleteStreet {
         if let Some(hovered_streets) = &self.hovered_streets {
             let action = Rc::new(RefCell::new(MultiAction::new()));
             for street in hovered_streets {
-                action.as_ref().borrow_mut().actions.push(app.data_mut().remove_street(street));
+                action
+                    .as_ref()
+                    .borrow_mut()
+                    .push(ActionDeleteStreet::new(*street));
             }
 
             action.as_ref().borrow_mut().execute(app.data_mut());

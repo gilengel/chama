@@ -84,19 +84,8 @@ mod tests {
         intersection
     }
 
-    fn add_intersection(position: Coordinate<f64>, map: &mut Map) -> Uuid {
-        let id = Uuid::new_v4();
-        let intersection = Intersection::new_with_id(position, id);
-
-        map.intersections.insert(intersection.id(), intersection);
-
-        id
-    }
 
     fn add_street(start_pos: Coordinate<f64>, end_pos: Coordinate<f64>, map: &mut Map) {
-        let start_intersection_id = add_intersection(start_pos, map);
-        let end_intersection_id = add_intersection(end_pos, map);
-
         let mut action = CreateStreet::new(start_pos, end_pos, Uuid::new_v4());
         action.execute(map);
     }

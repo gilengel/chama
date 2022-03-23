@@ -2,7 +2,6 @@ use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     gizmo::Id,
-    log,
 };
 use uuid::Uuid;
 
@@ -176,9 +175,6 @@ mod tests {
     }
 
     fn add_street(start_pos: Coordinate<f64>, end_pos: Coordinate<f64>, map: &mut Map) {
-        let start_intersection_id = add_intersection(start_pos, map);
-        let end_intersection_id = add_intersection(end_pos, map);
-
         let mut action = CreateStreet::new(start_pos, end_pos, Uuid::new_v4());
         action.execute(map);
     }

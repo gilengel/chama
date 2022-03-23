@@ -539,8 +539,6 @@ impl Map {
     }
 
     pub fn remove_street(&mut self, id: &Uuid) -> Box<DeleteStreet> {
-        let street = self.street(id).unwrap();
-
         Box::new(DeleteStreet::new(id.clone()))
     }
 

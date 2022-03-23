@@ -1,1 +1,0 @@
-/home/nantu/Documents/rust_procmap/frontend/ui/doc/flow/create_street_action.excalidraw

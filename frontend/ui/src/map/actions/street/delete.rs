@@ -1,40 +1,83 @@
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    gizmo::Id
+    gizmo::Id,
+    log,
 };
 use uuid::Uuid;
 
-use crate::{
-    map::{
-        actions::intersection::{
-            delete::DeleteIntersection, remove_connected_street::RemoveConnectedStreet,
-            update::UpdateIntersection,
-        },
-        map::Map,
+use crate::map::{
+    actions::intersection::{
+        create::CreateIntersection, delete::DeleteIntersection,
+        remove_connected_street::RemoveConnectedStreet, update::UpdateIntersection,
     },
+    map::Map,
 };
 
-use super::create::CreateStreet;
+use super::create::{CreateSingleStreet, CreateStreet};
+
+pub struct SimpleDeleteStreet {
+    street_id: Uuid,
+    start_id: Option<Uuid>,
+    end_id: Option<Uuid>,
+}
+
+impl SimpleDeleteStreet {
+    pub fn new(street_id: Uuid) -> Self {
+        SimpleDeleteStreet {
+            street_id,
+            start_id: None,
+            end_id: None,
+        }
+    }
+}
+
+impl Undo<Map> for SimpleDeleteStreet {
+    fn undo(&mut self, map: &mut Map) {
+        let start_id = self.start_id.unwrap();
+        let end_id = self.end_id.unwrap();
+
+        CreateSingleStreet::new(self.street_id, start_id, end_id).execute(map);
+        UpdateIntersection::new(start_id).execute(map);
+        UpdateIntersection::new(end_id).execute(map);
+    }
+}
+
+impl Redo<Map> for SimpleDeleteStreet {
+    fn redo(&mut self, map: &mut Map) {
+        let street = map.streets_mut().remove(&self.street_id).unwrap();
+        self.start_id = Some(street.start);
+        self.end_id = Some(street.end);
+
+        map.intersection_mut(&self.start_id.unwrap())
+            .unwrap()
+            .remove_connected_street(&self.street_id);
+        map.intersection_mut(&self.end_id.unwrap())
+            .unwrap()
+            .remove_connected_street(&self.street_id);
+    }
+}
+
+impl Action<Map> for SimpleDeleteStreet {}
 
 pub struct DeleteStreet {
     action_stack: MultiAction<Map>,
 
     street_id: Uuid,
-    start: Coordinate<f64>,
+    start: Option<Coordinate<f64>>,
     start_id: Option<Uuid>,
-    end: Coordinate<f64>,
+    end: Option<Coordinate<f64>>,
     end_id: Option<Uuid>,
 }
 
 impl DeleteStreet {
-    pub fn new(street_id: Uuid, start: Coordinate<f64>, end: Coordinate<f64>) -> Self {
+    pub fn new(street_id: Uuid) -> Self {
         DeleteStreet {
             action_stack: MultiAction::new(),
             street_id,
-            start,
+            start: None,
             start_id: None,
-            end,
+            end: None,
             end_id: None,
         }
     }
@@ -42,14 +85,16 @@ impl DeleteStreet {
 
 impl Undo<Map> for DeleteStreet {
     fn undo(&mut self, map: &mut Map) {
-        let mut action = CreateStreet::new_with_id(
-            self.start_id.unwrap(),
-            self.start,
-            self.end_id.unwrap(),
-            self.end,
-            self.street_id,
-        );
-        action.execute(map);
+        if map.street(&self.start_id.unwrap()).is_none() {
+            CreateIntersection::new_with_id(self.start.unwrap(), self.start_id.unwrap())
+                .execute(map);
+        }
+
+        if map.street(&self.end_id.unwrap()).is_none() {
+            CreateIntersection::new_with_id(self.end.unwrap(), self.end_id.unwrap()).execute(map);
+        }
+
+        CreateStreet::new(self.start.unwrap(), self.end.unwrap(), self.street_id).execute(map);
     }
 }
 
@@ -59,43 +104,33 @@ impl Redo<Map> for DeleteStreet {
 
         let street = map.streets_mut().remove(&self.street_id).unwrap();
         self.start_id = Some(street.start);
+        self.start = Some(street.start());
         self.end_id = Some(street.end);
+        self.end = Some(street.end());
 
         let mut is_start_empty = false;
         let mut start_id = Uuid::default();
         if let Some(start) = map.intersections_mut().get_mut(&street.start) {
             self.action_stack
-                .actions
-                .push(Box::new(RemoveConnectedStreet::new(
-                    start.id(),
-                    self.street_id,
-                )));
+                .push(RemoveConnectedStreet::new(start.id(), self.street_id));
 
             is_start_empty = start.get_connected_streets().len() == 1;
             start_id = start.id();
         }
 
         if is_start_empty {
-            self.action_stack
-                .actions
-                .push(Box::new(DeleteIntersection::new(
-                    map.intersection(&start_id).unwrap(),
-                )));
+            self.action_stack.push(DeleteIntersection::new(
+                map.intersection(&start_id).unwrap(),
+            ));
         } else {
-            self.action_stack
-                .actions
-                .push(Box::new(UpdateIntersection::new(start_id)));
+            self.action_stack.push(UpdateIntersection::new(start_id));
         }
 
         let mut is_end_empty = false;
         let mut end_id = Uuid::default();
         if let Some(end) = map.intersections_mut().get_mut(&street.end) {
             self.action_stack
-                .actions
-                .push(Box::new(RemoveConnectedStreet::new(
-                    end.id(),
-                    self.street_id,
-                )));
+                .push(RemoveConnectedStreet::new(end.id(), self.street_id));
 
             is_end_empty = end.get_connected_streets().len() == 1;
             end_id = end.id();
@@ -103,14 +138,9 @@ impl Redo<Map> for DeleteStreet {
 
         if is_end_empty {
             self.action_stack
-                .actions
-                .push(Box::new(DeleteIntersection::new(
-                    map.intersection(&end_id).unwrap(),
-                )));
+                .push(DeleteIntersection::new(map.intersection(&end_id).unwrap()));
         } else {
-            self.action_stack
-                .actions
-                .push(Box::new(UpdateIntersection::new(end_id)));
+            self.action_stack.push(UpdateIntersection::new(end_id));
         }
 
         self.action_stack.execute(map);
@@ -149,12 +179,7 @@ mod tests {
         let start_intersection_id = add_intersection(start_pos, map);
         let end_intersection_id = add_intersection(end_pos, map);
 
-        let mut action = CreateStreet::new(
-            start_intersection_id,
-            start_pos,
-            end_intersection_id,
-            end_pos,
-        );
+        let mut action = CreateStreet::new(start_pos, end_pos, Uuid::new_v4());
         action.execute(map);
     }
 
@@ -167,7 +192,7 @@ mod tests {
         add_street(start, end, &mut map);
         assert_eq!(map.streets.len(), 1);
 
-        let mut action = DeleteStreet::new(*map.streets.iter().next().unwrap().0, start, end);
+        let mut action = DeleteStreet::new(*map.streets.iter().next().unwrap().0);
         action.redo(&mut map);
 
         assert!(map.streets.is_empty());
@@ -183,20 +208,14 @@ mod tests {
         let start_intersection_id = add_intersection(start_pos, &mut map);
         let end_intersection_id = add_intersection(end_pos, &mut map);
 
-        let mut action = CreateStreet::new(
-            start_intersection_id,
-            start_pos,
-            end_intersection_id,
-            end_pos,
-        );
+        let mut action = CreateStreet::new(start_pos, end_pos, Uuid::new_v4());
         action.execute(&mut map);
 
         assert_eq!(map.streets.len(), 1);
 
         let old_street = map.streets.iter().next().unwrap().1.clone();
 
-        let mut action =
-            DeleteStreet::new(*map.streets.iter().next().unwrap().0, start_pos, end_pos);
+        let mut action = DeleteStreet::new(*map.streets.iter().next().unwrap().0);
         action.redo(&mut map);
 
         assert!(map.intersection(&start_intersection_id).is_none());
@@ -231,10 +250,10 @@ mod tests {
 
         let street_id = *map.streets.iter().next().unwrap().0;
 
-        let mut action = DeleteStreet::new(street_id, start, end);
+        let mut action = DeleteStreet::new(street_id);
         for _ in 0..10 {
             action.redo(&mut map);
-            
+
             assert_eq!(map.streets.len(), 0);
 
             action.undo(&mut map);

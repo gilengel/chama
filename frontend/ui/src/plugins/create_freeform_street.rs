@@ -1,4 +1,5 @@
 use geo::{simplify::Simplify, Coordinate, LineString};
+use rand::seq::index;
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     keys,
@@ -11,9 +12,13 @@ use rust_editor::{
     },
 };
 use rust_macro::editor_plugin;
+use uuid::Uuid;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::map::map::Map;
+use crate::map::{
+    actions::{intersection::create::CreateIntersection, street::create::CreateStreet},
+    map::Map,
+};
 
 #[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {
@@ -59,7 +64,7 @@ impl Undo<Map> for CreateFreeFormStreetAction {
 impl Redo<Map> for CreateFreeFormStreetAction {
     fn redo(&mut self, map: &mut Map) {
         self.action_stack.actions.clear();
-        
+
         if self.raw_points.is_empty() {
             return;
         }
@@ -74,13 +79,15 @@ impl Redo<Map> for CreateFreeFormStreetAction {
         }
 
         let mut previous = &self.raw_points[index_to_be_skipped];
+
         for point in self.raw_points.iter().skip(index_to_be_skipped + 1) {
             self.action_stack
-                .actions
-                .push(map.create_street(&previous, point, 10.0));
+                .push(CreateStreet::new(*previous, *point, Uuid::new_v4()));
 
             previous = point;
         }
+
+        self.action_stack.redo(map);
     }
 }
 

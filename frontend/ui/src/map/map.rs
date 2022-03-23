@@ -214,12 +214,11 @@ impl Map {
         end_intersection_id: Uuid,
     ) -> CreateStreet {
         let mut action = CreateStreet::new(
-            start_intersection_id,
             self.intersection(&start_intersection_id)
                 .unwrap()
                 .position(),
-            end_intersection_id,
             self.intersection(&end_intersection_id).unwrap().position(),
+            Uuid::new_v4()
         );
 
         action.execute(self);
@@ -317,10 +316,7 @@ impl Map {
         None
     }
 
-    pub fn line_intersection_with_street(
-        &self,
-        line: &Line<f64>,
-    ) -> Option<(Uuid, Coordinate<f64>)> {
+    pub fn line_intersection_with_streets(&self, line: &Line<f64>) -> Vec<(Uuid, Coordinate<f64>)> {
         let mut intersections: Vec<(Uuid, Coordinate<f64>)> = Vec::new();
 
         for (_, street) in &self.streets {
@@ -353,6 +349,15 @@ impl Map {
 
             Ordering::Greater
         });
+
+        intersections
+    }
+
+    pub fn line_intersection_with_street(
+        &self,
+        line: &Line<f64>,
+    ) -> Option<(Uuid, Coordinate<f64>)> {
+        let intersections = self.line_intersection_with_streets(line);
 
         if intersections.is_empty() {
             return None;
@@ -536,7 +541,7 @@ impl Map {
     pub fn remove_street(&mut self, id: &Uuid) -> Box<DeleteStreet> {
         let street = self.street(id).unwrap();
 
-        Box::new(DeleteStreet::new(id.clone(), street.start(), street.end()))
+        Box::new(DeleteStreet::new(id.clone()))
     }
 
     pub fn remove_intersection(&mut self, id: &Uuid) -> Box<dyn Action<Map>> {

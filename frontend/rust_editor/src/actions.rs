@@ -31,6 +31,14 @@ impl<T> MultiAction<T> {
             actions: Vec::new(),
         }
     }
+
+    pub fn push<A>(&mut self, action: A) where A: Action<T> + 'static {
+        self.actions.push(Box::new(action));
+    }
+
+    pub fn clear(&mut self) {
+        self.actions.clear();
+    }
 }
 
 impl<T> Action<T> for MultiAction<T> {}

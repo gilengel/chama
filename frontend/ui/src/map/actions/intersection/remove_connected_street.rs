@@ -97,7 +97,7 @@ mod tests {
         let start_intersection_id = add_intersection(start_pos, map);
         let end_intersection_id = add_intersection(end_pos, map);
 
-        let mut action = CreateStreet::new(start_intersection_id, start_pos, end_intersection_id, end_pos);
+        let mut action = CreateStreet::new(start_pos, end_pos, Uuid::new_v4());
         action.execute(map);
     }
 

@@ -1,29 +1,33 @@
-use geo::Coordinate;
+use geo::{Coordinate, Line};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     gizmo::{Id, SetId},
+    log,
 };
 use uuid::Uuid;
 
 use crate::map::{
-    actions::intersection::{create::CreateIntersection, update::UpdateIntersection},
+    actions::{
+        intersection::{create::CreateIntersection, update::UpdateIntersection},
+        split_street::SplitStreet,
+    },
     intersection::Intersection,
     map::Map,
     street::Street,
 };
 
-struct CreateSingleStreet {
+pub(crate) struct CreateSingleStreet {
     id: Uuid,
-    start_intersection_id: Uuid,
-    end_intersection_id: Uuid,
+    start_id: Uuid,
+    end_id: Uuid,
 }
 
 impl CreateSingleStreet {
-    pub fn new(id: Uuid, start_intersection_id: Uuid, end_intersection_id: Uuid) -> Self {
+    pub fn new(id: Uuid, start_id: Uuid, end_id: Uuid) -> Self {
         CreateSingleStreet {
             id,
-            start_intersection_id,
-            end_intersection_id,
+            start_id,
+            end_id,
         }
     }
 }
@@ -31,6 +35,9 @@ impl CreateSingleStreet {
 impl Undo<Map> for CreateSingleStreet {
     fn undo(&mut self, map: &mut Map) {
         let street = map.streets.remove(&self.id).unwrap();
+        let start = map.intersection(&self.start_id).unwrap();
+        let end = map.intersection(&self.end_id).unwrap();
+
         map.intersection_mut(&street.start)
             .unwrap()
             .remove_connected_street(&street.id());
@@ -44,7 +51,7 @@ impl Undo<Map> for CreateSingleStreet {
             .get_connected_streets()
             .is_empty()
         {
-            map.intersections.remove(&self.start_intersection_id);
+            map.intersections.remove(&self.start_id);
         }
 
         if map
@@ -53,26 +60,26 @@ impl Undo<Map> for CreateSingleStreet {
             .get_connected_streets()
             .is_empty()
         {
-            map.intersections.remove(&self.end_intersection_id);
+            map.intersections.remove(&self.end_id);
         }
     }
 }
 
 impl Redo<Map> for CreateSingleStreet {
     fn redo(&mut self, map: &mut Map) {
-        let start = map.intersection(&self.start_intersection_id).unwrap();
-        let end = map.intersection(&self.end_intersection_id).unwrap();
+        let start = map.intersection(&self.start_id).unwrap();
+        let end = map.intersection(&self.end_id).unwrap();
 
         let mut street = Street::default();
         street.set_id(self.id);
         street.set_start(&start);
         street.set_end(&end);
 
-        if let Some(start) = map.intersection_mut(&self.start_intersection_id) {
+        if let Some(start) = map.intersection_mut(&self.start_id) {
             start.add_outgoing_street(&street.id());
         }
 
-        if let Some(end) = map.intersection_mut(&self.end_intersection_id) {
+        if let Some(end) = map.intersection_mut(&self.end_id) {
             end.add_incoming_street(&street.id());
         }
 
@@ -83,9 +90,9 @@ impl Redo<Map> for CreateSingleStreet {
 impl Action<Map> for CreateSingleStreet {}
 
 pub(crate) struct CreateStreet {
-    start_intersection_id: Uuid,
+    start_intersection_id: Option<Uuid>,
     start_pos: Coordinate<f64>,
-    end_intersection_id: Uuid,
+    end_intersection_id: Option<Uuid>,
     end_pos: Coordinate<f64>,
     street_id: Uuid,
 
@@ -94,31 +101,14 @@ pub(crate) struct CreateStreet {
 
 impl CreateStreet {
     pub fn new(
-        start_intersection_id: Uuid,
         start_pos: Coordinate<f64>,
-        end_intersection_id: Uuid,
-        end_pos: Coordinate<f64>,
-    ) -> Self {
-        CreateStreet::new_with_id(
-            start_intersection_id,
-            start_pos,
-            end_intersection_id,
-            end_pos,
-            Uuid::new_v4(),
-        )
-    }
-
-    pub fn new_with_id(
-        start_intersection_id: Uuid,
-        start_pos: Coordinate<f64>,
-        end_intersection_id: Uuid,
         end_pos: Coordinate<f64>,
         street_id: Uuid,
     ) -> Self {
         CreateStreet {
-            start_intersection_id,
+            start_intersection_id: None,
             start_pos,
-            end_intersection_id,
+            end_intersection_id: None,
             end_pos,
             street_id,
             action_stack: MultiAction::new(),
@@ -134,42 +124,83 @@ impl Undo<Map> for CreateStreet {
 
 impl Redo<Map> for CreateStreet {
     fn redo(&mut self, map: &mut Map) {
-        self.action_stack.actions.clear();
+        self.action_stack.clear();
 
-        if map.intersection(&self.start_intersection_id).is_none() {
+        let mut redo_intersection = |position: &Coordinate<f64>| match map
+            .get_intersection_at_position(&position, 10., &vec![])
+        {
+            Some(intersection) => intersection,
+            None => match map.get_street_at_position(position, &vec![]) {
+                Some(street_id) => {
+                    let id = Uuid::new_v4();
+                    self.action_stack
+                        .push(SplitStreet::new_with_id(*position, street_id, id));
+
+                    id
+                }
+
+                None => {
+                    let id = Uuid::new_v4();
+                    self.action_stack.push(CreateIntersection::new_with_id(
+                        position.clone(),
+                        id.clone(),
+                    ));
+
+                    id
+                }
+            },
+        };
+
+        let start_id = redo_intersection(&self.start_pos);
+        let end_id = redo_intersection(&self.end_pos);
+
+        self.start_intersection_id = Some(start_id);
+        self.end_intersection_id = Some(end_id);
+
+        let intersections =
+            map.line_intersection_with_streets(&Line::new(self.start_pos, self.end_pos));
+
+        // Split each street were an intersection occurs with the new street in order to properly create districts later on
+        if !intersections.is_empty() {
+            let mut intersection_ids: Vec<Uuid> = intersections
+                .iter()
+                .map(|(street_id, intersection)| {
+                    let split_intersection_id = Uuid::new_v4();
+                    self.action_stack.push(SplitStreet::new_with_id(
+                        *intersection,
+                        *street_id,
+                        split_intersection_id,
+                    ));
+
+                    split_intersection_id
+                })
+                .collect();
+
+            // Add the original start and end position so that we can create streets for them too
+            intersection_ids.insert(0, start_id);
+            intersection_ids.push(end_id);
+
+            let mut it = intersection_ids.iter().peekable();
+            while let (Some(current), Some(next)) = (it.next(), it.peek()) {
+                self.action_stack
+                    .push(CreateSingleStreet::new(Uuid::new_v4(), *current, **next))
+            }
+
+            // Update is necessary to recalculate the shape of the newly created streets
+            intersection_ids.iter().for_each(|intersection| {
+                self.action_stack
+                    .push(UpdateIntersection::new(*intersection))
+            });
+
+        // Happy path: The new street does not intersects existing streets and we can proceed with creating the street without the need
+        // of splitting others
+        } else {
             self.action_stack
-                .actions
-                .push(Box::new(CreateIntersection::new_with_id(
-                    self.start_pos,
-                    self.start_intersection_id,
-                )));
+                .push(CreateSingleStreet::new(self.street_id, start_id, end_id));
+
+            self.action_stack.push(UpdateIntersection::new(start_id));
+            self.action_stack.push(UpdateIntersection::new(end_id));
         }
-
-        if map.intersection(&self.start_intersection_id).is_none() {
-            self.action_stack
-                .actions
-                .push(Box::new(CreateIntersection::new_with_id(
-                    self.end_pos,
-                    self.end_intersection_id,
-                )));
-        }
-
-        self.action_stack
-            .actions
-            .push(Box::new(CreateSingleStreet::new(
-                self.street_id,
-                self.start_intersection_id,
-                self.end_intersection_id,
-            )));
-
-        self.action_stack
-            .actions
-            .push(Box::new(UpdateIntersection::new(
-                self.start_intersection_id,
-            )));
-        self.action_stack
-            .actions
-            .push(Box::new(UpdateIntersection::new(self.end_intersection_id)));
 
         self.action_stack.redo(map);
     }
@@ -229,10 +260,9 @@ mod tests {
         let end = add_intersection(Coordinate { x: 300., y: 100. }, map);
 
         CreateStreet::new(
-            start,
             Coordinate { x: 100., y: 100. },
-            end,
             Coordinate { x: 300., y: 100. },
+            Uuid::new_v4()
         )
     }
 
@@ -258,10 +288,9 @@ mod tests {
         let street = add_street(start, middle, &mut map);
 
         let mut action = CreateStreet::new(
-            middle,
             Coordinate { x: 300., y: 100. },
-            end,
             Coordinate { x: 500., y: 100. },
+            Uuid::new_v4()
         );
 
         action.redo(&mut map);
@@ -294,10 +323,9 @@ mod tests {
         let street = add_street(start, middle, &mut map);
 
         let mut action = CreateStreet::new(
-            middle,
             Coordinate { x: 300., y: 100. },
-            end,
             Coordinate { x: 500., y: 100. },
+            Uuid::new_v4()
         );
 
         action.redo(&mut map);
@@ -330,10 +358,9 @@ mod tests {
 
         let street = add_street(middle, end, &mut map);
         let mut action = CreateStreet::new(
-            start,
             Coordinate { x: 100., y: 100. },
-            middle,
             Coordinate { x: 300., y: 100. },
+            Uuid::new_v4()
         );
 
         action.redo(&mut map);
@@ -365,10 +392,9 @@ mod tests {
 
         add_street(middle, end, &mut map);
         let mut action = CreateStreet::new(
-            start,
             Coordinate { x: 100., y: 100. },
-            middle,
             Coordinate { x: 300., y: 100. },
+            Uuid::new_v4()
         );
 
         action.redo(&mut map);
@@ -397,10 +423,9 @@ mod tests {
         add_street(start, middle, &mut map);
         add_street(middle_2, end, &mut map);
         let mut action = CreateStreet::new(
-            middle,
             Coordinate { x: 300., y: 100. },
-            middle_2,
             Coordinate { x: 500., y: 100. },
+            Uuid::new_v4()
         );
 
         action.redo(&mut map);
@@ -450,10 +475,9 @@ mod tests {
         add_street(start, middle, &mut map);
         add_street(middle_2, end, &mut map);
         let mut action = CreateStreet::new(
-            middle,
             Coordinate { x: 300., y: 100. },
-            middle_2,
             Coordinate { x: 500., y: 100. },
+            Uuid::new_v4()
         );
 
         action.redo(&mut map);

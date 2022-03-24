@@ -43,7 +43,7 @@ cargo build && cargo test
 ```sh
 grcov . -s . --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./target/debug/coverage/
 ```
-
+You'll find the report here: ```target/debug/coverage/index.html```
 
 Production: 
 Comming Soon

@@ -96,11 +96,7 @@ pub(crate) struct CreateStreet {
 }
 
 impl CreateStreet {
-    pub fn new(
-        start_pos: Coordinate<f64>,
-        end_pos: Coordinate<f64>,
-        street_id: Uuid,
-    ) -> Self {
+    pub fn new(start_pos: Coordinate<f64>, end_pos: Coordinate<f64>, street_id: Uuid) -> Self {
         CreateStreet {
             start_intersection_id: None,
             start_pos,
@@ -208,7 +204,7 @@ impl Action<Map> for CreateStreet {}
 mod tests {
     use geo::Coordinate;
     use rust_editor::{
-        actions::{Redo, Undo},
+        actions::{Action, Redo, Undo},
         gizmo::Id,
     };
     use uuid::Uuid;
@@ -255,7 +251,7 @@ mod tests {
         CreateStreet::new(
             Coordinate { x: 100., y: 100. },
             Coordinate { x: 300., y: 100. },
-            Uuid::new_v4()
+            Uuid::new_v4(),
         )
     }
 
@@ -271,15 +267,75 @@ mod tests {
     }
 
     #[test]
+    fn split_street_at_start_redo_works() {
+        let mut map = create_map();
+
+        let old_split_street_id = Uuid::new_v4();
+        CreateStreet::new(
+            Coordinate { x: 128., y: 128. },
+            Coordinate { x: 128., y: 1024. },
+            old_split_street_id,
+        )
+        .execute(&mut map);
+
+        CreateStreet::new(
+            Coordinate { x: 128., y: 512. },
+            Coordinate { x: 512., y: 512. },
+            Uuid::new_v4(),
+        ).redo(&mut map);
+
+        assert_eq!(map.intersections.len(), 4);
+        assert_eq!(map.streets.len(), 3);
+
+        assert_eq!(map.streets.contains_key(&old_split_street_id), false);
+    }
+
+    #[test]
+    fn split_multiple_intersected_streets_redo_works() {
+        let mut map = create_map();
+
+        let mut old_split_street_id = Vec::with_capacity(4);
+        for i in 0..4 {
+            let id = Uuid::new_v4();
+            old_split_street_id.push(id);
+
+            CreateStreet::new(
+                Coordinate { x: 128. * (i + 1) as f64, y: 128. },
+                Coordinate { x: 128. * (i + 1) as f64, y: 1024. },
+                id,
+            )
+            .execute(&mut map);
+        }
+
+        
+        CreateStreet::new(
+            Coordinate { x: 0., y: 512. },
+            Coordinate { x: 2048., y: 512. },
+            Uuid::new_v4(),
+        ).redo(&mut map);
+        
+
+        assert_eq!(map.intersections.len(), 14);
+        assert_eq!(map.streets.len(), 13);
+    }
+
+    #[test]
     fn connected_street_at_start_redo_works() {
         let mut map = create_map();
 
         let middle = add_intersection(Coordinate { x: 300., y: 100. }, &mut map);
 
+        CreateStreet::new(
+            Coordinate { x: 100., y: 100. },
+            Coordinate { x: 300., y: 100. },
+            Uuid::new_v4(),
+        )
+        .execute(&mut map);
+
         let mut action = CreateStreet::new(
             Coordinate { x: 300., y: 100. },
             Coordinate { x: 500., y: 100. },
-            Uuid::new_v4()
+            Uuid::new_v4(),
         );
 
         action.redo(&mut map);
@@ -307,10 +363,17 @@ mod tests {
 
         let middle = add_intersection(Coordinate { x: 300., y: 100. }, &mut map);
 
+        CreateStreet::new(
+            Coordinate { x: 100., y: 100. },
+            Coordinate { x: 300., y: 100. },
+            Uuid::new_v4(),
+        )
+        .execute(&mut map);
+
         let mut action = CreateStreet::new(
             Coordinate { x: 300., y: 100. },
             Coordinate { x: 500., y: 100. },
-            Uuid::new_v4()
+            Uuid::new_v4(),
         );
 
         action.redo(&mut map);
@@ -339,12 +402,18 @@ mod tests {
 
         let middle = add_intersection(Coordinate { x: 300., y: 100. }, &mut map);
 
+        CreateStreet::new(
+            Coordinate { x: 300., y: 100. },
+            Coordinate { x: 500., y: 100. },
+            Uuid::new_v4(),
+        )
+        .execute(&mut map);
+
         let mut action = CreateStreet::new(
             Coordinate { x: 100., y: 100. },
             Coordinate { x: 300., y: 100. },
-            Uuid::new_v4()
+            Uuid::new_v4(),
         );
-
         action.redo(&mut map);
 
         assert_eq!(map.streets.len(), 2);
@@ -375,7 +444,7 @@ mod tests {
         let mut action = CreateStreet::new(
             Coordinate { x: 100., y: 100. },
             Coordinate { x: 300., y: 100. },
-            Uuid::new_v4()
+            Uuid::new_v4(),
         );
 
         action.redo(&mut map);
@@ -406,7 +475,7 @@ mod tests {
         let mut action = CreateStreet::new(
             Coordinate { x: 300., y: 100. },
             Coordinate { x: 500., y: 100. },
-            Uuid::new_v4()
+            Uuid::new_v4(),
         );
 
         action.redo(&mut map);
@@ -458,7 +527,7 @@ mod tests {
         let mut action = CreateStreet::new(
             Coordinate { x: 300., y: 100. },
             Coordinate { x: 500., y: 100. },
-            Uuid::new_v4()
+            Uuid::new_v4(),
         );
 
         action.redo(&mut map);

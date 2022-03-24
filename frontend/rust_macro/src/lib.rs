@@ -221,12 +221,6 @@ pub fn data_source(args: TokenStream, input: TokenStream) -> TokenStream {
                 }
                 _ => (),
             }
-
-            /*
-            return quote! {
-                #ast
-            }.into();
-            */
         }
         _ => panic!("`add_field` has to be used with structs "),
     }

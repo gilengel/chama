@@ -8,11 +8,8 @@ use uuid::Uuid;
 use crate::map::{map::Map, street::Street};
 
 use super::{
-    intersection::create::CreateIntersection,
-    street::{
-        create::{CreateSingleStreet},
-        delete::{SimpleDeleteStreet},
-    },
+    intersection::{create::CreateIntersection, update::UpdateIntersection},
+    street::{create::CreateSingleStreet, delete::SimpleDeleteStreet},
 };
 
 pub struct SplitStreet {
@@ -119,6 +116,10 @@ impl Redo<Map> for SplitStreet {
             splitted_street.end,
         ));
 
+        self.action_stack.push(UpdateIntersection::new(splitted_street.start));
+        self.action_stack.push(UpdateIntersection::new(splitted_street.end));
+        self.action_stack.push(UpdateIntersection::new(self.intersection_id.unwrap()));
+
         self.action_stack.redo(map);
     }
 }
@@ -132,6 +133,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::map::actions::split_street::SplitStreet;
+    use crate::map::intersection::Side;
     use crate::map::{actions::street::create::CreateStreet, map::Map};
 
     fn create_map() -> Map {
@@ -175,6 +177,39 @@ mod tests {
                 &vec![]
             )
             .is_some());
+    }
+
+    #[test]
+    fn split_street_keeps_connections_redo_works() {
+        let mut map = create_map();
+
+        let start = Coordinate { x: 256., y: 256. };
+        let middle_1 = Coordinate { x: 512., y: 256. };
+        let middle_2 = Coordinate {
+            x: 512. + 256.,
+            y: 256.,
+        };
+        let end = Coordinate { x: 1024., y: 256. };
+
+        let left_street_id = Uuid::new_v4();
+        let split_street_id = Uuid::new_v4();
+        let right_street_id = Uuid::new_v4();
+
+        CreateStreet::new(start, middle_1, left_street_id).redo(&mut map);
+        CreateStreet::new(middle_1, middle_2, split_street_id).redo(&mut map);
+        CreateStreet::new(middle_2, end, right_street_id).redo(&mut map);
+
+        let mut action = SplitStreet::new(
+            Coordinate {
+                x: 256. + 128.,
+                y: 256.,
+            },
+            split_street_id,
+        );
+        action.redo(&mut map);
+
+        assert!(map.street(&left_street_id).unwrap().get_next(Side::Left).is_some());
+        assert!(map.street(&right_street_id).unwrap().get_previous(Side::Left).is_some());   
     }
 
     #[test]

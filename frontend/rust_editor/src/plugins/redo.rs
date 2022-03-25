@@ -7,7 +7,7 @@ use super::plugin::{Plugin};
 #[editor_plugin(skip)]
 pub struct Redo<Data> {
     #[option(skip)]
-    pub stack: Vec<Rc<RefCell<dyn Action<Data>>>>,
+    stack: Vec<Rc<RefCell<dyn Action<Data>>>>,
 }
 
 impl<T> Redo<T> {
@@ -17,6 +17,10 @@ impl<T> Redo<T> {
 
     pub fn push_generic(&mut self, action: Rc<RefCell<dyn Action<T>>>) {
         self.stack.push(action);
+    }
+
+    pub fn clear(&mut self) {
+        self.stack.clear();
     }
 }
 
@@ -45,6 +49,10 @@ where
         if *key == keys!["Control", "y"] {
             if let Some(action) = self.stack.pop() {
                 action.borrow_mut().redo(editor.data_mut());
+
+                editor.plugin_mut(move |redo: &mut crate::plugins::redo::Redo<Data>| {
+                    redo.clear();
+                });
 
                 editor.plugin_mut(|undo: &mut crate::plugins::undo::Undo<Data>| {
                     undo.push_generic(Rc::clone(&action));

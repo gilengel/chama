@@ -184,6 +184,10 @@ impl Plugin<Map> for DeleteStreet {
 
             action.as_ref().borrow_mut().execute(app.data_mut());
 
+            app.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
+                redo.clear();
+            });
+
             app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
                 undo.push(Rc::clone(&action));
             });

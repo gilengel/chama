@@ -45,7 +45,7 @@ struct CreateDistrictAction {
     minimum_house_side: f64,
     seed: <ChaCha8Rng as SeedableRng>::Seed,
 
-    district: Option<Uuid>
+    district: Option<Uuid>,
 }
 
 impl Redo<Map> for CreateDistrictAction {
@@ -75,13 +75,11 @@ impl Undo<Map> for CreateDistrictAction {
 
 impl Action<Map> for CreateDistrictAction {}
 
-
 impl fmt::Display for CreateDistrictAction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[create_district] street={}", self.street)
     }
 }
-
 
 impl CreateDistrictAction {
     pub fn new(
@@ -95,7 +93,7 @@ impl CreateDistrictAction {
             side,
             minimum_house_side,
             seed,
-            district: None
+            district: None,
         }
     }
 }
@@ -167,6 +165,11 @@ impl Plugin<Map> for CreateDistrict {
             create_district_action.execute(app.data_mut());
 
             let action = Rc::new(RefCell::new(create_district_action));
+
+            app.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
+                redo.clear();
+            });
+
             app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
                 undo.push(Rc::clone(&action));
             });

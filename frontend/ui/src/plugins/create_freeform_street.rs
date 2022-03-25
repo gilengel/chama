@@ -3,7 +3,7 @@ use std::fmt;
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    keys, log,
+    keys,
     plugins::plugin::{Plugin, PluginWithOptions},
     renderer::apply_style,
     style::Style,
@@ -71,14 +71,14 @@ impl Redo<Map> for CreateFreeFormStreetAction {
         }
 
         /*
-                // skip the first n points if at that position already a street exists
-                let mut index_to_be_skipped = 0;
-                for (index, point) in self.raw_points.iter().enumerate() {
-                    if map.get_street_at_position(point, &vec![]).is_none() && index != 0 {
-                        index_to_be_skipped = index - 1;
-                        break;
-                    }
+            // skip the first n points if at that position already a street exists
+            let mut index_to_be_skipped = 0;
+            for (index, point) in self.raw_points.iter().enumerate() {
+                if map.get_street_at_position(point, &vec![]).is_none() && index != 0 {
+                    index_to_be_skipped = index - 1;
+                    break;
                 }
+            }
         */
         let mut previous = &self.raw_points[0];
         for (point, street_id) in self.raw_points.iter().skip(1).zip(self.street_ids.iter()) {
@@ -168,6 +168,10 @@ impl Plugin<Map> for CreateFreeformStreet {
                 .collect(),
         )));
         action.borrow_mut().execute(app.data_mut());
+
+        app.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
+            redo.clear();
+        });
 
         app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
             undo.push(Rc::clone(&action));

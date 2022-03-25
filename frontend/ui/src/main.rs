@@ -31,4 +31,5 @@ fn main() {
     editor.add_plugin(CreateDistrict::default());
     editor.add_plugin(DeleteDistrict::default());
     editor.add_plugin(MapRender::default());
+    //editor.add_plugin(TestData::default());
 }

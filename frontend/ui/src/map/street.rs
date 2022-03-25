@@ -206,8 +206,9 @@ impl Street {
 
         //self.line.render(self.style(), &context);
 
-        let mut owned_string: String = format!("{} -> ", &self.id.to_string()[..2]);
+        let mut owned_string: String = format!("{} ->", &self.id.to_string()[..2]);
 
+        
         match &self.left_previous {
             Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
             None => owned_string.push_str("#,"),
@@ -224,6 +225,7 @@ impl Street {
             Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
             None => owned_string.push_str("#"),
         }
+        
 
         if let Some(position) = self.polygon.exterior().centroid() {
             context.set_fill_style(&"#FFFFFF".into());

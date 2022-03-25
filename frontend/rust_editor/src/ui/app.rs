@@ -12,9 +12,11 @@ use yew::html::Scope;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::{error, log};
+use crate::error;
 use geo::Coordinate;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent};
+use web_sys::{
+    CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent,
+};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
@@ -352,14 +354,11 @@ where
                 self.render(ctx.link());
             }
             EditorMessages::PluginOptionUpdated((plugin, attribute, value)) => {
-                
-                    let plugin = Rc::clone(self.plugins.get(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin)));
-                    plugin
-                        .as_ref()
-                        .borrow_mut()
-                        .update_property(attribute, value);
-                
-
+                let plugin = Rc::clone(self.plugins.get(plugin).unwrap_or_else(|| panic!("plugin with key {} is not present but received an option update. Make sure that the plugin is not destroyed during runtime", plugin)));
+                plugin
+                    .as_ref()
+                    .borrow_mut()
+                    .update_property(attribute, value);
 
                 plugin
                     .as_ref()
@@ -405,16 +404,18 @@ where
         let onkeyup = ctx.link().callback(|e| EditorMessages::KeyUp(e));
         let onkeydown = ctx.link().callback(|e| EditorMessages::KeyDown(e));
 
-        let onpointermove = ctx.link().callback(|e: PointerEvent| { log!("{:?}", e.tilt_x()); EditorMessages::Render(0.0) });
+        let onpointermove = ctx
+            .link()
+            .callback(|_: PointerEvent| EditorMessages::Render(0.0));
 
         html! {
         <main>
-            <canvas ref={self.canvas_ref.clone()} width="2560" height="1440" 
-            {onmousedown} 
-            {onmouseup} 
-            {onmousemove} 
-            {onkeyup} 
-            {onkeydown} 
+            <canvas ref={self.canvas_ref.clone()} width="2560" height="1440"
+            {onmousedown}
+            {onmouseup}
+            {onmousemove}
+            {onkeyup}
+            {onkeydown}
             {onpointermove} tabindex="0"></canvas>
 
             <Dialog>

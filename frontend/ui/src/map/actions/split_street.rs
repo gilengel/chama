@@ -1,3 +1,5 @@
+use std::fmt;
+
 use geo::{
     line_intersection::{line_intersection, LineIntersection},
     Coordinate, Line,
@@ -14,47 +16,32 @@ use super::{
 
 pub struct SplitStreet {
     action_stack: MultiAction<Map>,
-
-    split_position: Coordinate<f64>,
     street_id: Uuid,
-    intersection_id: Option<Uuid>,
+    split_position: Coordinate<f64>,
+    intersection_id: Uuid,
+}
+
+impl fmt::Display for SplitStreet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[split_street]\n{}", self.action_stack)
+    }
 }
 
 impl SplitStreet {
-    pub fn new(split_position: Coordinate<f64>, street_id: Uuid) -> Self {
+    pub fn new(split_position: Coordinate<f64>, intersection_id: Uuid) -> Self {
         SplitStreet {
             split_position,
-            street_id,
-            intersection_id: None,
+            intersection_id,
+            street_id: Uuid::default(),
             action_stack: MultiAction::new(),
         }
-    }
-
-    pub fn new_with_id(
-        split_position: Coordinate<f64>,
-        street_id: Uuid,
-        split_intersection_id: Uuid,
-    ) -> Self {
-        SplitStreet {
-            split_position,
-            street_id,
-            intersection_id: Some(split_intersection_id),
-            action_stack: MultiAction::new(),
-        }
-    }
-
-    pub fn intersection_id(&self) -> Option<Uuid> {
-        self.intersection_id
     }
 
     fn project_point_onto_middle_of_street(
-        &self,
+        &mut self,
         point: Coordinate<f64>,
-        street_id: &Uuid,
-        map: &Map,
+        street: &Street,
     ) -> Coordinate<f64> {
-        let street: &Street = map.street(street_id).unwrap();
-
         let start = street.start();
         let end = street.end();
 
@@ -81,44 +68,49 @@ impl SplitStreet {
 
 impl Undo<Map> for SplitStreet {
     fn undo(&mut self, map: &mut Map) {
-        self.action_stack.undo(map);
+        for action in self.action_stack.actions.iter_mut().rev() {
+            action.undo(map);
+        }
     }
 }
 
 impl Redo<Map> for SplitStreet {
     fn redo(&mut self, map: &mut Map) {
-        self.intersection_id = Some(self.intersection_id.unwrap_or_else(|| Uuid::new_v4()));
+        self.action_stack.clear();
 
-        self.action_stack.actions.clear();
-
-        let split_position =
-            self.project_point_onto_middle_of_street(self.split_position, &self.street_id, &map);
-
+        self.street_id = map
+            .get_street_at_position(&self.split_position, &vec![])
+            .unwrap();
         let splitted_street = map.street(&self.street_id).unwrap();
+        let split_position =
+            self.project_point_onto_middle_of_street(self.split_position, splitted_street);
 
         self.action_stack
             .push(SimpleDeleteStreet::new(self.street_id));
 
         self.action_stack.push(CreateIntersection::new_with_id(
             split_position,
-            self.intersection_id.unwrap(),
+            self.intersection_id,
         ));
 
         self.action_stack.push(CreateSingleStreet::new(
             Uuid::new_v4(),
             splitted_street.start,
-            self.intersection_id.unwrap(),
+            self.intersection_id,
         ));
 
         self.action_stack.push(CreateSingleStreet::new(
             Uuid::new_v4(),
-            self.intersection_id.unwrap(),
+            self.intersection_id,
             splitted_street.end,
         ));
 
-        self.action_stack.push(UpdateIntersection::new(splitted_street.start));
-        self.action_stack.push(UpdateIntersection::new(splitted_street.end));
-        self.action_stack.push(UpdateIntersection::new(self.intersection_id.unwrap()));
+        self.action_stack
+            .push(UpdateIntersection::new(splitted_street.start));
+        self.action_stack
+            .push(UpdateIntersection::new(splitted_street.end));
+        self.action_stack
+            .push(UpdateIntersection::new(self.intersection_id));
 
         self.action_stack.redo(map);
     }
@@ -201,15 +193,23 @@ mod tests {
 
         let mut action = SplitStreet::new(
             Coordinate {
-                x: 256. + 128.,
+                x: 512. + 128.,
                 y: 256.,
             },
             split_street_id,
         );
         action.redo(&mut map);
 
-        assert!(map.street(&left_street_id).unwrap().get_next(Side::Left).is_some());
-        assert!(map.street(&right_street_id).unwrap().get_previous(Side::Left).is_some());   
+        assert!(map
+            .street(&left_street_id)
+            .unwrap()
+            .get_next(Side::Left)
+            .is_some());
+        assert!(map
+            .street(&right_street_id)
+            .unwrap()
+            .get_previous(Side::Left)
+            .is_some());
     }
 
     #[test]

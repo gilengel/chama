@@ -1,7 +1,9 @@
+use std::fmt;
+
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    keys,
+    keys, log,
     plugins::plugin::{Plugin, PluginWithOptions},
     renderer::apply_style,
     style::Style,
@@ -37,16 +39,19 @@ pub struct CreateFreeformStreet {
     simplification_factor: f64,
 }
 
-struct CreateFreeFormStreetAction {
+pub struct CreateFreeFormStreetAction {
     raw_points: Vec<Coordinate<f64>>,
     action_stack: MultiAction<Map>,
+    street_ids: Vec<Uuid>,
 }
 
 impl CreateFreeFormStreetAction {
     pub fn new(raw_points: Vec<Coordinate<f64>>) -> Self {
+        let street_ids: Vec<Uuid> = raw_points.iter().skip(1).map(|_| Uuid::new_v4()).collect();
         CreateFreeFormStreetAction {
             raw_points,
             action_stack: MultiAction::new(),
+            street_ids,
         }
     }
 }
@@ -65,20 +70,20 @@ impl Redo<Map> for CreateFreeFormStreetAction {
             return;
         }
 
-        // skip the first n points if at that position already a street exists
-        let mut index_to_be_skipped = 0;
-        for (index, point) in self.raw_points.iter().enumerate() {
-            if map.get_street_at_position(point, &vec![]).is_none() && index != 0 {
-                index_to_be_skipped = index - 1;
-                break;
-            }
-        }
-
-        let mut previous = &self.raw_points[index_to_be_skipped];
-
-        for point in self.raw_points.iter().skip(index_to_be_skipped + 1) {
+        /*
+                // skip the first n points if at that position already a street exists
+                let mut index_to_be_skipped = 0;
+                for (index, point) in self.raw_points.iter().enumerate() {
+                    if map.get_street_at_position(point, &vec![]).is_none() && index != 0 {
+                        index_to_be_skipped = index - 1;
+                        break;
+                    }
+                }
+        */
+        let mut previous = &self.raw_points[0];
+        for (point, street_id) in self.raw_points.iter().skip(1).zip(self.street_ids.iter()) {
             self.action_stack
-                .push(CreateStreet::new(*previous, *point, Uuid::new_v4()));
+                .push(CreateStreet::new(*previous, *point, *street_id));
 
             previous = point;
         }
@@ -88,6 +93,16 @@ impl Redo<Map> for CreateFreeFormStreetAction {
 }
 
 impl Action<Map> for CreateFreeFormStreetAction {}
+
+impl fmt::Display for CreateFreeFormStreetAction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[create_freeform_street]\n\u{251C}  {}",
+            self.action_stack
+        )
+    }
+}
 
 impl Plugin<Map> for CreateFreeformStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {

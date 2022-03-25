@@ -1,3 +1,5 @@
+use std::fmt;
+
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, Redo, Undo},
@@ -43,6 +45,12 @@ impl Redo<Map> for DeleteIntersection {
 }
 
 impl Action<Map> for DeleteIntersection {}
+
+impl fmt::Display for DeleteIntersection {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[delete_intersection] id={}, position={:#?}", self.id, self.position)
+    }
+}
 
 #[cfg(test)]
 mod tests {

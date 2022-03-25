@@ -1,3 +1,5 @@
+use std::fmt;
+
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_macro::editor_plugin;
@@ -10,7 +12,7 @@ use geo::Coordinate;
 use rust_editor::{
     actions::{Action, Redo, Undo},
     gizmo::Id,
-    keys, log,
+    keys,
     plugins::plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
@@ -73,6 +75,14 @@ impl Undo<Map> for CreateDistrictAction {
 
 impl Action<Map> for CreateDistrictAction {}
 
+
+impl fmt::Display for CreateDistrictAction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[create_district] street={}", self.street)
+    }
+}
+
+
 impl CreateDistrictAction {
     pub fn new(
         street: Uuid,
@@ -92,7 +102,6 @@ impl CreateDistrictAction {
 
 impl Plugin<Map> for CreateDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        log!("{:?}", self.seed);
         editor.add_shortkey::<CreateDistrict>(keys!["Control", "d"])?;
 
         let toolbar =

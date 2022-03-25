@@ -1,3 +1,5 @@
+use std::fmt;
+
 use geo::Coordinate;
 use rust_editor::actions::{Action, Redo, Undo};
 use uuid::Uuid;
@@ -10,13 +12,6 @@ pub(crate) struct CreateIntersection {
 }
 
 impl CreateIntersection {
-    pub fn new(position: Coordinate<f64>) -> Self {
-        CreateIntersection::new_with_id(
-            position,
-            Uuid::new_v4(),
-        )
-    }
-
     pub fn new_with_id(position: Coordinate<f64>, id: Uuid) -> Self {
         CreateIntersection {
             position,
@@ -27,14 +22,21 @@ impl CreateIntersection {
 
 impl Undo<Map> for CreateIntersection {
     fn undo(&mut self, map: &mut Map) {
-        map.remove_intersection(&self.id);
+        map.intersections.remove(&self.id);
     }
 }
 
 impl Redo<Map> for CreateIntersection {
     fn redo(&mut self, map: &mut Map) {
-        map.add_intersection(Intersection::new_with_id(self.position, self.id));
+        map.intersections.insert(self.id, Intersection::new_with_id(self.position, self.id));
     }
 }
 
 impl Action<Map> for CreateIntersection {}
+
+
+impl fmt::Display for CreateIntersection {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[create_intersection] position=({},{})", self.position.x, self.position.y)
+    }
+}

@@ -1,7 +1,6 @@
 use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
-use rust_editor::actions::{Action, MultiAction};
 use rust_editor::gizmo::{GetPosition, Id};
 use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
 use serde::{Deserialize, Serialize};
@@ -11,13 +10,8 @@ use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
-use super::actions::intersection::create::CreateIntersection;
-use super::actions::intersection::delete::DeleteIntersection;
-use super::actions::intersection::update::UpdateIntersection;
-use super::actions::split_street::SplitStreet;
-use super::actions::street::create::CreateStreet;
+
 use super::actions::street::delete::DeleteStreet;
-use super::actions::street::update::UpdateStreet;
 use super::district::District;
 use super::intersection::Intersection;
 use super::street::Street;
@@ -192,109 +186,6 @@ impl Map {
         self.update_bounding_box();
 
         id
-    }
-
-    pub fn update_street(&mut self, id: &Uuid) -> Box<UpdateStreet> {
-        let mut action = UpdateStreet::new(*id);
-        action.execute(self);
-
-        Box::new(action)
-    }
-
-    pub fn update_intersection(&mut self, id: &Uuid) -> Box<UpdateIntersection> {
-        let mut action = UpdateIntersection::new(*id);
-        action.execute(self);
-
-        Box::new(action)
-    }
-
-    fn _create_street(
-        &mut self,
-        start_intersection_id: Uuid,
-        end_intersection_id: Uuid,
-    ) -> CreateStreet {
-        let mut action = CreateStreet::new(
-            self.intersection(&start_intersection_id)
-                .unwrap()
-                .position(),
-            self.intersection(&end_intersection_id).unwrap().position(),
-            Uuid::new_v4()
-        );
-
-        action.execute(self);
-        action
-    }
-
-    pub fn create_street(
-        &mut self,
-        start: &Coordinate<f64>,
-        end: &Coordinate<f64>,
-        snapping_offset: f64,
-    ) -> Box<dyn Action<Map>> {
-        let mut action = MultiAction::new();
-
-        let mut muu = |position: &Coordinate<f64>| -> Uuid {
-            match self.get_intersection_at_position(&position, snapping_offset, &vec![]) {
-                Some(intersection) => intersection,
-                None => match self.get_street_at_position(position, &vec![]) {
-                    Some(street_id) => {
-                        let split_action = self.split_street(*position, &street_id);
-                        let id = split_action.intersection_id().unwrap();
-
-                        action.actions.push(Box::new(split_action));
-
-                        id
-                    }
-                    None => {
-                        let mut create_intersection_action =
-                            CreateIntersection::new(position.clone());
-                        create_intersection_action.execute(self);
-                        let id = create_intersection_action.id.clone();
-
-                        action.actions.push(Box::new(create_intersection_action));
-
-                        id
-                    }
-                },
-            }
-        };
-
-        let start_id = muu(&start);
-        let end_id = muu(&end);
-
-        match self.line_intersection_with_street(&Line::new(*start, *end)) {
-            Some((street_id, intersection)) => {
-                let split_action = self.split_street(intersection, &street_id);
-                let split_id = split_action.intersection_id().unwrap();
-                action.actions.push(Box::new(split_action));
-
-                action
-                    .actions
-                    .push(Box::new(self._create_street(start_id, split_id)));
-
-                action
-                    .actions
-                    .push(Box::new(self._create_street(split_id, end_id)));
-            }
-            None => {
-                action
-                    .actions
-                    .push(Box::new(self._create_street(start_id, end_id)));
-            }
-        };
-
-        Box::new(action)
-    }
-
-    pub fn split_street(
-        &mut self,
-        split_position: Coordinate<f64>,
-        street_id: &Uuid,
-    ) -> SplitStreet {
-        let mut action = SplitStreet::new(split_position, *street_id);
-        action.execute(self);
-
-        action
     }
 
     pub fn get_intersection_at_position(
@@ -542,11 +433,13 @@ impl Map {
         Box::new(DeleteStreet::new(id.clone()))
     }
 
+    /*
     pub fn remove_intersection(&mut self, id: &Uuid) -> Box<dyn Action<Map>> {
         let intersection = self.intersection(id).unwrap();
 
         Box::new(DeleteIntersection::new(intersection))
     }
+    */
 
     pub fn remove_district(&mut self, id: &Uuid) {
         self.districts.remove(id);

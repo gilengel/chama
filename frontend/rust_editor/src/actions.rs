@@ -1,3 +1,5 @@
+use std::fmt;
+
 pub trait Redo<T> {
     fn redo(&mut self, map: &mut T);
 
@@ -15,7 +17,7 @@ pub trait Undo<T> {
 }
 
 
-pub trait Action<T>: Undo<T> + Redo<T> + Send + Sync {
+pub trait Action<T>: Undo<T> + Redo<T> + Send + Sync + fmt::Display {
     fn execute(&mut self, map: &mut T) {
         self.redo(map);
     }
@@ -23,6 +25,16 @@ pub trait Action<T>: Undo<T> + Redo<T> + Send + Sync {
 
 pub struct MultiAction<T> {
     pub actions: Vec<Box<dyn Action<T>>>,
+}
+
+impl<T> fmt::Display for MultiAction<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "===")?;
+        self.actions.iter().fold(Ok(()), |result, action| {
+            result.and_then(|_| writeln!(f, "\u{251C}  {}", action))
+        })?;
+        writeln!(f, "===")
+    }
 }
 
 impl<T> MultiAction<T> {
@@ -53,7 +65,7 @@ impl<T> Redo<T> for MultiAction<T> {
 
 impl<T> Undo<T> for MultiAction<T> {
     fn undo(&mut self, map: &mut T) {
-        for action in self.actions.iter_mut() {
+        for action in self.actions.iter_mut().rev() {
             (*action).undo(map);
         }
     }

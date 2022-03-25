@@ -1,7 +1,9 @@
+use std::fmt;
+
 use geo::{Coordinate, Line};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    gizmo::{Id, SetId},
+    gizmo::{Id, SetId, GetPosition},
 };
 use uuid::Uuid;
 
@@ -18,6 +20,9 @@ pub(crate) struct CreateSingleStreet {
     id: Uuid,
     start_id: Uuid,
     end_id: Uuid,
+
+    start_pos: Option<Coordinate<f64>>,
+    end_pos: Option<Coordinate<f64>>,
 }
 
 impl CreateSingleStreet {
@@ -26,37 +31,22 @@ impl CreateSingleStreet {
             id,
             start_id,
             end_id,
+            start_pos: None,
+            end_pos: None
         }
     }
 }
 
 impl Undo<Map> for CreateSingleStreet {
     fn undo(&mut self, map: &mut Map) {
-        let street = map.streets.remove(&self.id).unwrap();
+        if let Some(street) = map.streets.remove(&self.id) {
+            if let Some(start) = map.intersection_mut(&street.start) {
+                start.remove_connected_street(&street.id());
+            }
 
-        map.intersection_mut(&street.start)
-            .unwrap()
-            .remove_connected_street(&street.id());
-        map.intersection_mut(&street.end)
-            .unwrap()
-            .remove_connected_street(&street.id());
-
-        if map
-            .intersection(&street.start)
-            .unwrap()
-            .get_connected_streets()
-            .is_empty()
-        {
-            map.intersections.remove(&self.start_id);
-        }
-
-        if map
-            .intersection(&street.end)
-            .unwrap()
-            .get_connected_streets()
-            .is_empty()
-        {
-            map.intersections.remove(&self.end_id);
+            if let Some(end) = map.intersection_mut(&street.end) {
+                end.remove_connected_street(&street.id());
+            }
         }
     }
 }
@@ -71,6 +61,9 @@ impl Redo<Map> for CreateSingleStreet {
         street.set_start(&start);
         street.set_end(&end);
 
+        self.start_pos = Some(start.position());
+        self.end_pos = Some(end.position());
+
         if let Some(start) = map.intersection_mut(&self.start_id) {
             start.add_outgoing_street(&street.id());
         }
@@ -84,6 +77,16 @@ impl Redo<Map> for CreateSingleStreet {
 }
 
 impl Action<Map> for CreateSingleStreet {}
+
+impl fmt::Display for CreateSingleStreet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[create_single_street] id={}, start=({},{}), end=({},{})",
+            self.id, self.start_pos.unwrap().x, self.start_pos.unwrap().y, self.end_pos.unwrap().x, self.end_pos.unwrap().y
+        )
+    }
+}
 
 pub(crate) struct CreateStreet {
     start_intersection_id: Option<Uuid>,
@@ -110,7 +113,9 @@ impl CreateStreet {
 
 impl Undo<Map> for CreateStreet {
     fn undo(&mut self, map: &mut Map) {
-        self.action_stack.undo(map);
+        for action in self.action_stack.actions.iter_mut() {
+            action.undo(map);
+        }
     }
 }
 
@@ -123,11 +128,10 @@ impl Redo<Map> for CreateStreet {
         {
             Some(intersection) => intersection,
             None => match map.get_street_at_position(position, &vec![]) {
-                Some(street_id) => {
+                Some(_) => {
                     let id = Uuid::new_v4();
                     self.action_stack
-                        .push(SplitStreet::new_with_id(*position, street_id, id));
-
+                        .push(SplitStreet::new(*position, id));
                     id
                 }
 
@@ -156,11 +160,10 @@ impl Redo<Map> for CreateStreet {
         if !intersections.is_empty() {
             let mut intersection_ids: Vec<Uuid> = intersections
                 .iter()
-                .map(|(street_id, intersection)| {
+                .map(|(_, intersection)| {
                     let split_intersection_id = Uuid::new_v4();
-                    self.action_stack.push(SplitStreet::new_with_id(
+                    self.action_stack.push(SplitStreet::new(
                         *intersection,
-                        *street_id,
                         split_intersection_id,
                     ));
 
@@ -178,11 +181,13 @@ impl Redo<Map> for CreateStreet {
                     .push(CreateSingleStreet::new(Uuid::new_v4(), *current, **next))
             }
 
+            
             // Update is necessary to recalculate the shape of the newly created streets
             intersection_ids.iter().for_each(|intersection| {
                 self.action_stack
                     .push(UpdateIntersection::new(*intersection))
             });
+            
 
         // Happy path: The new street does not intersects existing streets and we can proceed with creating the street without the need
         // of splitting others
@@ -199,6 +204,16 @@ impl Redo<Map> for CreateStreet {
 }
 
 impl Action<Map> for CreateStreet {}
+
+impl fmt::Display for CreateStreet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[create_street] street={}\n\u{251C}  {}",
+            self.street_id, self.action_stack
+        )
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -282,7 +297,8 @@ mod tests {
             Coordinate { x: 128., y: 512. },
             Coordinate { x: 512., y: 512. },
             Uuid::new_v4(),
-        ).redo(&mut map);
+        )
+        .redo(&mut map);
 
         assert_eq!(map.intersections.len(), 4);
         assert_eq!(map.streets.len(), 3);
@@ -300,20 +316,25 @@ mod tests {
             old_split_street_id.push(id);
 
             CreateStreet::new(
-                Coordinate { x: 128. * (i + 1) as f64, y: 128. },
-                Coordinate { x: 128. * (i + 1) as f64, y: 1024. },
+                Coordinate {
+                    x: 128. * (i + 1) as f64,
+                    y: 128.,
+                },
+                Coordinate {
+                    x: 128. * (i + 1) as f64,
+                    y: 1024.,
+                },
                 id,
             )
             .execute(&mut map);
         }
 
-        
         CreateStreet::new(
             Coordinate { x: 0., y: 512. },
             Coordinate { x: 2048., y: 512. },
             Uuid::new_v4(),
-        ).redo(&mut map);
-        
+        )
+        .redo(&mut map);
 
         assert_eq!(map.intersections.len(), 14);
         assert_eq!(map.streets.len(), 13);

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use rust_editor::actions::{Action, Redo, Undo};
 use uuid::Uuid;
 
@@ -48,6 +50,12 @@ impl Redo<Map> for RemoveConnectedStreet {
 }
 
 impl Action<Map> for RemoveConnectedStreet {}
+
+impl fmt::Display for RemoveConnectedStreet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[remove_connected_street] intersection={}, street={}", self.intersection_id, self.street_id)
+    }
+}
 
 #[cfg(test)]
 mod tests {

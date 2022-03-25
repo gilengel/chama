@@ -1,7 +1,9 @@
+use std::fmt;
+
 use rust_editor::{actions::{Undo, Redo, Action}};
 use uuid::Uuid;
 
-use crate::map::{map::Map, intersection::Direction};
+use crate::map::{map::Map, intersection::Direction, actions::street::update::UpdateStreet};
 
 pub struct UpdateIntersection {
     id: Uuid,
@@ -29,7 +31,7 @@ impl Redo<Map> for UpdateIntersection {
 
             let streets = intersection.get_connected_streets().clone();            
             for (_, id) in &streets {
-                map.update_street(id);
+                UpdateStreet::new(*id).redo(map);
             }
 
             self.connected_streets = Some(streets);
@@ -39,3 +41,9 @@ impl Redo<Map> for UpdateIntersection {
 }
 
 impl Action<Map> for UpdateIntersection {}
+
+impl fmt::Display for UpdateIntersection {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[update_intersection] id={}", self.id)
+    }
+}

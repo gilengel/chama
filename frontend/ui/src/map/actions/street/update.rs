@@ -1,3 +1,5 @@
+use core::fmt;
+
 use rust_editor::{
     actions::{Action, Redo, Undo},
     gizmo::Id,
@@ -35,3 +37,9 @@ impl Redo<Map> for UpdateStreet {
 }
 
 impl Action<Map> for UpdateStreet {}
+
+impl fmt::Display for UpdateStreet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[update_street] street={}", self.id)
+    }
+}

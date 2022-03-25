@@ -1,3 +1,5 @@
+use std::fmt;
+
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
@@ -18,7 +20,9 @@ use super::create::{CreateSingleStreet, CreateStreet};
 pub struct SimpleDeleteStreet {
     street_id: Uuid,
     start_id: Option<Uuid>,
+    start_pos: Option<Coordinate<f64>>,
     end_id: Option<Uuid>,
+    end_pos: Option<Coordinate<f64>>,
 }
 
 impl SimpleDeleteStreet {
@@ -26,7 +30,9 @@ impl SimpleDeleteStreet {
         SimpleDeleteStreet {
             street_id,
             start_id: None,
+            start_pos: None,
             end_id: None,
+            end_pos: None,
         }
     }
 }
@@ -35,6 +41,14 @@ impl Undo<Map> for SimpleDeleteStreet {
     fn undo(&mut self, map: &mut Map) {
         let start_id = self.start_id.unwrap();
         let end_id = self.end_id.unwrap();
+
+        if map.street(&start_id).is_none() {
+            CreateIntersection::new_with_id(self.start_pos.unwrap(), start_id).execute(map);
+        }
+
+        if map.street(&end_id).is_none() {
+            CreateIntersection::new_with_id(self.end_pos.unwrap(), end_id).execute(map);
+        }
 
         CreateSingleStreet::new(self.street_id, start_id, end_id).execute(map);
         UpdateIntersection::new(start_id).execute(map);
@@ -46,7 +60,9 @@ impl Redo<Map> for SimpleDeleteStreet {
     fn redo(&mut self, map: &mut Map) {
         let street = map.streets_mut().remove(&self.street_id).unwrap();
         self.start_id = Some(street.start);
+        self.start_pos = Some(street.start());
         self.end_id = Some(street.end);
+        self.end_pos = Some(street.end());
 
         map.intersection_mut(&self.start_id.unwrap())
             .unwrap()
@@ -58,6 +74,13 @@ impl Redo<Map> for SimpleDeleteStreet {
 }
 
 impl Action<Map> for SimpleDeleteStreet {}
+
+impl fmt::Display for SimpleDeleteStreet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        
+        write!(f, "[delete_simple_street] street={}", self.street_id)
+    }
+}
 
 pub struct DeleteStreet {
     action_stack: MultiAction<Map>,
@@ -147,6 +170,16 @@ impl Redo<Map> for DeleteStreet {
 }
 
 impl Action<Map> for DeleteStreet {}
+
+impl fmt::Display for DeleteStreet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[delete_street] street={}\n\u{251C}  {}",
+            self.street_id, self.action_stack
+        )
+    }
+}
 
 #[cfg(test)]
 mod tests {

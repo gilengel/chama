@@ -25,4 +25,5 @@ jobs:
 
       - uses: codecov/codecov-action@v2
         with:
-          files: ${{ steps.coverage.outputs.report }}
+          token: 9a248f77-0831-475f-9aa7-c1a4441bc100
+          files: lcov.info

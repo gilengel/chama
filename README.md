@@ -1,3 +1,7 @@
+
+![build](https://img.shields.io/github/workflow/status/gilengel/rust_procmap/Code%20Coverage?style=for-the-badge)
+![coverage](https://img.shields.io/codecov/c/github/gilengel/rust_procmap?style=for-the-badge)
+![license](https://img.shields.io/github/license/gilengel/rust_procmap?style=for-the-badge)
 # rust-procmap
 2D map editor for creating beautiful and stylized fantasy maps for games and / or pen and paper adventures. It also serves as a living example of the EditAll editor framework (unstable, work in progress).
 

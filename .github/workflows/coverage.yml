@@ -21,7 +21,7 @@ jobs:
           RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests'
       - uses: actions-rs/grcov@v0.1.5
         with:
-          config: grcov.yml
+          config: ./grcov.yml
 
       - uses: codecov/codecov-action@v2
         with:

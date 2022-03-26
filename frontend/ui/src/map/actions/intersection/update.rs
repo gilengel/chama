@@ -20,7 +20,8 @@ impl UpdateIntersection {
 }
 
 impl Undo<Map> for UpdateIntersection {
-    fn undo(&mut self, _map: &mut Map) {
+    fn undo(&mut self, map: &mut Map) {
+        self.redo(map)
     }
 }
 

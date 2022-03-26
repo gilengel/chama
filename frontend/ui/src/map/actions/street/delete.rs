@@ -107,6 +107,7 @@ impl DeleteStreet {
 
 impl Undo<Map> for DeleteStreet {
     fn undo(&mut self, map: &mut Map) {
+        /*
         if map.street(&self.start_id.unwrap()).is_none() {
             CreateIntersection::new_with_id(self.start.unwrap(), self.start_id.unwrap())
                 .execute(map);
@@ -117,6 +118,8 @@ impl Undo<Map> for DeleteStreet {
         }
 
         CreateStreet::new(self.start.unwrap(), self.end.unwrap(), self.street_id).execute(map);
+*/
+        self.action_stack.undo(map);
     }
 }
 

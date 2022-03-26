@@ -8,7 +8,6 @@
   - [Setup](#setup)
   - [Test](#test)
     - [Coverage](#coverage)
-  - [Contact](#contact)
 
 ## General Information
 Put a more general information about your project
@@ -47,5 +46,3 @@ You'll find the report here: ```target/debug/coverage/index.html```
 
 Production: 
 Comming Soon
-## Contact
-Gil Engel <fernwaerts@gmail.com>

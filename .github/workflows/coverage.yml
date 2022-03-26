@@ -2,13 +2,11 @@ on: [push]
 
 name: Code Coverage
 
-defaults:
-  run:
-    working-directory: ./frontend
-
 jobs:
   lint:
     runs-on: ubuntu-latest
+    env:
+      working-directory: frontend
     steps:
       - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1

@@ -21,9 +21,10 @@ jobs:
           RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests'
       - uses: actions-rs/grcov@v0.1.5
         with:
-          config: ./configs/grcov.yml
+          config: configs/grcov.yml
 
       - uses: codecov/codecov-action@v2
         with:
           token: 9a248f77-0831-475f-9aa7-c1a4441bc100
-          files: lcov.info
+          files: ${{ steps.coverage.outputs.report }}
+          path_to_write_report: ./coverage/codecov_report.txt

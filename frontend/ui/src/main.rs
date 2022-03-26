@@ -16,7 +16,6 @@ use rust_editor::ui::app::x_launch;
 mod map;
 mod plugins;
 mod algorithm;
-//mod systems;
 
 fn main() {
     let mut editor = x_launch::<Map>();
@@ -31,5 +30,4 @@ fn main() {
     editor.add_plugin(CreateDistrict::default());
     editor.add_plugin(DeleteDistrict::default());
     editor.add_plugin(MapRender::default());
-    //editor.add_plugin(TestData::default());
 }

@@ -10,12 +10,12 @@ use uuid::Uuid;
 use crate::map::{
     actions::intersection::{
         create::CreateIntersection, delete::DeleteIntersection,
-        remove_connected_street::RemoveConnectedStreet, update::UpdateIntersection,
+        update::UpdateIntersection,
     },
     map::Map,
 };
 
-use super::create::{CreateSingleStreet, CreateStreet};
+use super::create::CreateSingleStreet;
 
 pub struct SimpleDeleteStreet {
     street_id: Uuid,
@@ -77,7 +77,6 @@ impl Action<Map> for SimpleDeleteStreet {}
 
 impl fmt::Display for SimpleDeleteStreet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        
         write!(f, "[delete_simple_street] street={}", self.street_id)
     }
 }
@@ -107,18 +106,6 @@ impl DeleteStreet {
 
 impl Undo<Map> for DeleteStreet {
     fn undo(&mut self, map: &mut Map) {
-        /*
-        if map.street(&self.start_id.unwrap()).is_none() {
-            CreateIntersection::new_with_id(self.start.unwrap(), self.start_id.unwrap())
-                .execute(map);
-        }
-
-        if map.street(&self.end_id.unwrap()).is_none() {
-            CreateIntersection::new_with_id(self.end.unwrap(), self.end_id.unwrap()).execute(map);
-        }
-
-        CreateStreet::new(self.start.unwrap(), self.end.unwrap(), self.street_id).execute(map);
-*/
         self.action_stack.undo(map);
     }
 }
@@ -127,18 +114,21 @@ impl Redo<Map> for DeleteStreet {
     fn redo(&mut self, map: &mut Map) {
         self.action_stack.actions.clear();
 
-        let street = map.streets_mut().remove(&self.street_id).unwrap();
+
+        {
+        let street = map.street(&self.street_id).unwrap();
         self.start_id = Some(street.start);
         self.start = Some(street.start());
         self.end_id = Some(street.end);
         self.end = Some(street.end());
+        }
 
+        self.action_stack.push(SimpleDeleteStreet::new(self.street_id));
+
+        
         let mut is_start_empty = false;
         let mut start_id = Uuid::default();
-        if let Some(start) = map.intersections_mut().get_mut(&street.start) {
-            self.action_stack
-                .push(RemoveConnectedStreet::new(start.id(), self.street_id));
-
+        if let Some(start) = map.intersections_mut().get_mut(&self.start_id.unwrap()) {
             is_start_empty = start.get_connected_streets().len() == 1;
             start_id = start.id();
         }
@@ -153,10 +143,7 @@ impl Redo<Map> for DeleteStreet {
 
         let mut is_end_empty = false;
         let mut end_id = Uuid::default();
-        if let Some(end) = map.intersections_mut().get_mut(&street.end) {
-            self.action_stack
-                .push(RemoveConnectedStreet::new(end.id(), self.street_id));
-
+        if let Some(end) = map.intersections_mut().get_mut(&self.end_id.unwrap()) {
             is_end_empty = end.get_connected_streets().len() == 1;
             end_id = end.id();
         }
@@ -167,6 +154,7 @@ impl Redo<Map> for DeleteStreet {
         } else {
             self.action_stack.push(UpdateIntersection::new(end_id));
         }
+        
 
         self.action_stack.execute(map);
     }

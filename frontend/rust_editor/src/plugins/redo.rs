@@ -50,10 +50,6 @@ where
             if let Some(action) = self.stack.pop() {
                 action.borrow_mut().redo(editor.data_mut());
 
-                editor.plugin_mut(move |redo: &mut crate::plugins::redo::Redo<Data>| {
-                    redo.clear();
-                });
-
                 editor.plugin_mut(|undo: &mut crate::plugins::undo::Undo<Data>| {
                     undo.push_generic(Rc::clone(&action));
                 });

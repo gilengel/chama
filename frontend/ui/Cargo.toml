@@ -18,7 +18,7 @@ uuid = { version = "0.8.2", features = ["v4", "wasm-bindgen", "serde"] }
 rust_editor = { path = "../rust_editor" }
 rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }
-yew = { git = "https://github.com/yewstack/yew", branch = "master" }
+yew = { git = "https://github.com/yewstack/yew", branch = "master", features=["csr"] }
 wasm-bindgen = "0.2.78"
 rand = "0.8.5"
 rand_chacha = "0.3.1"

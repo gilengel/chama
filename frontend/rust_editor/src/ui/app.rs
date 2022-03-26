@@ -527,7 +527,7 @@ pub fn x_launch<Data>() -> GenericEditor<Data>
 where
     Data: Default + 'static,
 {
-    GenericEditor {
-        app_handle: yew::start_app::<App<Data>>(),
+    GenericEditor {        
+        app_handle: yew::Renderer::<App<Data>>::new().render(),
     }
 }

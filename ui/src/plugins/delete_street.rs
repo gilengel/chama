@@ -194,3 +194,43 @@ impl Plugin<Map> for DeleteStreet {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, rc::Rc};
+
+    use geo::Coordinate;
+    use rust_editor::actions::Action;
+    use uuid::Uuid;
+
+    use crate::map::{map::Map, actions::street::create::CreateStreet, intersection::Side};
+
+    use super::DeleteStreet;
+
+    #[test]
+    fn all_previous_connected_streets_are_selected() {
+        let mut map = Map::new(2048, 2048);
+
+        CreateStreet::new(Coordinate { x: 256., y: 0.}, Coordinate { x: 256., y: 512. }, Uuid::new_v4()).execute(&mut map);
+        CreateStreet::new(Coordinate { x: 256., y: 512.}, Coordinate { x: 256., y: 1024. }, Uuid::new_v4()).execute(&mut map);
+
+        let mut ids = Vec::<Uuid>::with_capacity(4);
+        for i in 0..4 {
+            let id = Uuid::new_v4();
+            ids.push(id);
+            CreateStreet::new(Coordinate { x: 256. + i as f64 * 256., y: 512.}, Coordinate { x: 256. + (i+1) as f64 * 256., y: 512. }, id).execute(&mut map);
+        }
+
+        CreateStreet::new(Coordinate { x: 1024. + 256., y: 0.}, Coordinate { x: 1024. + 256., y: 512. }, Uuid::new_v4()).execute(&mut map);
+        CreateStreet::new(Coordinate { x: 1024. + 256., y: 512.}, Coordinate { x: 1024. + 256., y: 1024. }, Uuid::new_v4()).execute(&mut map);
+
+        assert!(map.street(&ids[2]).unwrap().get_previous(Side::Left).is_some());
+        assert_eq!(map.streets().len(), 8);
+
+        let delete_street_plugin = DeleteStreet { hovered_streets: None, __enabled: Rc::new(RefCell::new(true)), __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive };
+        let streets = delete_street_plugin.iter_backward(ids[2], &map);
+
+        assert_eq!(streets.len(), 2);
+
+    }
+}

@@ -6,6 +6,7 @@ use plugins::delete_street::DeleteStreet;
 use plugins::load::Load;
 use plugins::map_render::MapRender;
 use plugins::save::Save;
+use plugins::test_data::TestData;
 use rust_editor::plugins::camera::Camera;
 use rust_editor::plugins::redo::Redo;
 use rust_editor::plugins::undo::Undo;
@@ -30,4 +31,5 @@ fn main() {
     editor.add_plugin(CreateDistrict::default());
     editor.add_plugin(DeleteDistrict::default());
     editor.add_plugin(MapRender::default());
+    editor.add_plugin(TestData::default());
 }

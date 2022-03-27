@@ -167,6 +167,7 @@ impl Plugin<Map> for CreateFreeformStreet {
                 .map(|x| Coordinate { x: x.x(), y: x.y() })
                 .collect(),
         )));
+
         action.borrow_mut().execute(app.data_mut());
 
         app.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {

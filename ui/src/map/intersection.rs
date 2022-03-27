@@ -22,7 +22,7 @@ pub enum Direction {
     Out,
 }
 
-#[derive(Clone, PartialEq, Copy)]
+#[derive(Clone, PartialEq, Copy, Debug)]
 pub enum Side {
     Left,
     Right,

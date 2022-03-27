@@ -297,16 +297,6 @@ impl Map {
         Some(intersections.first().unwrap().clone())
     }
 
-    pub fn get_intersection_contained_in_polygon(&self, polygon: &Polygon<f64>) -> Option<Uuid> {
-        for (id, intersection) in &self.intersections {
-            if polygon.contains(&intersection.position()) {
-                return Some(*id);
-            }
-        }
-
-        None
-    }
-
     pub fn get_street_at_position(
         &self,
         position: &Coordinate<f64>,
@@ -428,18 +418,6 @@ impl Map {
 
         None
     }
-
-    pub fn remove_street(&mut self, id: &Uuid) -> Box<DeleteStreet> {
-        Box::new(DeleteStreet::new(id.clone()))
-    }
-
-    /*
-    pub fn remove_intersection(&mut self, id: &Uuid) -> Box<dyn Action<Map>> {
-        let intersection = self.intersection(id).unwrap();
-
-        Box::new(DeleteIntersection::new(intersection))
-    }
-    */
 
     pub fn remove_district(&mut self, id: &Uuid) {
         self.districts.remove(id);

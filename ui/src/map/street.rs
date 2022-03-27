@@ -206,6 +206,7 @@ impl Street {
 
         //self.line.render(self.style(), &context);
 
+        /*
         let mut owned_string: String = format!("{} ->", &self.id.to_string()[..2]);
 
         
@@ -250,6 +251,7 @@ impl Street {
         context.set_stroke_style(&"#FFFFFF".into());
         context.stroke();
         context.restore();
+        */
 
         Ok(())
     }

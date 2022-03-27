@@ -4,7 +4,7 @@ use geo::{
 };
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use rust_editor::{gizmo::SetId, renderer::PrimitiveRenderer, log};
+use rust_editor::{gizmo::SetId, renderer::PrimitiveRenderer};
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
@@ -241,7 +241,6 @@ fn enclosed(side: Side, street: Uuid, map: &mut Map) -> Enclosed {
         }
     }
 
-    log!("{:?}", streets);
     Enclosed {
         enclosed: next.is_some() && next.unwrap() == start,
         _streets: streets,

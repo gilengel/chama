@@ -10,7 +10,7 @@ use rust_editor::{
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    },
+    }, log,
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;

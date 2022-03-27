@@ -79,7 +79,7 @@ impl Intersection {
 
     pub fn new_with_id(position: Coordinate<f64>, id: Uuid) -> Intersection {
         Intersection {
-            position, 
+            position,
             id,
             ..Default::default()
         }
@@ -126,8 +126,7 @@ impl Intersection {
         Ok(())
     }
 
-    
-    pub fn remove_connected_street(&mut self, id: &Uuid) -> Option<(Direction, Uuid)>{
+    pub fn remove_connected_street(&mut self, id: &Uuid) -> Option<(Direction, Uuid)> {
         if let Some(index) = self
             .connected_streets
             .iter()
@@ -138,7 +137,6 @@ impl Intersection {
 
         None
     }
-    
 
     pub fn add_incoming_street(&mut self, id: &Uuid) {
         self.connected_streets.push((Direction::In, *id));
@@ -154,7 +152,7 @@ impl Intersection {
 
     pub fn reorder(&mut self, streets: &mut HashMap<Uuid, Street>) {
         fn angle(vec: &Coordinate<f64>) -> f64 {
-            vec.y.atan2(vec.x) + (PI / 2.0)
+            (vec.y * 1.).atan2(vec.x) //+ (PI / 2.0)
         }
 
         fn norm_based_on_direction(direction: Direction, street: &Street) -> Coordinate<f64> {
@@ -171,13 +169,14 @@ impl Intersection {
             if let (Some(street_1), Some(street_2)) = (streets.get(&a.1), streets.get(&b.1)) {
                 let norm_1 = norm_based_on_direction(a.0, &street_1);
                 let norm_2 = norm_based_on_direction(b.0, &street_2);
-    
+
                 let angle_1 = angle(&norm_1);
                 let angle_2 = angle(&norm_2);
+
                 if angle_1 < angle_2 {
                     return Ordering::Less;
                 }
-    
+
                 if angle_1 > angle_2 {
                     return Ordering::Greater;
                 }

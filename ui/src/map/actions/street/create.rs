@@ -72,7 +72,11 @@ impl Redo<Map> for CreateSingleStreet {
             end.add_incoming_street(&street.id());
         }
 
+        street.update_geometry(map.intersections(), map.streets());
+
         map.add_street(street);
+
+        
     }
 }
 
@@ -178,7 +182,7 @@ impl Redo<Map> for CreateStreet {
             let mut it = intersection_ids.iter().peekable();
             while let (Some(current), Some(next)) = (it.next(), it.peek()) {
                 self.action_stack
-                    .push(CreateSingleStreet::new(Uuid::new_v4(), *current, **next))
+                  .push(CreateSingleStreet::new(Uuid::new_v4(), *current, **next));
             }
 
             

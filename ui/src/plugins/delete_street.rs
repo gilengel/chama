@@ -34,7 +34,7 @@ impl DeleteStreet {
         fn_next_street: FnNextStreet,
     ) -> HashSet<Uuid>
     where
-        FnNextIntersection: Fn(&Uuid) -> Option<&'a Intersection>,
+        FnNextIntersection: Fn(bool, &Uuid) -> Option<&'a Intersection>,
         FnNextStreet: Fn(bool, &Street, Side) -> Option<Uuid>,
     {
         let mut street = start;
@@ -45,14 +45,14 @@ impl DeleteStreet {
         let mut side = Side::Left;
         let mut next = fn_next_street(forward, map.street(&street).unwrap(), side);
 
-        while next.is_some()
-            && next.unwrap() != start
-            && fn_next_intersection(&street)
+        let mut connected_to_end = false;
+
+        while next.is_some() && next.unwrap() != start && !connected_to_end {
+            connected_to_end = fn_next_intersection(forward, &street)
                 .unwrap()
                 .get_connected_streets()
                 .len()
-                <= 2
-        {
+                > 2;
             streets.insert(street);
 
             {
@@ -78,8 +78,6 @@ impl DeleteStreet {
             }
         }
 
-        //streets.push(street);
-
         streets
     }
 
@@ -87,7 +85,13 @@ impl DeleteStreet {
         self.iter(
             start,
             map,
-            |uuid| map.intersection(&map.street(&uuid).unwrap().start),
+            |forward, uuid| {
+                if forward {
+                    map.intersection(&map.street(&uuid).unwrap().start)
+                } else {
+                    map.intersection(&map.street(&uuid).unwrap().end)
+                }
+            },
             |forward, street, side| {
                 if forward {
                     street.get_previous(side)
@@ -102,7 +106,13 @@ impl DeleteStreet {
         self.iter(
             start,
             map,
-            |uuid| map.intersection(&map.street(&uuid).unwrap().end),
+            |forward, uuid| {
+                if forward {
+                    map.intersection(&map.street(&uuid).unwrap().end)
+                } else {
+                    map.intersection(&map.street(&uuid).unwrap().start)
+                }
+            },
             |forward, street, side| {
                 if forward {
                     street.get_next(side)
@@ -203,34 +213,140 @@ mod tests {
     use rust_editor::actions::Action;
     use uuid::Uuid;
 
-    use crate::map::{map::Map, actions::street::create::CreateStreet, intersection::Side};
+    use crate::map::{actions::street::create::CreateStreet, intersection::Side, map::Map};
 
     use super::DeleteStreet;
 
-    #[test]
-    fn all_previous_connected_streets_are_selected() {
-        let mut map = Map::new(2048, 2048);
-
-        CreateStreet::new(Coordinate { x: 256., y: 0.}, Coordinate { x: 256., y: 512. }, Uuid::new_v4()).execute(&mut map);
-        CreateStreet::new(Coordinate { x: 256., y: 512.}, Coordinate { x: 256., y: 1024. }, Uuid::new_v4()).execute(&mut map);
+    fn create_test_data(map: &mut Map) -> Vec<Uuid> {
+        CreateStreet::new(
+            Coordinate { x: 256., y: 0. },
+            Coordinate { x: 256., y: 512. },
+            Uuid::new_v4(),
+        )
+        .execute(map);
+        CreateStreet::new(
+            Coordinate { x: 256., y: 512. },
+            Coordinate { x: 256., y: 1024. },
+            Uuid::new_v4(),
+        )
+        .execute(map);
 
         let mut ids = Vec::<Uuid>::with_capacity(4);
         for i in 0..4 {
             let id = Uuid::new_v4();
             ids.push(id);
-            CreateStreet::new(Coordinate { x: 256. + i as f64 * 256., y: 512.}, Coordinate { x: 256. + (i+1) as f64 * 256., y: 512. }, id).execute(&mut map);
+
+            let (start, end) = if i % 2 == 0 {
+                (
+                    Coordinate {
+                        x: 256. + i as f64 * 256.,
+                        y: 512.,
+                    },
+                    Coordinate {
+                        x: 256. + (i + 1) as f64 * 256.,
+                        y: 512.,
+                    },
+                )
+            } else {
+                (
+                    Coordinate {
+                        x: 256. + (i + 1) as f64 * 256.,
+                        y: 512.,
+                    },
+                    Coordinate {
+                        x: 256. + i as f64 * 256.,
+                        y: 512.,
+                    },
+                )
+            };
+            CreateStreet::new(start, end, id).execute(map);
         }
 
-        CreateStreet::new(Coordinate { x: 1024. + 256., y: 0.}, Coordinate { x: 1024. + 256., y: 512. }, Uuid::new_v4()).execute(&mut map);
-        CreateStreet::new(Coordinate { x: 1024. + 256., y: 512.}, Coordinate { x: 1024. + 256., y: 1024. }, Uuid::new_v4()).execute(&mut map);
+        CreateStreet::new(
+            Coordinate {
+                x: 1024. + 256.,
+                y: 0.,
+            },
+            Coordinate {
+                x: 1024. + 256.,
+                y: 512.,
+            },
+            Uuid::new_v4(),
+        )
+        .execute(map);
+        CreateStreet::new(
+            Coordinate {
+                x: 1024. + 256.,
+                y: 512.,
+            },
+            Coordinate {
+                x: 1024. + 256.,
+                y: 1024.,
+            },
+            Uuid::new_v4(),
+        )
+        .execute(map);
 
-        assert!(map.street(&ids[2]).unwrap().get_previous(Side::Left).is_some());
+        ids
+    }
+    #[test]
+    fn all_previous_connected_streets_are_selected() {
+        let mut map = Map::new(2048, 2048);
+
+        let ids = create_test_data(&mut map);
+
+        assert!(map
+            .street(&ids[2])
+            .unwrap()
+            .get_previous(Side::Left)
+            .is_some());
         assert_eq!(map.streets().len(), 8);
 
-        let delete_street_plugin = DeleteStreet { hovered_streets: None, __enabled: Rc::new(RefCell::new(true)), __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive };
+        let delete_street_plugin = DeleteStreet {
+            hovered_streets: None,
+            __enabled: Rc::new(RefCell::new(true)),
+            __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive,
+        };
         let streets = delete_street_plugin.iter_backward(ids[2], &map);
 
-        assert_eq!(streets.len(), 2);
+        assert_eq!(streets.len(), 3);
+        for i in 0..2 {
+            assert!(streets.contains(&ids[i]));
+        }
+    }
 
+    #[test]
+    fn all_next_connected_street_are_selected() {
+        let mut map = Map::new(2048, 2048);
+
+        let ids = create_test_data(&mut map);
+
+        let delete_street_plugin = DeleteStreet {
+            hovered_streets: None,
+            __enabled: Rc::new(RefCell::new(true)),
+            __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive,
+        };
+        let streets = delete_street_plugin.iter_forward(ids[2], &map);
+
+        assert_eq!(streets.len(), 2);
+        for i in 2..3 {
+            assert!(streets.contains(&ids[i]));
+        }
+    }
+
+    #[test]
+    fn all_connected_streets_are_selected() {
+        let mut map = Map::new(2048, 2048);
+
+        let ids = create_test_data(&mut map);
+        let delete_street_plugin = DeleteStreet {
+            hovered_streets: None,
+            __enabled: Rc::new(RefCell::new(true)),
+            __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive,
+        };
+        let streets = delete_street_plugin.connected_streets(ids[2], &map);
+        for id in ids {
+            assert!(streets.contains(&id));
+        }
     }
 }

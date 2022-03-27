@@ -11,7 +11,6 @@ use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
 
-use super::actions::street::delete::DeleteStreet;
 use super::district::District;
 use super::intersection::Intersection;
 use super::street::Street;

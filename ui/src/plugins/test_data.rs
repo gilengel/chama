@@ -5,7 +5,6 @@ use uuid::Uuid;
 
 use crate::map::{map::Map, actions::street::create::CreateStreet};
 
-use super::create_freeform_street::CreateFreeFormStreetAction;
 
 #[editor_plugin(skip, specific_to=Map)]
 pub struct TestData {}

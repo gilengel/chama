@@ -98,6 +98,23 @@ where
     canvas_size: Coordinate<i32>,
 }
 
+// Not functional. Is used for test cases
+impl<Data> Default for App<Data> where Data: Default{
+    fn default() -> Self {
+        Self {
+            data: Default::default(),
+            plugins: Default::default(),
+            toolbars: Toolbars::<Data>::new(),
+            shortkeys: Default::default(),
+            _render_loop: Default::default(),
+            canvas_ref: Default::default(),
+            context: Default::default(),
+            pressed_keys: Default::default(),
+            canvas_size: Default::default(),
+        }
+    }
+}
+
 impl<Data> App<Data>
 where
     Data: Default + 'static,
@@ -527,7 +544,7 @@ pub fn x_launch<Data>() -> GenericEditor<Data>
 where
     Data: Default + 'static,
 {
-    GenericEditor {        
+    GenericEditor {
         app_handle: yew::Renderer::<App<Data>>::new().render(),
     }
 }

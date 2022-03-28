@@ -123,8 +123,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::map::actions::split_street::SplitStreet;
-    use crate::map::intersection::{Intersection, Side};
-    use crate::map::street::Street;
+    use crate::map::intersection::Side;
     use crate::map::{actions::street::create::CreateStreet, map::Map};
 
     fn create_map() -> Map {

@@ -408,7 +408,6 @@ mod tests {
     fn integration_startup_adds_shortcut() {
         let mut app = App::<Map>::default();
 
-        let ids = create_test_data(app.data_mut());
         let mut delete_street_plugin = DeleteStreet {
             hovered_streets: None,
             __enabled: Rc::new(RefCell::new(true)),
@@ -424,7 +423,6 @@ mod tests {
     fn integration_startup_adds_toolbar_button() {
         let mut app = App::<Map>::default();
 
-        let ids = create_test_data(app.data_mut());
         let mut delete_street_plugin = DeleteStreet {
             hovered_streets: None,
             __enabled: Rc::new(RefCell::new(true)),

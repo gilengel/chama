@@ -108,7 +108,7 @@ impl Plugin<Map> for CreateDistrict {
         let enabled = Rc::clone(&self.__enabled);
         toolbar.add_toggle_button(
             "maps_home_work",
-            "mumumu",
+            "create_district",
             "Create District".to_string(),
             move || *enabled.as_ref().borrow(),
             move || EditorMessages::ActivatePlugin(CreateDistrict::identifier()),
@@ -174,5 +174,41 @@ impl Plugin<Map> for CreateDistrict {
                 undo.push(Rc::clone(&action));
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rust_editor::keys;
+    use rust_editor::plugins::plugin::Plugin;
+    use rust_editor::ui::app::App;
+    use rust_editor::ui::toolbar::ToolbarPosition;
+
+    use crate::map::map::Map;
+    use crate::plugins::create_district::CreateDistrict;
+
+    #[test]
+    fn integration_startup_adds_shortcut() {
+        let mut app = App::<Map>::default();
+
+        let mut plugin = CreateDistrict::default();
+        plugin.startup(&mut app).unwrap();
+
+        assert!(app.has_shortkey(keys!["Control", "d"]))
+    }
+
+    #[test]
+
+    fn integration_startup_adds_toolbar_button() {
+        let mut app = App::<Map>::default();
+
+        let mut plugin = CreateDistrict::default();
+        plugin.startup(&mut app).unwrap();
+
+        let toolbar = app
+            .get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)
+            .unwrap();
+
+        assert!(toolbar.has_button("create_district"));
     }
 }

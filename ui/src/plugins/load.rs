@@ -40,3 +40,39 @@ impl Plugin<Map> for Load {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rust_editor::keys;
+    use rust_editor::plugins::plugin::Plugin;
+    use rust_editor::ui::app::App;
+    use rust_editor::ui::toolbar::ToolbarPosition;
+
+    use crate::map::map::Map;
+    use crate::plugins::load::Load;
+
+    #[test]
+    fn integration_startup_adds_shortcut() {
+        let mut app = App::<Map>::default();
+
+        let mut plugin = Load::default();
+        plugin.startup(&mut app).unwrap();
+
+        assert!(app.has_shortkey(keys!["Control", "o"]))
+    }
+
+    #[test]
+
+    fn integration_startup_adds_toolbar_button() {
+        let mut app = App::<Map>::default();
+
+        let mut plugin = Load::default();
+        plugin.startup(&mut app).unwrap();
+
+        let toolbar = app
+            .get_or_add_toolbar("primary.actions", ToolbarPosition::Left)
+            .unwrap();
+
+        assert!(toolbar.has_button("load"));
+    }
+}

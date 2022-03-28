@@ -30,7 +30,7 @@ impl Plugin<Map> for DeleteDistrict {
         let enabled = Rc::clone(&self.__enabled);
         toolbar.add_toggle_button(
             "delete_outline",
-            "mumu",
+            "delete_district",
             "Delete District".to_string(),
             move || *enabled.as_ref().borrow(),
             move || EditorMessages::ActivatePlugin(DeleteDistrict::identifier()),
@@ -49,16 +49,20 @@ impl Plugin<Map> for DeleteDistrict {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        _mouse_movement: Coordinate<f64>, editor: &mut App<Map>
+        _mouse_movement: Coordinate<f64>,
+        editor: &mut App<Map>,
     ) {
         if let Some(old_hovered_district) = self.hovered_district {
-            let old_hovered_district: &mut District =
-            editor.data_mut().district_mut(&old_hovered_district).unwrap();
+            let old_hovered_district: &mut District = editor
+                .data_mut()
+                .district_mut(&old_hovered_district)
+                .unwrap();
             old_hovered_district.set_state(InteractiveElementState::Normal);
         }
 
         if let Some(hovered_district) = editor.data().get_district_at_position(&mouse_pos) {
-            let hovered_district: &mut District = editor.data_mut().district_mut(&hovered_district).unwrap();
+            let hovered_district: &mut District =
+                editor.data_mut().district_mut(&hovered_district).unwrap();
             hovered_district.set_state(InteractiveElementState::Hover);
             self.hovered_district = Some(hovered_district.id());
         }
@@ -69,5 +73,51 @@ impl Plugin<Map> for DeleteDistrict {
             app.data_mut().remove_district(&hovered_district);
             self.hovered_district = None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, rc::Rc};
+
+    use rust_editor::keys;
+    use rust_editor::plugins::plugin::Plugin;
+    use rust_editor::ui::app::App;
+    use rust_editor::ui::toolbar::ToolbarPosition;
+
+    use crate::map::map::Map;
+    use crate::plugins::delete_district::DeleteDistrict;
+
+    #[test]
+    fn integration_startup_adds_shortcut() {
+        let mut app = App::<Map>::default();
+
+        let mut delete_district_plugin = DeleteDistrict {
+            hovered_district: None,
+            __enabled: Rc::new(RefCell::new(true)),
+            __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive,
+        };
+        delete_district_plugin.startup(&mut app).unwrap();
+
+        assert!(app.has_shortkey(keys!["Control", "f"]))
+    }
+
+    #[test]
+
+    fn integration_startup_adds_toolbar_button() {
+        let mut app = App::<Map>::default();
+
+        let mut delete_district_plugin = DeleteDistrict {
+            hovered_district: None,
+            __enabled: Rc::new(RefCell::new(true)),
+            __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive,
+        };
+        delete_district_plugin.startup(&mut app).unwrap();
+
+        let toolbar = app
+            .get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)
+            .unwrap();
+
+        assert!(toolbar.has_button("delete_district"));
     }
 }

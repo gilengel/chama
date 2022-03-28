@@ -173,7 +173,10 @@ fn calc_split_polygons(
 }
 
 pub fn longest_line(polygon: &AnnotatedPolygon, min_side_length: f64) -> AnnotatedLine {
-    fn determine_longest_line<'a, It>(it: It) -> Option<&'a AnnotatedLine> where It: Iterator<Item = &'a (Line<f64>, bool)> {
+    fn determine_longest_line<'a, It>(it: It) -> Option<&'a AnnotatedLine>
+    where
+        It: Iterator<Item = &'a (Line<f64>, bool)>,
+    {
         it.max_by(|x, y| {
             x.0.euclidean_length()
                 .partial_cmp(&y.0.euclidean_length())
@@ -181,11 +184,61 @@ pub fn longest_line(polygon: &AnnotatedPolygon, min_side_length: f64) -> Annotat
         })
     }
 
-    match determine_longest_line(polygon
-        .lines()
-        .iter()
-        .filter(|(line, is_street)| *is_street && line.euclidean_length() >= min_side_length)) {
+    match determine_longest_line(
+        polygon
+            .lines()
+            .iter()
+            .filter(|(line, is_street)| *is_street && line.euclidean_length() >= min_side_length),
+    ) {
         Some(line) => *line,
         None => *determine_longest_line(polygon.lines().iter()).unwrap(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use geo::{LineString, Point, Polygon, Line, Coordinate};
+
+    use crate::algorithm::geo::longest_line;
+
+    use super::{AnnotatedPolygon, split};
+
+    #[test]
+    fn unit_split_polygon() {
+        let pts: Vec<Point<f64>> = vec![
+            Point::new(0., 0.),
+            Point::new(256., 0.),
+            Point::new(256., 256.),
+            Point::new(0., 256.),
+        ];
+        let poly = Polygon::new(LineString::from(pts.clone()), vec![]);
+        let is_street: Vec<bool> = pts.iter().map(|_| true).collect();
+
+        let polygon = AnnotatedPolygon(poly, is_street);
+
+        let splits = split(&polygon, &Line::new(Coordinate { x: 128., y: 0. }, Coordinate { x: 128., y: 256. }));
+
+        assert_eq!(splits.len(), 2);
+        assert_eq!(splits[0].enclosed(), false);
+        assert_eq!(splits[1].enclosed(), false);
+    }
+
+    #[test]
+    fn unit_longest_line() {
+        let pts: Vec<Point<f64>> = vec![
+            Point::new(0., 0.),
+            Point::new(256., 0.),
+            Point::new(256., 512.),
+            Point::new(0., 256.),
+        ];
+        let poly = Polygon::new(LineString::from(pts.clone()), vec![]);
+        let is_street: Vec<bool> = pts.iter().map(|_| true).collect();
+
+        let polygon = AnnotatedPolygon(poly, is_street);
+
+        let result = longest_line(&polygon, 5.0);
+
+        assert_eq!(result.0, Line::new(Coordinate { x: 256., y: 0. }, Coordinate { x: 256., y: 512. }));
+        assert_eq!(result.1, true);
     }
 }

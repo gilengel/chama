@@ -552,3 +552,16 @@ where
         app_handle: yew::Renderer::<App<Data>>::new().render(),
     }
 }
+
+pub fn launch<Data>(id: &str) -> GenericEditor<Data> 
+    where
+    Data: Default + 'static,
+{
+    let window = web_sys::window().expect("no global `window` exists");
+    let document = window.document().expect("should have a document on window");
+    let parent = document.get_element_by_id(id).unwrap();
+
+    GenericEditor {
+        app_handle: yew::Renderer::<App<Data>>::with_root(parent).render(),
+    }
+}

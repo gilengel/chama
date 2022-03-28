@@ -175,6 +175,10 @@ where
         }
     }
 
+    pub fn has_shortkey(&self, key: Shortkey) -> bool {
+        self.shortkeys.values().any(|x| x.contains(&&key))
+    }
+
     pub fn add_toolbar(
         &mut self,
         toolbar_id: &'static str,

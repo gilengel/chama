@@ -209,11 +209,14 @@ impl Plugin<Map> for DeleteStreet {
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
+    use rust_editor::keys;
+    use rust_editor::ui::app::App;
     use geo::Coordinate;
     use rust_editor::actions::Action;
     use uuid::Uuid;
 
     use crate::map::{actions::street::create::CreateStreet, intersection::Side, map::Map};
+    use rust_editor::plugins::plugin::Plugin;
 
     use super::DeleteStreet;
 
@@ -349,4 +352,57 @@ mod tests {
             assert!(streets.contains(&id));
         }
     }
+
+    #[test]
+    fn unit_mouse_move_selects_streets() {
+        let mut app = App::<Map>::default();
+
+        let ids = create_test_data(app.data_mut());
+        let mut delete_street_plugin = DeleteStreet {
+            hovered_streets: None,
+            __enabled: Rc::new(RefCell::new(true)),
+            __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive,
+        };
+        delete_street_plugin.mouse_move(Coordinate::<f64> { x: 512. - 64., y: 512. }, Coordinate::<f64> { x: 0., y: 0. }, &mut app);
+        let hovered_streets = delete_street_plugin.hovered_streets.unwrap();
+        for id in ids {
+            assert!(hovered_streets.contains(&id));
+        }
+    }
+
+    #[test]
+    fn integration_mouse_up_executes_action() {
+        let mut app = App::<Map>::default();
+
+        let ids = create_test_data(app.data_mut());
+        let mut delete_street_plugin = DeleteStreet {
+            hovered_streets: None,
+            __enabled: Rc::new(RefCell::new(true)),
+            __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive,
+        };
+        delete_street_plugin.mouse_move(Coordinate::<f64> { x: 512. - 64., y: 512. }, Coordinate::<f64> { x: 0., y: 0. }, &mut app);
+        delete_street_plugin.mouse_up(Coordinate::<f64> { x: 512., y: 512. }, 1, &mut app);
+
+
+        assert_eq!(app.data().streets().len(), 4);
+        for id in ids {
+            assert!(app.data().street(&id).is_none());
+        }
+    }  
+
+    #[test]
+
+    fn integration_startup_adds_shortcut() {
+        let mut app = App::<Map>::default();
+
+        let ids = create_test_data(app.data_mut());
+        let mut delete_street_plugin = DeleteStreet {
+            hovered_streets: None,
+            __enabled: Rc::new(RefCell::new(true)),
+            __execution_behaviour: rust_internal::PluginExecutionBehaviour::Exclusive,
+        };
+        delete_street_plugin.startup(&mut app).unwrap();
+
+        assert!(app.has_shortkey(keys!["Control", "2"]))
+    }  
 }

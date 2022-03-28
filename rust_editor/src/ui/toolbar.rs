@@ -70,6 +70,10 @@ impl<Data> Toolbar<Data> {
 
         Ok(())
     }
+
+    pub fn has_button(&self, identifier: &'static str) -> bool {
+        self.buttons.iter().any(|x| x.identifier == identifier)
+    }
 }
 
 pub(crate) struct Toolbars<Data> {

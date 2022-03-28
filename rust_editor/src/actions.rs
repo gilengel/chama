@@ -29,11 +29,9 @@ pub struct MultiAction<T> {
 
 impl<T> fmt::Display for MultiAction<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "===")?;
         self.actions.iter().fold(Ok(()), |result, action| {
             result.and_then(|_| writeln!(f, "\u{251C}  {}", action))
-        })?;
-        writeln!(f, "===")
+        })
     }
 }
 

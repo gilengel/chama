@@ -50,16 +50,14 @@ impl SplitStreet {
         let line1 = Line::new(start, end);
         let line2 = Line::new(point + perp * -1000.0, point + perp * 1000.0);
 
-        if let Some(intersection) = line_intersection(line1, line2) {
-            match intersection {
-                LineIntersection::SinglePoint {
-                    intersection,
-                    is_proper: _,
-                } => {
-                    return intersection;
-                }
-                _ => return point,
-            }
+        let intersection = line_intersection(line1, line2).unwrap();
+
+        if let LineIntersection::SinglePoint {
+            intersection,
+            is_proper: _,
+        } = intersection
+        {
+            return intersection;
         }
 
         point
@@ -125,7 +123,8 @@ mod tests {
     use uuid::Uuid;
 
     use crate::map::actions::split_street::SplitStreet;
-    use crate::map::intersection::Side;
+    use crate::map::intersection::{Intersection, Side};
+    use crate::map::street::Street;
     use crate::map::{actions::street::create::CreateStreet, map::Map};
 
     fn create_map() -> Map {
@@ -135,6 +134,22 @@ mod tests {
     fn add_street(start_pos: Coordinate<f64>, end_pos: Coordinate<f64>, map: &mut Map) {
         let mut action = CreateStreet::new(start_pos, end_pos, Uuid::new_v4());
         action.execute(map);
+    }
+
+    #[test]
+    fn display() {
+        let street_id = Uuid::new_v4();
+        let action = SplitStreet::new(
+            Coordinate {
+                x: 256. + 128.,
+                y: 256.,
+            },
+            street_id,
+        );
+
+        let format = format!("{}", action);
+
+        assert_eq!(format, "[split_street]\n")
     }
 
     #[test]

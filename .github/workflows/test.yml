@@ -21,7 +21,6 @@ jobs:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests'
           RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests'
-      - run: wasm-pack test --headless --chrome
       - run: wasm-pack test --headless --firefox
       - uses: actions-rs/grcov@v0.1
       - name: Upload coverage to Codecov

@@ -1,95 +1,63 @@
-.dialog {
+.overlay {
   position: absolute;
+  left: 0;
   right: 0;
-  top: 0%;
-  height: 100%;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+  top: 0;
+  bottom: 0;
+  z-index: 999;
+}
 
-  min-width: 500px;
-  max-width: 400px;
+.dialog {
+  background-color: lighten($background, 5);
   border-radius: $border-radius;
 
-  background-color: lighten($background, 5%);
-  padding: $padding * 6;
+  width: 560px;
+  min-height: 182px;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
 
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 
-  div:first-child {
-    h2 {
-      margin-top: 0;
-    }
+  h6 {
+    padding-top: 24px;
+    padding-left: 24px;
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+    color: $text;
   }
 
-  div {
-    h2 {
-      margin-top: 1em;
+  .controls {
+    display: flex;
+    justify-content: flex-end;
+    button {
+      height: 52px - 16px;
+
+      padding: 8px;
+      background-color: transparent;
+      border: none;
       color: $text;
-      font-size: 1.2em;
+      font-size: 14px;
     }
 
-    .textbox {
-      height: 4em;
-      display: flex;
-      flex-direction: column;
+    button:hover {
+      height: 52px - 16px;
 
-      .info {
-        color: $error;
-        font-size: 0.8em;
-        text-align: right;
-        padding: 0;
-        padding-top: 0.1em;
-      }
-
-      input[type="number"],
-      input[type="text"] {
-        -moz-appearance: textfield;
-
-        background-color: $background;
-        border: none;
-        border-radius: calc($border-radius / 2);
-        color: $text;
-        padding-left: $padding;
-
-        font-size: 1em;
-        height: 2em;
-      }
-
-      input[type="number"]:focus,
-      input[type="text"]:focus {
-        outline: none;
-      }
-
-      input[type="number"]:focus:not(.error),
-      input[type="text"]:focus:not(.error) {
-        outline: none;
-        border-bottom: solid $primary 2px !important;
-      }
-
-      .error {
-        border: none !important;
-        border-bottom: solid $error 2px !important;
-      }
-
-      input[type="number"]::-webkit-inner-spin-button,
-      input[type="number"]::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
+      padding: 8px;
+      background-color: lighten($background, 10);
+      border: none;
+      color: $text;
+      font-size: 14px;
     }
-    div {
-      position: relative;
-      padding-top: $padding;
-      padding-bottom: $padding;
-      display: flex;
-      justify-content: space-between;
 
-      line-height: em;
-
-      label {
-        padding-right: 1em;
-        font-size: 1em;
-      }
-    }
+    padding: 8px;
   }
+
+  box-shadow: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.22);
 }

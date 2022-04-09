@@ -3,7 +3,7 @@ use rust_editor::{
     plugins::plugin::Plugin,
     ui::{
         app::{EditorError, Shortkey},
-        dialog::Dialog,
+        panel::Panel,
         toolbar::ToolbarPosition,
     },
 };
@@ -36,7 +36,12 @@ impl Plugin<Map> for Settings {
         Ok(())
     }
 
-    fn shortkey_pressed(&mut self, key: &Shortkey, _ctx: &Context<App<Map>>, _editor: &mut App<Map>) {
+    fn shortkey_pressed(
+        &mut self,
+        key: &Shortkey,
+        _ctx: &Context<App<Map>>,
+        _editor: &mut App<Map>,
+    ) {
         if *key == keys!["Control", "m"] {
             let mut visible = self.visible.borrow_mut();
             *visible = !(*visible);
@@ -45,7 +50,7 @@ impl Plugin<Map> for Settings {
             let document = window.document().expect("should have a document on window");
             let body = document.body().expect("document should have a body");
 
-            let dialogs = body.get_elements_by_class_name("dialog");
+            let dialogs = body.get_elements_by_class_name("panel");
             if let Some(settings) = dialogs.item(0) {
                 let settings = settings.dyn_into::<web_sys::HtmlElement>().unwrap();
                 let value = if *visible { "hidden" } else { "visible" };
@@ -54,18 +59,18 @@ impl Plugin<Map> for Settings {
         }
     }
 
-    fn editor_elements(&self, ctx: &Context<App<Map>>, editor: &App<Map>) -> Vec<Html> {
+    fn editor_elements(&mut self, ctx: &Context<App<Map>>, editor: &App<Map>) -> Vec<Html> {
         let plugins = editor.plugins();
         let mut elements: Vec<Html> = Vec::new();
 
         elements.push(html! {
-            <Dialog>
-        {
-            for plugins.filter(|(id, _)| **id != "Settings").map(|(_, plugin)| {
-                plugin.as_ref().borrow().view_options(ctx)
-            })
-        }
-        </Dialog>
+        <Panel>
+            {
+                for plugins.filter(|(id, _)| **id != "Settings").map(|(_, plugin)| {
+                    plugin.as_ref().borrow().view_options(ctx)
+                })
+            }
+        </Panel>
         });
 
         elements

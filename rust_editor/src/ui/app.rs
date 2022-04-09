@@ -48,6 +48,7 @@ pub enum EditorMessages<Data> {
     KeyUp(KeyboardEvent),
     ShortkeyPressed(Shortkey),
     Render(f64),
+    UpdateElements(),
 }
 
 pub type Shortkey = Vec<String>;
@@ -265,6 +266,7 @@ where
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
+            EditorMessages::UpdateElements() => return true,
             EditorMessages::AddPlugin((key, plugin)) => {
                 if let Err(e) = plugin.as_ref().borrow_mut().startup(self) {
                     error!("{}", e)
@@ -440,7 +442,7 @@ where
 
         let mut plugin_elements: Vec<Html> = Vec::new();
         enabled_plugins.iter().for_each(|plugin| {
-            plugin_elements.append(&mut plugin.borrow().editor_elements(ctx, self));
+            plugin_elements.append(&mut plugin.borrow_mut().editor_elements(ctx, self));
             //enabled_plugins[0].as_ref().borrow().editor_elements(ctx, &self)
             //plugin.borrow().view_options(ctx)
         });

@@ -107,7 +107,7 @@ where
 
     fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Data>) {}
 
-    fn editor_elements(&self, ctx: &Context<App<Data>>, editor: &App<Data>) -> Vec<Html> {
+    fn editor_elements(&mut self, ctx: &Context<App<Data>>, editor: &App<Data>) -> Vec<Html> {
         Vec::default()
     }
 

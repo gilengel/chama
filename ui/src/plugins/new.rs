@@ -1,7 +1,7 @@
+use rust_editor::ui::dialog::Dialog;
 use rust_editor::{
     keys,
     plugins::plugin::Plugin,
-    store::Store,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
@@ -12,7 +12,10 @@ use rust_macro::editor_plugin;
 use crate::map::map::Map;
 
 #[editor_plugin(skip, specific_to=Map)]
-pub struct New {}
+pub struct New {
+    #[option(skip)]
+    dialog_visible: Rc<RefCell<bool>>,
+}
 
 impl Plugin<Map> for New {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
@@ -31,19 +34,50 @@ impl Plugin<Map> for New {
         Ok(())
     }
 
-    fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Map>>, editor: &mut App<Map>) {
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, editor: &mut App<Map>) {
         if *key == keys!["Control", "n"] {
-            let map = editor.data_mut();
-            map.clear();
+            let mut dialog_visible = self.dialog_visible.borrow_mut();
+            if *dialog_visible {
+                let map = editor.data_mut();
+                map.clear();
 
-            editor.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
-                redo.clear();
+                editor.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
+                    redo.clear();
+                });
+
+                editor.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
+                    undo.clear();
+                });
+            }
+
+            *dialog_visible = !*dialog_visible;
+            ctx.link().send_message(EditorMessages::UpdateElements());
+        }
+    }
+
+    fn editor_elements(&mut self, ctx: &Context<App<Map>>, _: &App<Map>) -> Vec<Html> {
+        let mut elements: Vec<Html> = Vec::new();
+
+        let dialog_visible = Rc::clone(&self.dialog_visible);
+        if *self.dialog_visible.as_ref().borrow() {
+            let cancel = ctx.link().callback(move |_| {
+                *dialog_visible.borrow_mut() = false;
+                EditorMessages::UpdateElements()
             });
+            let discard = ctx
+                .link()
+                .callback(move |_| EditorMessages::ShortkeyPressed(keys!["Control", "n"]));
 
-            editor.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
-                undo.clear();
+            elements.push(html! {
+            <Dialog title="Save changes before closing?">
+                <button onclick={discard}>{"Discard"}</button>
+                <button onclick={cancel}>{"Cancel"}</button>
+                <button>{"Save"}</button>
+            </Dialog>
             });
         }
+
+        elements
     }
 }
 

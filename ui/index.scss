@@ -1,6 +1,7 @@
 @import "style";
 
 @import "../rust_internal/src/ui/switch";
+@import "../rust_editor/src/ui/panel";
 @import "../rust_editor/src/ui/dialog";
 
 html,
@@ -114,7 +115,7 @@ main {
 }
 .toolbar {
   position: relative;
-  z-index: 999;
+  z-index: 10;
   background: darken($background, 5);
 
   $icon-size: 24px;

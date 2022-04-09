@@ -13,6 +13,7 @@ pub struct Camera {
     position: Coordinate<f64>,
 
     #[option(
+        skip,
         default = false,
         label = "Camera Enabled",
         description = "Enables / Disables the grid"

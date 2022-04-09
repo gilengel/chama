@@ -1,5 +1,6 @@
 use geo::Coordinate;
 use rust_macro::editor_plugin;
+use web_sys::CanvasRenderingContext2d;
 
 use super::plugin::Plugin;
 
@@ -69,13 +70,18 @@ where
             return;
         }
 
-        self.position = self.position + mouse_movement;
+        self.position = mouse_movement; //self.position + mouse_movement;
     }
 
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut App<Data>) {
         if self.active && button == 1 {
             self.active = false;
         }
+    }
+
+    fn render(&self, context: &CanvasRenderingContext2d, _: &App<Data>) {
+        context.set_fill_style(&"#FF8C00".into());
+        context.fill_text(&format!("Camera [x:{}, y:{}]", self.position.x, self.position.y), 100., 100.).unwrap();
     }
 }
 

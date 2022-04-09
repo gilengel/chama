@@ -289,6 +289,7 @@ where
                 }
             }
             EditorMessages::MouseMove(e) => {
+                
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
                 let mouse_diff = Coordinate {
                     x: e.movement_x() as f64,

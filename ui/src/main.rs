@@ -6,6 +6,7 @@ use plugins::delete_district::DeleteDistrict;
 use plugins::delete_street::DeleteStreet;
 use plugins::load::Load;
 use plugins::map_render::MapRender;
+use plugins::new::New;
 use plugins::settings::Settings;
 use plugins::save::Save;
 use rust_editor::plugins::camera::Camera;
@@ -22,6 +23,7 @@ mod algorithm;
 fn main() {
     let mut editor = x_launch::<Map>();
 
+    editor.add_plugin(New::default());
     editor.add_plugin(Save::default());
     editor.add_plugin(Load::default());
     editor.add_plugin(Settings::default());
@@ -40,6 +42,7 @@ fn main() {
 mod tests {
     use crate::plugins::create_freeform_street::CreateFreeformStreet;
     use crate::Map;
+    use crate::plugins::new::New;
     use crate::plugins::settings::Settings;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::{launch, EditorError};
@@ -84,6 +87,7 @@ mod tests {
 
         let mut editor = launch::<Map>("test_container");
 
+        editor.add_plugin(New::default());
         editor.add_plugin(Save::default());
         editor.add_plugin(Load::default());
         editor.add_plugin(Settings::default());

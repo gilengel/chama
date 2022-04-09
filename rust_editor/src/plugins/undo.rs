@@ -22,6 +22,10 @@ impl<T> Undo<T> {
     pub fn push_generic(&mut self, action: Rc<RefCell<dyn Action<T>>>) {
         self.stack.push(action);
     }
+
+    pub fn clear(&mut self) {
+        self.stack.clear();
+    }
 }
 
 impl<Data> Plugin<Data> for Undo<Data>

@@ -86,6 +86,14 @@ impl Map {
         self.height
     }
 
+    /// Removes all data (streets, districts, intersections) from the instance. 
+    /// Be aware that calling this is permanent and not unduable.
+    pub fn clear(&mut self) {
+        self.streets.clear();
+        self.intersections.clear();
+        self.districts.clear();
+    }
+
     /// Returns `true` if `self` has no streets, no intersections and no districts
     pub fn is_empty(&self) -> bool {
         self.streets.is_empty() && self.intersections.is_empty() && self.districts.is_empty()

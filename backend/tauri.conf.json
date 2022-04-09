@@ -4,10 +4,10 @@
     "version": "0.1.0"
   },
   "build": {
-    "distDir": "../frontend/ui/dist",
+    "distDir": "../ui/dist",
     "devPath": "http://localhost:8080",
-    "beforeDevCommand": "cd frontend && trunk serve --watch ui/src rust_editor/src rust_internal/src rust_macro/src",
-    "beforeBuildCommand": "cd frontend && trunk build"
+    "beforeDevCommand": "cd ui && trunk serve --watch src ../rust_editor/src ../rust_internal/src ../rust_macro/src",
+    "beforeBuildCommand": "cd ui && trunk build"
   },
   "tauri": {
     "bundle": {

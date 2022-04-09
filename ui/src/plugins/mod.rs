@@ -7,3 +7,4 @@ pub mod save;
 pub mod load;
 pub mod settings;
 pub mod test_data;
+pub mod debug;

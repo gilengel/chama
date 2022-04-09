@@ -1,6 +1,7 @@
 use map::map::Map;
 
 use plugins::create_district::CreateDistrict;
+use plugins::debug::Debug;
 use plugins::delete_district::DeleteDistrict;
 use plugins::delete_street::DeleteStreet;
 use plugins::load::Load;
@@ -32,6 +33,7 @@ fn main() {
     editor.add_plugin(CreateDistrict::default());
     editor.add_plugin(DeleteDistrict::default());
     editor.add_plugin(MapRender::default());
+    editor.add_plugin(Debug::default());
 }
 
 #[cfg(test)]
@@ -94,6 +96,7 @@ mod tests {
         editor.add_plugin(DeleteDistrict::default());
         editor.add_plugin(MapRender::default());
         editor.add_plugin(TestData::default());
+        editor.add_plugin(crate::plugins::debug::Debug::default());
 
         // The headless test plugin contains the asserts. We chose this approach to avoid hardcoding timeouts
         // or other workarounds.

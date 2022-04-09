@@ -136,19 +136,21 @@ pub(crate) fn generate_option_element(
         });
 
         result.element = quote! {
-        <div class="setting">
-            <label>{#label}</label>
-            <NumberBox<#ty>
-                plugin={#plugin}
-                attribute={#attribute}
-                min={#min}
-                max={#max}
-                value={#value}
-                on_value_change={#callback_name}
-            />
-
-            <label class="description">{#description}</label>
-        </div>};
+            <div class="setting">
+                <label>{#label}</label>
+                <NumberBox<#ty>
+                    plugin={#plugin}
+                    attribute={#attribute}
+                    min={#min}
+                    max={#max}
+                    value={#value}
+                    on_value_change={#callback_name}
+                />
+            </div>
+            <div class="setting">
+                <label class="description">{#description}</label>
+            </div>
+        };
     } else if ty.to_string() == "bool" {
         result.element = quote! {
         <div class="setting">

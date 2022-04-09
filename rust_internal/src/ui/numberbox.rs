@@ -37,7 +37,7 @@ where
     let value = value_handle.deref().clone();
     let range_handle = use_state(|| (props.min, props.max));
 
-    let error_handle = use_state(|| true);
+    let error_handle = use_state(|| false);
     let error = error_handle.deref().clone();
 
     let callback = props.on_value_change.clone();

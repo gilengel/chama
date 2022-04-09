@@ -66,7 +66,7 @@ pub(crate) fn checkbox(
     };
 
     let element = quote! {
-        <Checkbox
+        <Switch
             plugin={#plugin}
             attribute="__enabled"
             value={#default_value}
@@ -136,7 +136,7 @@ pub(crate) fn generate_option_element(
         });
 
         result.element = quote! {
-        <div>
+        <div class="setting">
             <label>{#label}</label>
             <NumberBox<#ty>
                 plugin={#plugin}
@@ -151,9 +151,9 @@ pub(crate) fn generate_option_element(
         </div>};
     } else if ty.to_string() == "bool" {
         result.element = quote! {
-        <div>
+        <div class="setting">
             <label>{#label}</label>
-            <Checkbox
+            <Switch
                 plugin={#plugin}
                 attribute={#attribute}
                 value={true}
@@ -307,7 +307,7 @@ fn produce_use_statements(crate_name: &Ident) -> TokenStream2 {
         use std::ops::Deref;
         use yew::{html, Html, Callback, Context};
         use rust_internal::ui::textbox::TextBox;
-        use rust_internal::ui::{numberbox::NumberBox, checkbox::Checkbox};
+        use rust_internal::ui::{numberbox::NumberBox, switch::Switch};
         use #crate_name::ui::app::App;
         use #crate_name::ui::app::EditorMessages;
         use #crate_name::plugins::plugin::SpecialKey;

@@ -11,10 +11,6 @@ pub struct DialogProps {
 pub fn Dialog(props: &DialogProps) -> Html {
     html! {
         <div class="dialog">
-            <button class="close">
-                <span class="material-icons">{"close"}</span>
-            </button>
-            
             { for props.children.iter() } 
         </div>
     }

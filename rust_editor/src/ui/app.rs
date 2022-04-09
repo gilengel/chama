@@ -1,4 +1,3 @@
-use crate::ui::dialog::Dialog;
 use gloo_render::{request_animation_frame, AnimationFrame};
 use rust_internal::PluginExecutionBehaviour;
 use std::any::Any;
@@ -99,7 +98,10 @@ where
 }
 
 // Not functional. Is used for test cases
-impl<Data> Default for App<Data> where Data: Default{
+impl<Data> Default for App<Data>
+where
+    Data: Default,
+{
     fn default() -> Self {
         Self {
             data: Default::default(),
@@ -429,6 +431,20 @@ where
             .link()
             .callback(|_: PointerEvent| EditorMessages::Render(0.0));
 
+        let enabled_plugins: Vec<Rc<RefCell<dyn PluginWithOptions<Data>>>> = self
+            .plugins
+            .iter()
+            .filter(|(_, plugin)| plugin.borrow().enabled())
+            .map(|(_, plugin)| Rc::clone(plugin))
+            .collect();
+
+        let mut plugin_elements: Vec<Html> = Vec::new();
+        enabled_plugins.iter().for_each(|plugin| {
+            plugin_elements.append(&mut plugin.borrow().editor_elements(ctx, self));
+            //enabled_plugins[0].as_ref().borrow().editor_elements(ctx, &self)
+            //plugin.borrow().view_options(ctx)
+        });
+
         html! {
         <main>
             <canvas ref={self.canvas_ref.clone()} width="2560" height="1440"
@@ -439,6 +455,10 @@ where
             {onkeydown}
             {onpointermove} tabindex="0"></canvas>
 
+            {
+                plugin_elements                
+            }
+            /*
             <Dialog>
             {
                 for self.plugins.iter().map(|(_, plugin)| {
@@ -446,7 +466,7 @@ where
                 })
             }
             </Dialog>
-
+            */
 
             {
                 self.toolbars.view(ctx)
@@ -485,6 +505,16 @@ where
             x: x as f64 - offset.x,
             y: y as f64 - offset.y,
         };
+    }
+
+    pub fn plugins(
+        &self,
+    ) -> std::collections::btree_map::Iter<
+        '_,
+        &str,
+        std::rc::Rc<RefCell<(dyn PluginWithOptions<Data> + 'static)>>,
+    > {
+        self.plugins.iter()
     }
 
     pub fn render(&mut self, link: &Scope<Self>) {
@@ -553,8 +583,8 @@ where
     }
 }
 
-pub fn launch<Data>(id: &str) -> GenericEditor<Data> 
-    where
+pub fn launch<Data>(id: &str) -> GenericEditor<Data>
+where
     Data: Default + 'static,
 {
     let window = web_sys::window().expect("no global `window` exists");

@@ -5,6 +5,7 @@ use plugins::delete_district::DeleteDistrict;
 use plugins::delete_street::DeleteStreet;
 use plugins::load::Load;
 use plugins::map_render::MapRender;
+use plugins::settings::Settings;
 use plugins::save::Save;
 use rust_editor::plugins::camera::Camera;
 use rust_editor::plugins::redo::Redo;
@@ -22,6 +23,7 @@ fn main() {
 
     editor.add_plugin(Save::default());
     editor.add_plugin(Load::default());
+    editor.add_plugin(Settings::default());
     editor.add_plugin(Camera::default());
     editor.add_plugin(Undo::<Map>::default());
     editor.add_plugin(Redo::<Map>::default());
@@ -36,6 +38,7 @@ fn main() {
 mod tests {
     use crate::plugins::create_freeform_street::CreateFreeformStreet;
     use crate::Map;
+    use crate::plugins::settings::Settings;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::{launch, EditorError};
     use rust_macro::editor_plugin;
@@ -81,6 +84,7 @@ mod tests {
 
         editor.add_plugin(Save::default());
         editor.add_plugin(Load::default());
+        editor.add_plugin(Settings::default());
         editor.add_plugin(Camera::default());
         editor.add_plugin(Undo::<Map>::default());
         editor.add_plugin(Redo::<Map>::default());

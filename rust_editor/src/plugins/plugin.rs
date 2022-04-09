@@ -1,10 +1,9 @@
-use std::any::Any;
+use std::{any::Any};
 
 use geo::Coordinate;
 use rust_internal::PluginExecutionBehaviour;
 use web_sys::CanvasRenderingContext2d;
 use yew::{html, Context, Html};
-
 
 use crate::ui::app::{App, EditorError, Shortkey};
 
@@ -33,7 +32,7 @@ pub enum SpecialKey {
 /// # Example
 ///
 /// ```
-/// /* 
+/// /*
 /// TODO: cargo test fails here, reenable it later
 /// #[derive(Plugin)]
 /// pub struct Grid {
@@ -108,6 +107,10 @@ where
 
     fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Data>) {}
 
+    fn editor_elements(&self, ctx: &Context<App<Data>>, editor: &App<Data>) -> Vec<Html> {
+        Vec::default()
+    }
+
     /// Is used to implement behaviour of the state if the user released a pressed mouse button
     /// inside the specified html element by the statemachine.
     ///
@@ -133,7 +136,13 @@ where
     /// While key_down or key_press react on single key events, shortkey_pressed is not a native web event instead pressed keys are aggregated by the
     /// editor and checked against registered shortkeys. If the pressed shortkey exists in one plugin and the plugin is active than only this function
     /// is called.
-    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Data>>, editor: &mut App<Data>) {}
+    fn shortkey_pressed(
+        &mut self,
+        key: &Shortkey,
+        ctx: &Context<App<Data>>,
+        editor: &mut App<Data>,
+    ) {
+    }
 
     fn property_updated(&mut self, property: &str, editor: &mut App<Data>) {}
 

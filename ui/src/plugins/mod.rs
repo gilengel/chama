@@ -5,4 +5,5 @@ pub mod delete_district;
 pub mod map_render;
 pub mod save;
 pub mod load;
+pub mod settings;
 pub mod test_data;

@@ -8,7 +8,7 @@ pub struct Camera {
     #[option(
         skip,
         label = "Camera Position",
-        description = "Enables / Disables the grid"
+        description = "Current position of the camera"
     )]
     position: Coordinate<f64>,
 
@@ -16,7 +16,7 @@ pub struct Camera {
         skip,
         default = false,
         label = "Camera Enabled",
-        description = "Enables / Disables the grid"
+        description = "Enables / Disables the camera"
     )]
     active: bool,
 }

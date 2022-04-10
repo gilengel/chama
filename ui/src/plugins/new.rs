@@ -1,6 +1,6 @@
+use rust_editor::input::keyboard::Key;
 use rust_editor::ui::dialog::Dialog;
 use rust_editor::{
-    keys,
     plugins::plugin::Plugin,
     ui::{
         app::{EditorError, Shortkey},
@@ -19,7 +19,7 @@ pub struct New {
 
 impl Plugin<Map> for New {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        editor.add_shortkey::<New>(keys!["Control", "n"])?;
+        editor.add_shortkey::<New>(vec![Key::Ctrl, Key::N])?;
 
         let toolbar = editor.get_or_add_toolbar("primary.actions", ToolbarPosition::Left)?;
 
@@ -28,14 +28,14 @@ impl Plugin<Map> for New {
             "new",
             "New".to_string(),
             || false,
-            || EditorMessages::ShortkeyPressed(keys!["Control", "n"]),
+            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::N]),
         )?;
 
         Ok(())
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, editor: &mut App<Map>) {
-        if *key == keys!["Control", "n"] {
+        if *key == vec![Key::Ctrl, Key::N] {
             let mut dialog_visible = self.dialog_visible.borrow_mut();
             if *dialog_visible {
                 let map = editor.data_mut();
@@ -66,7 +66,7 @@ impl Plugin<Map> for New {
             });
             let discard = ctx
                 .link()
-                .callback(move |_| EditorMessages::ShortkeyPressed(keys!["Control", "n"]));
+                .callback(move |_| EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::N]));
 
             elements.push(html! {
             <Dialog title="Save changes before closing?">
@@ -83,7 +83,7 @@ impl Plugin<Map> for New {
 
 #[cfg(test)]
 mod tests {
-    use rust_editor::keys;
+    use rust_editor::input::keyboard::Key;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::App;
     use rust_editor::ui::toolbar::ToolbarPosition;
@@ -98,7 +98,7 @@ mod tests {
         let mut plugin = New::default();
         plugin.startup(&mut app).unwrap();
 
-        assert!(app.has_shortkey(keys!["Control", "n"]))
+        assert!(app.has_shortkey(vec![Key::Ctrl, Key::N]))
     }
 
     #[test]

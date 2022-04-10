@@ -1,11 +1,10 @@
 use geo::{prelude::Centroid, Coordinate};
 use rust_editor::{
-    keys,
     plugins::plugin::Plugin,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, gizmo::Id,
+    }, gizmo::Id, input::keyboard::Key,
 };
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
@@ -17,7 +16,7 @@ pub struct Debug {}
 
 impl Plugin<Map> for Debug {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        editor.add_shortkey::<Debug>(keys!["Control", "u"])?;
+        editor.add_shortkey::<Debug>(vec![Key::Ctrl, Key::U])?;
 
         let toolbar = editor.get_or_add_toolbar("primary.actions", ToolbarPosition::Left)?;
 
@@ -27,14 +26,14 @@ impl Plugin<Map> for Debug {
             "debug",
             "Show/Hide debug information".to_string(),
             move || *enabled.as_ref().borrow(),
-            || EditorMessages::ShortkeyPressed(keys!["Control", "u"]),
+            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::U]),
         )?;
 
         Ok(())
     }
 
-    fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Map>>, editor: &mut App<Map>) {
-        if *key == keys!["Control", "u"] {
+    fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Map>>, _: &mut App<Map>) {
+        if *key == vec![Key::Ctrl, Key::U] {
             let mut enabled = self.__enabled.borrow_mut();
             *enabled = !*enabled;
         }
@@ -96,7 +95,7 @@ impl Plugin<Map> for Debug {
 
 #[cfg(test)]
 mod tests {
-    use rust_editor::keys;
+    use rust_editor::input::keyboard::Key;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::App;
     use rust_editor::ui::toolbar::ToolbarPosition;
@@ -111,7 +110,7 @@ mod tests {
         let mut plugin = Debug::default();
         plugin.startup(&mut app).unwrap();
 
-        assert!(app.has_shortkey(keys!["Control", "u"]))
+        assert!(app.has_shortkey(vec![Key::Ctrl, Key::U]))
     }
 
     #[test]

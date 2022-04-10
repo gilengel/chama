@@ -2,8 +2,7 @@ use rust_macro::editor_plugin;
 
 use crate::{
     actions::Action,
-    keys,
-    ui::{app::{EditorError, Shortkey}, toolbar::ToolbarPosition},
+    ui::{app::{EditorError, Shortkey}, toolbar::ToolbarPosition}, input::keyboard::Key,
 };
 
 use super::plugin::{Plugin};
@@ -33,7 +32,7 @@ where
     Data: Default + 'static,
 {
     fn startup(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
-        editor.add_shortkey::<Undo<Data>>(keys!["Control", "z"])?;
+        editor.add_shortkey::<Undo<Data>>(vec![Key::Ctrl, Key::Z])?;
 
         let toolbar = editor.get_or_add_toolbar("primary.undo_redo", ToolbarPosition::Left)?;
 
@@ -42,14 +41,14 @@ where
             "undo",
             "Undo".to_string(),
             || false,
-            || EditorMessages::ShortkeyPressed(keys!["Control", "z"]),
+            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::Z]),
         )?;
 
         Ok(())
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Data>>, editor: &mut App<Data>) {
-        if *key == keys!["Control", "z"] {
+        if *key == vec![Key::Ctrl, Key::Z] {
             if let Some(action) = self.stack.pop() {
                 action.borrow_mut().undo(editor.data_mut());
 

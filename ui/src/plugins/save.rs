@@ -1,11 +1,10 @@
 use rust_editor::{
-    keys,
     plugins::plugin::Plugin,
     store::Store,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    },
+    }, input::keyboard::Key,
 };
 use rust_macro::editor_plugin;
 
@@ -16,7 +15,7 @@ pub struct Save {}
 
 impl Plugin<Map> for Save {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        editor.add_shortkey::<Save>(keys!["Control", "s"])?;
+        editor.add_shortkey::<Save>(vec![Key::Ctrl, Key::S])?;
 
         let toolbar = editor.get_or_add_toolbar("primary.actions", ToolbarPosition::Left)?;
 
@@ -25,14 +24,14 @@ impl Plugin<Map> for Save {
             "save",
             "Save".to_string(),
             || false,
-            || EditorMessages::ShortkeyPressed(keys!["Control", "s"]),
+            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::S]),
         )?;
 
         Ok(())
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Map>>, editor: &mut App<Map>) {
-        if *key == keys!["Control", "s"] {
+        if *key == vec![Key::Ctrl, Key::S] {
             if let Some(store) = Store::new("map_editor") {
                 store.sync_local_storage(editor.data()).unwrap();
             }
@@ -42,7 +41,7 @@ impl Plugin<Map> for Save {
 
 #[cfg(test)]
 mod tests {
-    use rust_editor::keys;
+    use rust_editor::input::keyboard::Key;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::App;
     use rust_editor::ui::toolbar::ToolbarPosition;
@@ -57,7 +56,7 @@ mod tests {
         let mut plugin = Save::default();
         plugin.startup(&mut app).unwrap();
 
-        assert!(app.has_shortkey(keys!["Control", "s"]))
+        assert!(app.has_shortkey(vec![Key::Ctrl, Key::S]))
     }
 
     #[test]

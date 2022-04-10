@@ -8,10 +8,11 @@ use thiserror::Error;
 use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
+use crate::input::keyboard::Key;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::error;
+use crate::{error, log};
 use geo::Coordinate;
 use web_sys::{
     CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent,
@@ -19,11 +20,6 @@ use web_sys::{
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
-
-#[macro_export]
-macro_rules! keys {
-    ($($x:expr),*) => (vec![$($x.to_string()),*]);
-}
 
 pub enum EditorMessages<Data> {
     AddPlugin(
@@ -51,7 +47,7 @@ pub enum EditorMessages<Data> {
     UpdateElements(),
 }
 
-pub type Shortkey = Vec<String>;
+pub type Shortkey = Vec<Key>;
 
 pub type PluginId = &'static str;
 
@@ -93,11 +89,11 @@ where
 
     /// Internally stores the pressed keys as registered by native web events.
     /// Keys are pushed to the end so the vec is sorted from oldest pressed key to newest
-    pressed_keys: Vec<String>,
+    pressed_keys: Vec<Key>,
 
     canvas_size: Coordinate<i32>,
 
-    last_mouse_pos: Coordinate<f64>
+    last_mouse_pos: Coordinate<f64>,
 }
 
 // Not functional. Is used for test cases
@@ -116,7 +112,7 @@ where
             context: Default::default(),
             pressed_keys: Default::default(),
             canvas_size: Default::default(),
-            last_mouse_pos: Coordinate { x: 0., y: 0. }
+            last_mouse_pos: Coordinate { x: 0., y: 0. },
         }
     }
 }
@@ -235,7 +231,7 @@ where
 
             pressed_keys: Vec::new(),
             canvas_size: Coordinate { x: 1920, y: 1080 },
-            last_mouse_pos: Coordinate { x: 0., y: 0. }
+            last_mouse_pos: Coordinate { x: 0., y: 0. },
         }
     }
 
@@ -292,7 +288,7 @@ where
                     ctx.link().send_message(EditorMessages::ActivatePlugin(key))
                 }
             }
-            EditorMessages::MouseMove(e) => {                
+            EditorMessages::MouseMove(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
                 let mouse_diff = mouse_pos - self.last_mouse_pos;
 
@@ -331,14 +327,17 @@ where
             EditorMessages::KeyDown(e) => {
                 e.prevent_default();
 
+                let key: Key = e.key().into();
                 match self.pressed_keys.last() {
                     Some(last) => {
-                        if *last != e.key() {
-                            self.pressed_keys.push(e.key())
+                        if *last != key {
+                            self.pressed_keys.push(key)
                         }
                     }
-                    None => self.pressed_keys.push(e.key()),
+                    None => self.pressed_keys.push(key),
                 }
+
+                log!("{:?}", self.pressed_keys);
 
                 for shortkeys in self.shortkeys.values() {
                     for shortkey in shortkeys {
@@ -354,7 +353,7 @@ where
                 }
             }
             EditorMessages::KeyUp(e) => {
-                self.pressed_keys.retain(|value| *value != e.key());
+                self.pressed_keys.retain(|value| *value != e.key().into());
 
                 let mut special_keys = vec![];
                 if e.ctrl_key() {
@@ -372,6 +371,7 @@ where
                 }
             }
             EditorMessages::ShortkeyPressed(shortkey) => {
+                log!("MUU {:?}", shortkey);
                 for (plugin_id, shortkeys) in self.shortkeys.clone().iter() {
                     if shortkeys.contains(&shortkey) {
                         let plugin = Rc::clone(self.plugins.get(plugin_id).unwrap());
@@ -463,7 +463,7 @@ where
             {onpointermove} tabindex="0"></canvas>
 
             {
-                plugin_elements                
+                plugin_elements
             }
             /*
             <Dialog>

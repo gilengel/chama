@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
-    prelude::{Contains, EuclideanDistance, Centroid},
+    prelude::{Contains, EuclideanDistance},
     Coordinate, Line, LineString, Point, Polygon,
 };
 use rust_editor::{

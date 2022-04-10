@@ -2,12 +2,11 @@ use geo::Coordinate;
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    keys,
     plugins::plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    },
+    }, input::keyboard::Key,
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -22,7 +21,7 @@ pub struct DeleteDistrict {
 
 impl Plugin<Map> for DeleteDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        editor.add_shortkey::<DeleteDistrict>(keys!["Control", "f"])?;
+        editor.add_shortkey::<DeleteDistrict>(vec![Key::Ctrl, Key::F])?;
 
         let toolbar =
             editor.get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)?;
@@ -40,7 +39,7 @@ impl Plugin<Map> for DeleteDistrict {
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
-        if *key == keys!["Control", "f"] {
+        if *key == vec![Key::Ctrl, Key::F] {
             ctx.link()
                 .send_message(EditorMessages::ActivatePlugin(DeleteDistrict::identifier()));
         }
@@ -80,7 +79,7 @@ impl Plugin<Map> for DeleteDistrict {
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
-    use rust_editor::keys;
+    use rust_editor::input::keyboard::Key;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::App;
     use rust_editor::ui::toolbar::ToolbarPosition;
@@ -99,7 +98,7 @@ mod tests {
         };
         delete_district_plugin.startup(&mut app).unwrap();
 
-        assert!(app.has_shortkey(keys!["Control", "f"]))
+        assert!(app.has_shortkey(vec![Key::Ctrl, Key::F]))
     }
 
     #[test]

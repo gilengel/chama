@@ -12,12 +12,11 @@ use geo::Coordinate;
 use rust_editor::{
     actions::{Action, Redo, Undo},
     gizmo::Id,
-    keys,
     plugins::plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    },
+    }, input::keyboard::Key,
 };
 use uuid::Uuid;
 
@@ -100,7 +99,7 @@ impl CreateDistrictAction {
 
 impl Plugin<Map> for CreateDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        editor.add_shortkey::<CreateDistrict>(keys!["Control", "d"])?;
+        editor.add_shortkey::<CreateDistrict>(vec![Key::Ctrl, Key::D])?;
 
         let toolbar =
             editor.get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)?;
@@ -129,7 +128,7 @@ impl Plugin<Map> for CreateDistrict {
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
-        if *key == keys!["Control", "d"] {
+        if *key == vec![Key::Ctrl, Key::D] {
             ctx.link()
                 .send_message(EditorMessages::ActivatePlugin(CreateDistrict::identifier()));
         }
@@ -179,7 +178,7 @@ impl Plugin<Map> for CreateDistrict {
 
 #[cfg(test)]
 mod tests {
-    use rust_editor::keys;
+    use rust_editor::input::keyboard::Key;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::App;
     use rust_editor::ui::toolbar::ToolbarPosition;
@@ -194,7 +193,7 @@ mod tests {
         let mut plugin = CreateDistrict::default();
         plugin.startup(&mut app).unwrap();
 
-        assert!(app.has_shortkey(keys!["Control", "d"]))
+        assert!(app.has_shortkey(vec![Key::Ctrl, Key::D]))
     }
 
     #[test]

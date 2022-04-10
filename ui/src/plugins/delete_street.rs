@@ -4,12 +4,11 @@ use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction},
     interactive_element::{InteractiveElement, InteractiveElementState},
-    keys,
     plugins::plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    },
+    }, input::keyboard::Key,
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -138,7 +137,7 @@ impl DeleteStreet {
 }
 impl Plugin<Map> for DeleteStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        editor.add_shortkey::<DeleteStreet>(keys!["Control", "2"])?;
+        editor.add_shortkey::<DeleteStreet>(vec![Key::Ctrl, Key::D2])?;
 
         let toolbar =
             editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
@@ -156,7 +155,7 @@ impl Plugin<Map> for DeleteStreet {
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
-        if *key == keys!["Control", "2"] {
+        if *key == vec![Key::Ctrl, Key::D2] {
             ctx.link()
                 .send_message(EditorMessages::ActivatePlugin(DeleteStreet::identifier()));
         }
@@ -209,10 +208,9 @@ impl Plugin<Map> for DeleteStreet {
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
-    use rust_editor::ui::toolbar::ToolbarPosition;
+    use rust_editor::{ui::toolbar::ToolbarPosition, input::keyboard::Key};
     use geo::Coordinate;
     use rust_editor::actions::Action;
-    use rust_editor::keys;
     use rust_editor::ui::app::App;
     use uuid::Uuid;
 
@@ -415,7 +413,7 @@ mod tests {
         };
         delete_street_plugin.startup(&mut app).unwrap();
 
-        assert!(app.has_shortkey(keys!["Control", "2"]))
+        assert!(app.has_shortkey(vec![Key::Ctrl, Key::D2]))
     }
 
     #[test]

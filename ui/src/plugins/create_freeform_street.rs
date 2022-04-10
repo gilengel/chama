@@ -3,14 +3,13 @@ use std::fmt;
 use geo::{simplify::Simplify, Coordinate, LineString};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    keys,
     plugins::plugin::{Plugin, PluginWithOptions},
     renderer::apply_style,
     style::Style,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    },
+    }, input::keyboard::Key,
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -106,7 +105,7 @@ impl fmt::Display for CreateFreeFormStreetAction {
 
 impl Plugin<Map> for CreateFreeformStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
-        editor.add_shortkey::<CreateFreeformStreet>(keys!["Control", "a"])?;
+        editor.add_shortkey::<CreateFreeformStreet>(vec![Key::Ctrl, Key::A])?;
 
         let toolbar =
             editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
@@ -141,7 +140,7 @@ impl Plugin<Map> for CreateFreeformStreet {
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
-        if *key == keys!["Control", "a"] {
+        if *key == vec![Key::Ctrl, Key::A] {
             ctx.link().send_message(EditorMessages::ActivatePlugin(
                 CreateFreeformStreet::identifier(),
             ));
@@ -200,7 +199,7 @@ impl Plugin<Map> for CreateFreeformStreet {
 
 #[cfg(test)]
 mod tests {
-    use rust_editor::keys;
+    use rust_editor::input::keyboard::Key;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::App;
     use rust_editor::ui::toolbar::ToolbarPosition;
@@ -215,7 +214,7 @@ mod tests {
         let mut plugin = CreateFreeformStreet::default();
         plugin.startup(&mut app).unwrap();
 
-        assert!(app.has_shortkey(keys!["Control", "a"]))
+        assert!(app.has_shortkey(vec![Key::Ctrl, Key::A]))
     }
 
     #[test]

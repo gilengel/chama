@@ -70,7 +70,7 @@ where
             return;
         }
 
-        self.position = mouse_movement; //self.position + mouse_movement;
+        self.position = self.position + mouse_movement;
     }
 
     fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut App<Data>) {

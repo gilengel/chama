@@ -96,6 +96,8 @@ where
     pressed_keys: Vec<String>,
 
     canvas_size: Coordinate<i32>,
+
+    last_mouse_pos: Coordinate<f64>
 }
 
 // Not functional. Is used for test cases
@@ -114,6 +116,7 @@ where
             context: Default::default(),
             pressed_keys: Default::default(),
             canvas_size: Default::default(),
+            last_mouse_pos: Coordinate { x: 0., y: 0. }
         }
     }
 }
@@ -232,6 +235,7 @@ where
 
             pressed_keys: Vec::new(),
             canvas_size: Coordinate { x: 1920, y: 1080 },
+            last_mouse_pos: Coordinate { x: 0., y: 0. }
         }
     }
 
@@ -288,13 +292,9 @@ where
                     ctx.link().send_message(EditorMessages::ActivatePlugin(key))
                 }
             }
-            EditorMessages::MouseMove(e) => {
-                
+            EditorMessages::MouseMove(e) => {                
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
-                let mouse_diff = Coordinate {
-                    x: e.movement_x() as f64,
-                    y: e.movement_y() as f64,
-                };
+                let mouse_diff = mouse_pos - self.last_mouse_pos;
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
                     plugin
@@ -306,6 +306,8 @@ where
             EditorMessages::MouseDown(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
 
+                self.last_mouse_pos = mouse_pos;
+
                 let enabled_plugins = enabled_plugins(&mut self.plugins);
                 for (_, plugin) in &enabled_plugins {
                     plugin
@@ -316,6 +318,8 @@ where
             }
             EditorMessages::MouseUp(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
+
+                self.last_mouse_pos = mouse_pos;
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
                     plugin

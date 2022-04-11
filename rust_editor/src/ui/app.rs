@@ -448,8 +448,6 @@ where
         let mut plugin_elements: Vec<Html> = Vec::new();
         enabled_plugins.iter().for_each(|plugin| {
             plugin_elements.append(&mut plugin.borrow_mut().editor_elements(ctx, self));
-            //enabled_plugins[0].as_ref().borrow().editor_elements(ctx, &self)
-            //plugin.borrow().view_options(ctx)
         });
 
         html! {
@@ -465,16 +463,7 @@ where
             {
                 plugin_elements
             }
-            /*
-            <Dialog>
-            {
-                for self.plugins.iter().map(|(_, plugin)| {
-                    plugin.borrow().view_options(ctx)
-                })
-            }
-            </Dialog>
-            */
-
+    
             {
                 self.toolbars.view(ctx)
             }

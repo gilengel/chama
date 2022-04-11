@@ -78,15 +78,11 @@ impl Plugin<Map> for Debug {
             let p3 = _p + street.perp() * (width / 2.0 - 5.0);
             context.move_to(p1.x, p1.y);
             context.line_to(p2.x, p2.y);
-            context.line_to(p3.x, p3.y);
-    
+            context.line_to(p3.x, p3.y);    
             context.close_path();
-    
-            context.save();
     
             context.set_stroke_style(&"#FFFFFF".into());
             context.stroke();
-            context.restore();
         }
     }
 

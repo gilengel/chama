@@ -212,7 +212,6 @@ impl Street {
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         self.polygon.render(self.style(), &context)?;
         
-
         Ok(())
     }
 

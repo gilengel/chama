@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 js-sys = "0.3.55"
 wasm-bindgen = "0.2.78"
+wasm-bindgen-futures = "0.4.30"
 console_error_panic_hook = "0.1.7"
 geo-types = "0.7.2"
 geo = { version = "0.19.0", features = ["use-serde"] }
@@ -49,6 +50,11 @@ features = [
   'File',
   'DomRect',
   'DomTokenList',
-  'EventListener'
+  'EventListener',
+  'DataTransfer', 
+  'DataTransferItem',
+  'DataTransferItemList',
+  'EventTarget',
+  'ImageBitmap'
 ]
 

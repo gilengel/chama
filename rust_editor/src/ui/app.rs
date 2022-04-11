@@ -15,8 +15,11 @@ use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 use crate::{error, log};
 use geo::Coordinate;
 use web_sys::{
-    CanvasRenderingContext2d, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent,
+    CanvasRenderingContext2d, DragEvent, FileReader, HtmlCanvasElement, ImageBitmap, KeyboardEvent,
+    MouseEvent, PointerEvent,
 };
+
+use wasm_bindgen_futures::{spawn_local, JsFuture};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
@@ -45,6 +48,8 @@ pub enum EditorMessages<Data> {
     ShortkeyPressed(Shortkey),
     Render(f64),
     UpdateElements(),
+    Drop(DragEvent),
+    DragOver(DragEvent),
 }
 
 pub type Shortkey = Vec<Key>;
@@ -94,6 +99,8 @@ where
     canvas_size: Coordinate<i32>,
 
     last_mouse_pos: Coordinate<f64>,
+
+    background_image: Rc<RefCell<Option<ImageBitmap>>>,
 }
 
 // Not functional. Is used for test cases
@@ -113,6 +120,7 @@ where
             pressed_keys: Default::default(),
             canvas_size: Default::default(),
             last_mouse_pos: Coordinate { x: 0., y: 0. },
+            background_image: Rc::new(RefCell::new(None)),
         }
     }
 }
@@ -232,6 +240,7 @@ where
             pressed_keys: Vec::new(),
             canvas_size: Coordinate { x: 1920, y: 1080 },
             last_mouse_pos: Coordinate { x: 0., y: 0. },
+            background_image: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -266,6 +275,43 @@ where
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
+            EditorMessages::Drop(e) => {
+                e.prevent_default();
+
+                // TODO: Move to separate plugin
+                let background_image = Rc::clone(&self.background_image);
+                spawn_local(async move {
+                    let background_image = background_image.clone();
+                    if let Some(transfer) = e.data_transfer() {
+                        let items = transfer.items();
+                        for i in 0..items.length() {
+                            let item = items.get(i).unwrap();
+
+                            if &item.kind()[..] == "file" {
+                                let item = item.get_as_file().unwrap().unwrap();
+
+                                let window = web_sys::window().expect("no global `window` exists");
+                                let future = JsFuture::from(
+                                    window.create_image_bitmap_with_blob(&item).unwrap(),
+                                );
+
+                                let reader = FileReader::new().unwrap();
+                                reader.read_as_text(&item).unwrap();
+
+                                let resolved = future.await;
+
+                                if let Ok(e) = resolved {
+                                    *background_image.borrow_mut() = Some(e.dyn_into().unwrap());
+                                }
+ 
+                            }
+                        }
+                    }
+                });
+            }
+            EditorMessages::DragOver(e) => {
+                e.prevent_default();
+            }
             EditorMessages::UpdateElements() => return true,
             EditorMessages::AddPlugin((key, plugin)) => {
                 if let Err(e) = plugin.as_ref().borrow_mut().startup(self) {
@@ -276,8 +322,6 @@ where
                 ctx.link().send_message(EditorMessages::ActivatePlugin(key))
             }
             EditorMessages::AddPlugins(plugins) => {
-                //self.plugins.reserve(plugins.len());
-
                 for (key, plugin) in plugins {
                     if let Err(e) = plugin.as_ref().borrow_mut().startup(self) {
                         error!("{}", e)
@@ -434,6 +478,8 @@ where
         let onkeyup = ctx.link().callback(|e| EditorMessages::KeyUp(e));
         let onkeydown = ctx.link().callback(|e| EditorMessages::KeyDown(e));
 
+        let ondrop = ctx.link().callback(|e| EditorMessages::Drop(e));
+        let ondragover = ctx.link().callback(|e| EditorMessages::DragOver(e));
         let onpointermove = ctx
             .link()
             .callback(|_: PointerEvent| EditorMessages::Render(0.0));
@@ -453,6 +499,8 @@ where
         html! {
         <main>
             <canvas ref={self.canvas_ref.clone()} width="2560" height="1440"
+            {ondrop}
+            {ondragover}
             {onmousedown}
             {onmouseup}
             {onmousemove}
@@ -463,7 +511,7 @@ where
             {
                 plugin_elements
             }
-    
+
             {
                 self.toolbars.view(ctx)
             }
@@ -525,6 +573,13 @@ where
             self.canvas_size.y.into(),
         );
 
+        // TODO: Move to separate plugin
+        let background_image = self.background_image.borrow();
+        if background_image.is_some() {
+            let background_image = background_image.as_ref().unwrap();
+
+            context.draw_image_with_image_bitmap(background_image, 100.0, 100.0).unwrap();
+        }
         self.plugin(|camera: &Camera| {
             context.translate(camera.x(), camera.y()).unwrap();
         });

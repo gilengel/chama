@@ -1,0 +1,11 @@
+.reference {
+    position: absolute;
+
+    border: solid 4px transparent;
+    pointer-events: none;
+}
+
+.reference-selected {
+    border: solid 4px $primary;
+    border-radius: 2px;
+}

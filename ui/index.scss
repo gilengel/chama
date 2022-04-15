@@ -1,8 +1,12 @@
 @import "style";
 
+// Editor components
 @import "../rust_internal/src/ui/switch";
 @import "../rust_editor/src/ui/panel";
 @import "../rust_editor/src/ui/dialog";
+
+// Local plugins
+@import "src/plugins/reference_image.scss";
 
 html,
 body {

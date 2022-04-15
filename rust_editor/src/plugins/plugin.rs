@@ -2,10 +2,10 @@ use std::{any::Any};
 
 use geo::Coordinate;
 use rust_internal::PluginExecutionBehaviour;
-use web_sys::CanvasRenderingContext2d;
+use web_sys::{CanvasRenderingContext2d, DragEvent};
 use yew::{html, Context, Html};
 
-use crate::ui::app::{App, EditorError, Shortkey};
+use crate::{ui::app::{App, EditorError, Shortkey}, input::keyboard::Key};
 
 pub trait AnyPlugin<Data>: Plugin<Data>
 where
@@ -124,13 +124,17 @@ where
     ///
     /// * 'key' the value of the pressed key. [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
     /// * `data` - The data hold by the editor
-    fn key_down(&mut self, key: &str, editor: &mut App<Data>) {}
+    fn key_down(&mut self, key: Key, editor: &mut App<Data>) {}
 
     /// React to a key released on a keyboard.  
     ///
     /// * 'key' the value of the released key. [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
     /// * `data` - The data hold by the editor
-    fn key_up(&mut self, key: &str, editor: &mut App<Data>) {}
+    fn key_up(&mut self, key: Key, editor: &mut App<Data>) {}
+
+
+    /// React to a native web drop event.
+    fn drop(&mut self, event: DragEvent) {}
 
     /// Is triggered if a shortkey is pressed that is registered with the associated plugin. Notice the difference to key_down or key_press function:
     /// While key_down or key_press react on single key events, shortkey_pressed is not a native web event instead pressed keys are aggregated by the

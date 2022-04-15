@@ -12,14 +12,12 @@ use crate::input::keyboard::Key;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::{error, log};
+use crate::error;
 use geo::Coordinate;
 use web_sys::{
-    CanvasRenderingContext2d, DragEvent, FileReader, HtmlCanvasElement, ImageBitmap, KeyboardEvent,
-    MouseEvent, PointerEvent,
+    CanvasRenderingContext2d, DragEvent, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent,
 };
 
-use wasm_bindgen_futures::{spawn_local, JsFuture};
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
 use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
@@ -99,8 +97,6 @@ where
     canvas_size: Coordinate<i32>,
 
     last_mouse_pos: Coordinate<f64>,
-
-    background_image: Rc<RefCell<Option<ImageBitmap>>>,
 }
 
 // Not functional. Is used for test cases
@@ -120,7 +116,6 @@ where
             pressed_keys: Default::default(),
             canvas_size: Default::default(),
             last_mouse_pos: Coordinate { x: 0., y: 0. },
-            background_image: Rc::new(RefCell::new(None)),
         }
     }
 }
@@ -240,7 +235,6 @@ where
             pressed_keys: Vec::new(),
             canvas_size: Coordinate { x: 1920, y: 1080 },
             last_mouse_pos: Coordinate { x: 0., y: 0. },
-            background_image: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -278,36 +272,9 @@ where
             EditorMessages::Drop(e) => {
                 e.prevent_default();
 
-                // TODO: Move to separate plugin
-                let background_image = Rc::clone(&self.background_image);
-                spawn_local(async move {
-                    let background_image = background_image.clone();
-                    if let Some(transfer) = e.data_transfer() {
-                        let items = transfer.items();
-                        for i in 0..items.length() {
-                            let item = items.get(i).unwrap();
-
-                            if &item.kind()[..] == "file" {
-                                let item = item.get_as_file().unwrap().unwrap();
-
-                                let window = web_sys::window().expect("no global `window` exists");
-                                let future = JsFuture::from(
-                                    window.create_image_bitmap_with_blob(&item).unwrap(),
-                                );
-
-                                let reader = FileReader::new().unwrap();
-                                reader.read_as_text(&item).unwrap();
-
-                                let resolved = future.await;
-
-                                if let Ok(e) = resolved {
-                                    *background_image.borrow_mut() = Some(e.dyn_into().unwrap());
-                                }
- 
-                            }
-                        }
-                    }
-                });
+                for (_, plugin) in enabled_plugins(&mut self.plugins) {
+                    plugin.as_ref().borrow_mut().drop(e.clone())
+                }
             }
             EditorMessages::DragOver(e) => {
                 e.prevent_default();
@@ -381,8 +348,6 @@ where
                     None => self.pressed_keys.push(key),
                 }
 
-                log!("{:?}", self.pressed_keys);
-
                 for shortkeys in self.shortkeys.values() {
                     for shortkey in shortkeys {
                         if self.pressed_keys.ends_with(shortkey) {
@@ -393,7 +358,7 @@ where
                 }
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
-                    plugin.as_ref().borrow_mut().key_down(&e.key()[..], self);
+                    plugin.as_ref().borrow_mut().key_down(e.key().into(), self);
                 }
             }
             EditorMessages::KeyUp(e) => {
@@ -411,11 +376,10 @@ where
                 }
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
-                    plugin.as_ref().borrow_mut().key_up(&e.key()[..], self);
+                    plugin.as_ref().borrow_mut().key_up(e.key().into(), self);
                 }
             }
             EditorMessages::ShortkeyPressed(shortkey) => {
-                log!("MUU {:?}", shortkey);
                 for (plugin_id, shortkeys) in self.shortkeys.clone().iter() {
                     if shortkeys.contains(&shortkey) {
                         let plugin = Rc::clone(self.plugins.get(plugin_id).unwrap());
@@ -497,16 +461,16 @@ where
         });
 
         html! {
-        <main>
+        <main {ondrop}
+        {ondragover}
+        {onmousedown}
+        {onmouseup}
+        {onmousemove}
+        {onkeyup}
+        {onkeydown}
+        {onpointermove}>
             <canvas ref={self.canvas_ref.clone()} width="2560" height="1440"
-            {ondrop}
-            {ondragover}
-            {onmousedown}
-            {onmouseup}
-            {onmousemove}
-            {onkeyup}
-            {onkeydown}
-            {onpointermove} tabindex="0"></canvas>
+             tabindex="0"></canvas>
 
             {
                 plugin_elements
@@ -573,13 +537,6 @@ where
             self.canvas_size.y.into(),
         );
 
-        // TODO: Move to separate plugin
-        let background_image = self.background_image.borrow();
-        if background_image.is_some() {
-            let background_image = background_image.as_ref().unwrap();
-
-            context.draw_image_with_image_bitmap(background_image, 100.0, 100.0).unwrap();
-        }
         self.plugin(|camera: &Camera| {
             context.translate(camera.x(), camera.y()).unwrap();
         });

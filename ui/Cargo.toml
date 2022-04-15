@@ -20,6 +20,7 @@ rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }
 yew = { git = "https://github.com/yewstack/yew", branch = "master", features=["csr"] }
 wasm-bindgen = "0.2.78"
+wasm-bindgen-futures = "0.4.30"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 

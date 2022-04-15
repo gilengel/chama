@@ -122,6 +122,7 @@ impl Plugin<Map> for CreateFreeformStreet {
 
         Ok(())
     }
+    
     fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &App<Map>) {
         if button == 0 {
             self.brush_active = true;

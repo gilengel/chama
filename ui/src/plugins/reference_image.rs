@@ -38,7 +38,6 @@ struct ImageData {
     content: String,
     position: [i32; 2],
     size: [u32; 2],
-    rotation: f64,
     selected: bool,
     mouse_offset: [i32; 2],
     z_index: i32,
@@ -48,7 +47,6 @@ struct ImageData {
 struct ImageProps {
     content: String,
     size: [u32; 2],
-    rotation: f64,
     position: [i32; 2],
     z_index: i32,
     selected: bool,
@@ -105,7 +103,6 @@ impl Plugin<Map> for ReferenceImage {
                                     event.client_y() - (size[1] / 2) as i32,
                                 ],
                                 size,
-                                rotation: 0.,
                                 selected: false,
                                 mouse_offset: [0, 0],
                                 z_index: highest_z_index,
@@ -124,7 +121,7 @@ impl Plugin<Map> for ReferenceImage {
 
         for image in images.iter() {
             elements.push(html! {
-                <ImageComponent content={image.content.clone()} size={image.size} rotation={image.rotation} position={image.position} selected={image.selected} z_index={image.z_index} />
+                <ImageComponent content={image.content.clone()} size={image.size} position={image.position} selected={image.selected} z_index={image.z_index} />
             });
         }
 

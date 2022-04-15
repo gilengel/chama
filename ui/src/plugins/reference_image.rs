@@ -1,5 +1,4 @@
 use geo::Coordinate;
-use rust_editor::log;
 use rust_editor::{input::keyboard::Key, plugins::plugin::Plugin};
 use rust_macro::editor_plugin;
 use wasm_bindgen::JsCast;
@@ -29,7 +28,7 @@ fn ImageComponent(props: &ImageProps) -> Html {
     }
 
     html! {
-        <div class={classes!(classes)} style={format!("width:{}px; height:{}px; left:{}px; top:{}px", props.size[0], props.size[1], props.position[0], props.position[1])}>
+        <div class={classes!(classes)} style={format!("width:{}px; height:{}px; left:{}px; top:{}px; z-index:{}", props.size[0], props.size[1], props.position[0], props.position[1], props.z_index)}>
             <img src={props.content.clone()} alt="MUUUUUUUUUUUUUUUUUU" />
         </div>
     }
@@ -42,6 +41,7 @@ struct ImageData {
     rotation: f64,
     selected: bool,
     mouse_offset: [i32; 2],
+    z_index: i32,
 }
 
 #[derive(Properties, PartialEq)]
@@ -50,6 +50,7 @@ struct ImageProps {
     size: [u32; 2],
     rotation: f64,
     position: [i32; 2],
+    z_index: i32,
     selected: bool,
 }
 
@@ -68,6 +69,9 @@ pub struct ReferenceImage {
 impl Plugin<Map> for ReferenceImage {
     fn drop(&mut self, event: DragEvent) {
         let images = Rc::clone(&self.images);
+
+        let highest_z_index = self.images.as_ref().borrow().len() as i32;
+
         spawn_local(async move {
             let images = images.clone();
 
@@ -104,6 +108,7 @@ impl Plugin<Map> for ReferenceImage {
                                 rotation: 0.,
                                 selected: false,
                                 mouse_offset: [0, 0],
+                                z_index: highest_z_index,
                             });
                         }
                     }
@@ -119,7 +124,7 @@ impl Plugin<Map> for ReferenceImage {
 
         for image in images.iter() {
             elements.push(html! {
-                <ImageComponent content={image.content.clone()} size={image.size} rotation={image.rotation} position={image.position} selected={image.selected} />
+                <ImageComponent content={image.content.clone()} size={image.size} rotation={image.rotation} position={image.position} selected={image.selected} z_index={image.z_index} />
             });
         }
 
@@ -127,11 +132,36 @@ impl Plugin<Map> for ReferenceImage {
     }
 
     fn key_up(&mut self, key: Key, _: &mut App<Map>) {
-        log!("{:?}", key);
+        match key {
+            Key::Delete => {
+                self.images.as_ref().borrow_mut().pop();
+            }
+            Key::PageUp => {
+                let mut images = self.images.as_ref().borrow_mut();
+                let images_len = images.len() as i32;
 
-        if key == Key::Delete {
-            self.images.as_ref().borrow_mut().pop();
-        }
+                images
+                    .iter_mut()
+                    .filter(|image| image.selected)
+                    .for_each(|image| {
+                        if image.z_index < images_len - 1 {
+                            image.z_index += 1
+                        }
+                    })
+            }
+            Key::PageDown => {
+                let mut images = self.images.as_ref().borrow_mut();
+                images
+                    .iter_mut()
+                    .filter(|image| image.selected)
+                    .for_each(|image| {
+                        if image.z_index > 0 {
+                            image.z_index -= 1
+                        }
+                    })
+            }
+            _ => {}
+        };
     }
 
     fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &App<Map>) {
@@ -145,23 +175,44 @@ impl Plugin<Map> for ReferenceImage {
         }
 
         let mut images = self.images.as_ref().borrow_mut();
+        let images_len = images.len() as i32;
         images.iter_mut().for_each(|image| image.selected = false);
-        images
+
+        let image_selected = images
+            .iter()
+            .filter(|image| {
+                within_bounds(mouse_pos, image.position, image.size)
+                    && image.z_index != images_len - 1
+            })
+            .max_by(|x, y| x.z_index.cmp(&y.z_index))
+            .is_some();
+
+        if image_selected {
+            images
+                .iter_mut()
+                .filter(|image| image.z_index > 0)
+                .for_each(|image| image.z_index -= 1);
+        }
+
+        match images
             .iter_mut()
             .filter(|image| within_bounds(mouse_pos, image.position, image.size))
-            .for_each(|image| {
+            .max_by(|x, y| x.z_index.cmp(&y.z_index))
+        {
+            Some(image) => {
                 image.selected = true;
+                image.z_index = images_len as i32 - 1;
                 image.mouse_offset = [
                     mouse_pos.x as i32 - image.position[0],
                     mouse_pos.y as i32 - image.position[1],
-                ]
-            });
-
-        if !images.iter().any(|image| image.selected) {
-            images.iter_mut().for_each(|image| {
-                image.selected = false;
-                image.mouse_offset = [0, 0]
-            });
+                ];
+            }
+            None => {
+                images.iter_mut().for_each(|image| {
+                    image.selected = false;
+                    image.mouse_offset = [0, 0]
+                });
+            }
         }
 
         self.drag_start = mouse_pos;

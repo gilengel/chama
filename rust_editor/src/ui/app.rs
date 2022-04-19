@@ -304,10 +304,13 @@ where
                 let mouse_diff = mouse_pos - self.last_mouse_pos;
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
-                    plugin
+                    if plugin
                         .as_ref()
                         .borrow_mut()
-                        .mouse_move(mouse_pos, mouse_diff, self);
+                        .mouse_move(mouse_pos, mouse_diff, self)
+                    {
+                        break;
+                    }
                 }
             }
             EditorMessages::MouseDown(e) => {
@@ -317,10 +320,13 @@ where
 
                 let enabled_plugins = enabled_plugins(&mut self.plugins);
                 for (_, plugin) in &enabled_plugins {
-                    plugin
+                    if plugin
                         .as_ref()
                         .borrow_mut()
-                        .mouse_down(mouse_pos, e.button() as u32, self);
+                        .mouse_down(mouse_pos, e.button() as u32, self)
+                    {
+                        break;
+                    }
                 }
             }
             EditorMessages::MouseUp(e) => {
@@ -329,10 +335,13 @@ where
                 self.last_mouse_pos = mouse_pos;
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
-                    plugin
+                    if plugin
                         .as_ref()
                         .borrow_mut()
-                        .mouse_up(mouse_pos, e.button() as u32, self);
+                        .mouse_up(mouse_pos, e.button() as u32, self)
+                    {
+                        break;
+                    }
                 }
             }
             EditorMessages::KeyDown(e) => {

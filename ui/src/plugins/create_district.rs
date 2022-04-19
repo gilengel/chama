@@ -139,16 +139,18 @@ impl Plugin<Map> for CreateDistrict {
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
         editor: &mut App<Map>,
-    ) {
+    ) -> bool {
         match editor.data().get_nearest_street_to_position(&mouse_pos) {
             Some(street) => self.hovered_street = Some(street.id()),
             None => self.hovered_street = None,
         }
+
+        false
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, app: &mut App<Map>) {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, app: &mut App<Map>) -> bool {
         if button != 0 {
-            return;
+            return false;
         }
 
         if let Some(hovered_street_id) = self.hovered_street {
@@ -173,6 +175,8 @@ impl Plugin<Map> for CreateDistrict {
                 undo.push(Rc::clone(&action));
             });
         }
+
+        return false;
     }
 }
 

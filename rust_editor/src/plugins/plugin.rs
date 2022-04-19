@@ -1,11 +1,14 @@
-use std::{any::Any};
+use std::any::Any;
 
 use geo::Coordinate;
 use rust_internal::PluginExecutionBehaviour;
 use web_sys::{CanvasRenderingContext2d, DragEvent};
 use yew::{html, Context, Html};
 
-use crate::{ui::app::{App, EditorError, Shortkey}, input::keyboard::Key};
+use crate::{
+    input::keyboard::Key,
+    ui::app::{App, EditorError, Shortkey},
+};
 
 pub trait AnyPlugin<Data>: Plugin<Data>
 where
@@ -90,7 +93,9 @@ where
     /// * `x` - x coordinate of the cursor where the click occured
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, editor: &App<Data>) {}
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, editor: &App<Data>) -> bool {
+        false
+    }
 
     /// Is used to implement behaviour of the state if the user moved the cursor inside the
     /// specified html element by the statemaschine.
@@ -102,7 +107,8 @@ where
         mouse_pos: Coordinate<f64>,
         mouse_movement: Coordinate<f64>,
         editor: &mut App<Data>,
-    ) {
+    ) -> bool {
+        false
     }
 
     fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Data>) {}
@@ -118,7 +124,16 @@ where
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
     /// * `data` - The data hold by the editor
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, editor: &mut App<Data>) {}
+    ///
+    /// Use the return value to block following plugins from receiving the event: Return true to block execution for subsequential plugins. The default return is false.
+    fn mouse_up(
+        &mut self,
+        _mouse_pos: Coordinate<f64>,
+        _button: u32,
+        editor: &mut App<Data>,
+    ) -> bool {
+        false
+    }
 
     /// React to a key held down on a keyboard.  
     ///
@@ -131,7 +146,6 @@ where
     /// * 'key' the value of the released key. [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
     /// * `data` - The data hold by the editor
     fn key_up(&mut self, key: Key, editor: &mut App<Data>) {}
-
 
     /// React to a native web drop event.
     fn drop(&mut self, event: DragEvent) {}

@@ -161,7 +161,11 @@ impl Plugin<Map> for ReferenceImage {
         };
     }
 
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, _: u32, _: &App<Map>) {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, _: &App<Map>) -> bool {
+        if button != 0 {
+            return false;
+        }
+
         self.drag_state = State::MouseDown;
 
         fn within_bounds(pos: Coordinate<f64>, start: [i32; 2], size: [u32; 2]) -> bool {
@@ -213,6 +217,8 @@ impl Plugin<Map> for ReferenceImage {
         }
 
         self.drag_start = mouse_pos;
+
+        false
     }
 
     fn mouse_move(
@@ -220,9 +226,9 @@ impl Plugin<Map> for ReferenceImage {
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
         _: &mut App<Map>,
-    ) {
+    ) -> bool {
         if self.drag_state == State::Idle {
-            return;
+            return false;
         }
 
         let mut images = self.images.as_ref().borrow_mut();
@@ -234,10 +240,14 @@ impl Plugin<Map> for ReferenceImage {
                     mouse_pos.x as i32 - image.mouse_offset[0],
                     mouse_pos.y as i32 - image.mouse_offset[1],
                 ]
-            })
+            });
+
+        false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut App<Map>) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut App<Map>) -> bool {
         self.drag_state = State::Idle;
+
+        false
     }
 }

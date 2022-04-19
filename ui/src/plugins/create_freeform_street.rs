@@ -123,10 +123,12 @@ impl Plugin<Map> for CreateFreeformStreet {
         Ok(())
     }
     
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &App<Map>) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &App<Map>) -> bool {
         if button == 0 {
             self.brush_active = true;
         }
+
+        true
     }
 
     fn mouse_move(
@@ -134,10 +136,12 @@ impl Plugin<Map> for CreateFreeformStreet {
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
         _: &mut App<Map>,
-    ) {
+    ) -> bool {
         if self.brush_active {
             self.raw_points.push(mouse_pos);
         }
+
+        true
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
@@ -148,10 +152,10 @@ impl Plugin<Map> for CreateFreeformStreet {
         }
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, app: &mut App<Map>) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, app: &mut App<Map>) -> bool {
         // Only proceed if the left button was released
         if button != 0 {
-            return;
+            return true;
         }
 
         self.brush_active = false;
@@ -179,6 +183,8 @@ impl Plugin<Map> for CreateFreeformStreet {
         });
 
         self.raw_points.clear();
+
+        true
     }
 
     fn render(&self, context: &CanvasRenderingContext2d, _: &App<Map>) {

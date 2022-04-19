@@ -166,7 +166,7 @@ impl Plugin<Map> for DeleteStreet {
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
         editor: &mut App<Map>,
-    ) {
+    ) -> bool {
         let map = editor.data_mut();
         self.clean_hovered_street_state(map);
 
@@ -179,9 +179,11 @@ impl Plugin<Map> for DeleteStreet {
                 }
             }
         }
+
+        false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, app: &mut App<Map>) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, app: &mut App<Map>) -> bool {
         if let Some(hovered_streets) = &self.hovered_streets {
             let action = Rc::new(RefCell::new(MultiAction::new()));
             for street in hovered_streets {
@@ -201,6 +203,8 @@ impl Plugin<Map> for DeleteStreet {
                 undo.push(Rc::clone(&action));
             });
         }
+
+        return false;
     }
 }
 

@@ -56,8 +56,9 @@ impl<Data> Plugin<Data> for Camera
 where
     Data: Default + 'static,
 {
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &App<Data>) {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &App<Data>) -> bool {
         self.active = button == 1;
+        false
     }
 
     fn mouse_move(
@@ -65,18 +66,21 @@ where
         _: Coordinate<f64>,
         mouse_movement: Coordinate<f64>,
         _: &mut App<Data>,
-    ) {
+    ) -> bool {
         if !self.active {
-            return;
+            return false;
         }
 
         self.position = self.position + mouse_movement;
+        false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut App<Data>) {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &mut App<Data>) -> bool {
         if self.active && button == 1 {
             self.active = false;
         }
+
+        false
     }
 
     fn render(&self, context: &CanvasRenderingContext2d, _: &App<Data>) {

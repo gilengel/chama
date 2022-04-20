@@ -82,11 +82,6 @@ where
 
         false
     }
-
-    fn render(&self, context: &CanvasRenderingContext2d, _: &App<Data>) {
-        context.set_fill_style(&"#FF8C00".into());
-        context.fill_text(&format!("Camera [x:{}, y:{}]", self.position.x, self.position.y), 100., 100.).unwrap();
-    }
 }
 
 #[cfg(test)]

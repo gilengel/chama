@@ -323,7 +323,7 @@ where
                     if plugin
                         .as_ref()
                         .borrow_mut()
-                        .mouse_down(mouse_pos, e.button() as u32, self)
+                        .mouse_down(mouse_pos, e.button().into(), self)
                     {
                         break;
                     }
@@ -338,7 +338,7 @@ where
                     if plugin
                         .as_ref()
                         .borrow_mut()
-                        .mouse_up(mouse_pos, e.button() as u32, self)
+                        .mouse_up(mouse_pos, e.button().into(), self)
                     {
                         break;
                     }

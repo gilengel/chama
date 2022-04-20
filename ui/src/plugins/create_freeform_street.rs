@@ -9,7 +9,7 @@ use rust_editor::{
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, input::keyboard::Key,
+    }, input::{keyboard::Key, mouse},
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -123,12 +123,12 @@ impl Plugin<Map> for CreateFreeformStreet {
         Ok(())
     }
     
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: u32, _: &App<Map>) -> bool {
-        if button == 0 {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: mouse::Key, _: &App<Map>) -> bool {
+        if button == mouse::Key::Left {
             self.brush_active = true;
         }
 
-        true
+        false
     }
 
     fn mouse_move(
@@ -141,21 +141,13 @@ impl Plugin<Map> for CreateFreeformStreet {
             self.raw_points.push(mouse_pos);
         }
 
-        true
+        false
     }
 
-    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
-        if *key == vec![Key::Ctrl, Key::A] {
-            ctx.link().send_message(EditorMessages::ActivatePlugin(
-                CreateFreeformStreet::identifier(),
-            ));
-        }
-    }
-
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: u32, app: &mut App<Map>) -> bool {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: mouse::Key, app: &mut App<Map>) -> bool {
         // Only proceed if the left button was released
-        if button != 0 {
-            return true;
+        if button != mouse::Key::Left {
+            return false;
         }
 
         self.brush_active = false;
@@ -184,7 +176,15 @@ impl Plugin<Map> for CreateFreeformStreet {
 
         self.raw_points.clear();
 
-        true
+        false
+    }
+
+    fn shortkey_pressed(&mut self, key: &Shortkey, ctx: &Context<App<Map>>, _: &mut App<Map>) {
+        if *key == vec![Key::Ctrl, Key::A] {
+            ctx.link().send_message(EditorMessages::ActivatePlugin(
+                CreateFreeformStreet::identifier(),
+            ));
+        }
     }
 
     fn render(&self, context: &CanvasRenderingContext2d, _: &App<Map>) {

@@ -6,7 +6,7 @@ use web_sys::{CanvasRenderingContext2d, DragEvent};
 use yew::{html, Context, Html};
 
 use crate::{
-    input::keyboard::Key,
+    input::{keyboard::Key, mouse},
     ui::app::{App, EditorError, Shortkey},
 };
 
@@ -93,7 +93,7 @@ where
     /// * `x` - x coordinate of the cursor where the click occured
     /// * `y` - x coordinate of the cursor where the click occured
     /// * `button` - The number of the pressed button (0=left, 1=middle, 2=right) [See here for more informations](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, editor: &App<Data>) -> bool {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Key, editor: &App<Data>) -> bool {
         false
     }
 
@@ -129,7 +129,7 @@ where
     fn mouse_up(
         &mut self,
         _mouse_pos: Coordinate<f64>,
-        _button: u32,
+        _button: mouse::Key,
         editor: &mut App<Data>,
     ) -> bool {
         false

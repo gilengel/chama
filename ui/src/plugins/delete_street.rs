@@ -8,7 +8,7 @@ use rust_editor::{
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, input::keyboard::Key,
+    }, input::{keyboard::Key, mouse},
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -183,7 +183,7 @@ impl Plugin<Map> for DeleteStreet {
         false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _button: u32, app: &mut App<Map>) -> bool {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: mouse::Key, app: &mut App<Map>) -> bool {
         if let Some(hovered_streets) = &self.hovered_streets {
             let action = Rc::new(RefCell::new(MultiAction::new()));
             for street in hovered_streets {
@@ -212,7 +212,7 @@ impl Plugin<Map> for DeleteStreet {
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
-    use rust_editor::{ui::toolbar::ToolbarPosition, input::keyboard::Key};
+    use rust_editor::{ui::toolbar::ToolbarPosition, input::{keyboard::Key, mouse}};
     use geo::Coordinate;
     use rust_editor::actions::Action;
     use rust_editor::ui::app::App;
@@ -398,7 +398,7 @@ mod tests {
             Coordinate::<f64> { x: 0., y: 0. },
             &mut app,
         );
-        delete_street_plugin.mouse_up(Coordinate::<f64> { x: 512., y: 512. }, 1, &mut app);
+        delete_street_plugin.mouse_up(Coordinate::<f64> { x: 512., y: 512. }, mouse::Key::Left, &mut app);
 
         assert_eq!(app.data().streets().len(), 4);
         for id in ids {

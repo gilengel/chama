@@ -16,7 +16,7 @@ use rust_editor::{
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, input::keyboard::Key,
+    }, input::{keyboard::Key, mouse},
 };
 use uuid::Uuid;
 
@@ -148,8 +148,8 @@ impl Plugin<Map> for CreateDistrict {
         false
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: u32, app: &mut App<Map>) -> bool {
-        if button != 0 {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Key, app: &mut App<Map>) -> bool {
+        if button != mouse::Key::Left {
             return false;
         }
 

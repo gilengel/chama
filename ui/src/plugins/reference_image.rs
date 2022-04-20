@@ -1,5 +1,5 @@
 use geo::Coordinate;
-use rust_editor::{input::keyboard::Key, plugins::plugin::Plugin, log};
+use rust_editor::{input::{keyboard::Key, mouse}, plugins::plugin::Plugin, log};
 use rust_macro::editor_plugin;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
@@ -185,8 +185,8 @@ impl Plugin<Map> for ReferenceImage {
         };
     }
 
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: u32, _: &App<Map>) -> bool {
-        if button != 0 {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Key, _: &App<Map>) -> bool {
+        if button != mouse::Key::Left {
             return false;
         }
 
@@ -269,7 +269,7 @@ impl Plugin<Map> for ReferenceImage {
         false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: u32, _: &mut App<Map>) -> bool {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: mouse::Key, _: &mut App<Map>) -> bool {
         self.drag_state = State::Idle;
 
         false

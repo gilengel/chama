@@ -1,8 +1,76 @@
+@use "sass:math";
+
+
 .reference {
     position: absolute;
 
     border: solid 4px transparent;
     pointer-events: none;
+
+    .center_handle {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+
+        width: 36px;
+        height: 36px;
+    }
+
+    $handle-width: 8px;
+    .center_handle::before {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        bottom: 0;
+        content: ' ';
+
+        width: $handle-width;
+        background-color: $primary;
+
+        transform: translate(math.div(-$handle-width, 2), 0) rotate(45deg);
+        border-radius: math.div($handle-width, 2);
+    }
+
+    .center_handle::after {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        bottom: 0;
+        content: ' ';
+
+        width: $handle-width;
+        background-color: $primary;
+
+        transform: translate(math.div(-$handle-width, 2), 0) rotate(-45deg);
+        border-radius: math.div($handle-width, 2);
+    }
+
+    $resize-handle-width: $handle-width * 2;
+    .resize_handle {
+        position: absolute;
+        width: $resize-handle-width;
+        height: $resize-handle-width;
+        background-color: $primary;
+    }
+
+    
+    .top {
+        top: -$handle-width;
+    }
+
+    .left {
+        left: -$handle-width;
+    }
+
+    .bottom {
+        bottom: -$handle-width;
+    }
+
+    .right {
+        right: -$handle-width;;
+    }
+    
 }
 
 .reference-selected {

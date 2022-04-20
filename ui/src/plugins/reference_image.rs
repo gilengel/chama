@@ -1,5 +1,5 @@
 use geo::Coordinate;
-use rust_editor::{input::keyboard::Key, plugins::plugin::Plugin};
+use rust_editor::{input::keyboard::Key, plugins::plugin::Plugin, log};
 use rust_macro::editor_plugin;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
@@ -23,6 +23,7 @@ impl Default for State {
 #[function_component]
 fn ImageComponent(props: &ImageProps) -> Html {
     let mut classes = vec!["reference"];
+    
     if props.selected {
         classes.push("reference-selected");
     }
@@ -30,6 +31,14 @@ fn ImageComponent(props: &ImageProps) -> Html {
     html! {
         <div class={classes!(classes)} style={format!("width:{}px; height:{}px; left:{}px; top:{}px; z-index:{}", props.size[0], props.size[1], props.position[0], props.position[1], props.z_index)}>
             <img src={props.content.clone()} alt="MUUUUUUUUUUUUUUUUUU" />
+            <div class="center_handle"></div>
+            
+            if props.selected {
+                <div class="resize_handle left top"></div>
+                <div class="resize_handle right top"></div>
+                <div class="resize_handle right bottom"></div>
+                <div class="resize_handle left bottom"></div>
+            }
         </div>
     }
 }
@@ -50,6 +59,8 @@ struct ImageProps {
     position: [i32; 2],
     z_index: i32,
     selected: bool,
+
+    on_resize: Callback<([i32; 2], [i32; 2])>
 }
 
 #[editor_plugin(skip, specific_to=Map)]
@@ -119,9 +130,22 @@ impl Plugin<Map> for ReferenceImage {
 
         let mut elements: Vec<Html> = Vec::with_capacity(images.len());
 
+        
+
         for image in images.iter() {
+            let on_resize: Callback<([i32; 2], [i32; 2])> = Callback::from(move |(position, size)| {
+                log!("pos={:?} size={:?}", position, size);
+            });
+
             elements.push(html! {
-                <ImageComponent content={image.content.clone()} size={image.size} position={image.position} selected={image.selected} z_index={image.z_index} />
+                <ImageComponent 
+                    content={image.content.clone()} 
+                    size={image.size} 
+                    position={image.position} 
+                    selected={image.selected} 
+                    z_index={image.z_index}
+                    {on_resize} 
+                />
             });
         }
 

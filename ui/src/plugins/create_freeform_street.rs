@@ -123,8 +123,8 @@ impl Plugin<Map> for CreateFreeformStreet {
         Ok(())
     }
     
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: mouse::Key, _: &App<Map>) -> bool {
-        if button == mouse::Key::Left {
+    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: mouse::Button, _: &App<Map>) -> bool {
+        if button == mouse::Button::Left {
             self.brush_active = true;
         }
 
@@ -135,6 +135,7 @@ impl Plugin<Map> for CreateFreeformStreet {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
+        _: mouse::Button,
         _: &mut App<Map>,
     ) -> bool {
         if self.brush_active {
@@ -144,9 +145,9 @@ impl Plugin<Map> for CreateFreeformStreet {
         false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: mouse::Key, app: &mut App<Map>) -> bool {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: mouse::Button, app: &mut App<Map>) -> bool {
         // Only proceed if the left button was released
-        if button != mouse::Key::Left {
+        if button != mouse::Button::Left {
             return false;
         }
 

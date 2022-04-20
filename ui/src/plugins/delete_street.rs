@@ -3,12 +3,13 @@ use std::collections::HashSet;
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction},
+    input::{keyboard::Key, mouse},
     interactive_element::{InteractiveElement, InteractiveElementState},
     plugins::plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, input::{keyboard::Key, mouse},
+    },
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -165,15 +166,14 @@ impl Plugin<Map> for DeleteStreet {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
+        _: mouse::Button,
         editor: &mut App<Map>,
     ) -> bool {
         let map = editor.data_mut();
         self.clean_hovered_street_state(map);
 
         if let Some(hovered_street) = map.get_street_at_position(&mouse_pos, &vec![]) {
-            self.hovered_streets = Some(self.connected_streets(hovered_street, map));
-
-            for street in self.hovered_streets.as_ref().unwrap() {
+            for street in self.connected_streets(hovered_street, map) {
                 if let Some(street) = map.street_mut(&street) as Option<&mut Street> {
                     street.set_state(InteractiveElementState::Hover)
                 }
@@ -183,8 +183,43 @@ impl Plugin<Map> for DeleteStreet {
         false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: mouse::Key, app: &mut App<Map>) -> bool {
-        if let Some(hovered_streets) = &self.hovered_streets {
+    fn mouse_down(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: mouse::Button,
+        editor: &App<Map>,
+    ) -> bool {
+        if button != mouse::Button::Left {
+            return false;
+        }
+
+        let map = editor.data();
+
+        self.hovered_streets = match map.get_street_at_position(&mouse_pos, &vec![]) {
+            Some(hovered_street) => Some(self.connected_streets(hovered_street, map)),
+            None => None,
+        };
+
+        false
+    }
+
+    fn mouse_up(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: mouse::Button,
+        app: &mut App<Map>,
+    ) -> bool {
+        if button != mouse::Button::Left {
+            return false;
+        }
+
+        // Only continue if we selected streets before and we are currently hovering a street
+        if let (Some(hovered_streets), Some(street_at_mouse_pos)) = (&self.hovered_streets, app.data().get_street_at_position(&mouse_pos, &vec![])) {
+            // Don't delete if the currently hovered street was not previously selected
+            if !hovered_streets.contains(&street_at_mouse_pos) {
+                return false;
+            }
+
             let action = Rc::new(RefCell::new(MultiAction::new()));
             for street in hovered_streets {
                 action
@@ -204,7 +239,7 @@ impl Plugin<Map> for DeleteStreet {
             });
         }
 
-        return false;
+        false
     }
 }
 
@@ -212,10 +247,13 @@ impl Plugin<Map> for DeleteStreet {
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
-    use rust_editor::{ui::toolbar::ToolbarPosition, input::{keyboard::Key, mouse}};
     use geo::Coordinate;
     use rust_editor::actions::Action;
     use rust_editor::ui::app::App;
+    use rust_editor::{
+        input::{keyboard::Key, mouse},
+        ui::toolbar::ToolbarPosition,
+    };
     use uuid::Uuid;
 
     use crate::map::{actions::street::create::CreateStreet, intersection::Side, map::Map};
@@ -372,6 +410,7 @@ mod tests {
                 y: 512.,
             },
             Coordinate::<f64> { x: 0., y: 0. },
+            mouse::Button::Left,
             &mut app,
         );
         let hovered_streets = delete_street_plugin.hovered_streets.unwrap();
@@ -396,9 +435,14 @@ mod tests {
                 y: 512.,
             },
             Coordinate::<f64> { x: 0., y: 0. },
+            mouse::Button::Left,
             &mut app,
         );
-        delete_street_plugin.mouse_up(Coordinate::<f64> { x: 512., y: 512. }, mouse::Key::Left, &mut app);
+        delete_street_plugin.mouse_up(
+            Coordinate::<f64> { x: 512., y: 512. },
+            mouse::Button::Left,
+            &mut app,
+        );
 
         assert_eq!(app.data().streets().len(), 4);
         for id in ids {
@@ -432,8 +476,9 @@ mod tests {
         };
         delete_street_plugin.startup(&mut app).unwrap();
 
-        let toolbar = app.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left).unwrap();
-        
+        let toolbar = app
+            .get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)
+            .unwrap();
 
         assert!(toolbar.has_button("delete_street"));
     }

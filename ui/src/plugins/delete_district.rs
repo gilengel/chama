@@ -49,6 +49,7 @@ impl Plugin<Map> for DeleteDistrict {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
+        _: mouse::Button,
         editor: &mut App<Map>,
     ) -> bool {
         if let Some(old_hovered_district) = self.hovered_district {
@@ -69,7 +70,7 @@ impl Plugin<Map> for DeleteDistrict {
         false
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: mouse::Key, app: &mut App<Map>) -> bool {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: mouse::Button, app: &mut App<Map>) -> bool {
         if let Some(hovered_district) = app.data().get_district_at_position(&mouse_pos) {
             app.data_mut().remove_district(&hovered_district);
             self.hovered_district = None

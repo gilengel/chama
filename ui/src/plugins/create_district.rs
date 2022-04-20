@@ -137,7 +137,8 @@ impl Plugin<Map> for CreateDistrict {
     fn mouse_move(
         &mut self,
         mouse_pos: Coordinate<f64>,
-        _mouse_movement: Coordinate<f64>,
+        _: Coordinate<f64>,
+        _: mouse::Button,
         editor: &mut App<Map>,
     ) -> bool {
         match editor.data().get_nearest_street_to_position(&mouse_pos) {
@@ -148,8 +149,8 @@ impl Plugin<Map> for CreateDistrict {
         false
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Key, app: &mut App<Map>) -> bool {
-        if button != mouse::Key::Left {
+    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Button, app: &mut App<Map>) -> bool {
+        if button != mouse::Button::Left {
             return false;
         }
 

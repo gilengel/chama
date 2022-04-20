@@ -307,7 +307,7 @@ where
                     if plugin
                         .as_ref()
                         .borrow_mut()
-                        .mouse_move(mouse_pos, mouse_diff, self)
+                        .mouse_move(mouse_pos, mouse_diff, e.button().into(), self)
                     {
                         break;
                     }

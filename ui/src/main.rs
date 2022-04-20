@@ -6,7 +6,6 @@ use plugins::delete_street::DeleteStreet;
 use plugins::load::Load;
 use plugins::map_render::MapRender;
 use plugins::new::New;
-use plugins::reference_image::ReferenceImage;
 use plugins::save::Save;
 use rust_editor::plugins::camera::Camera;
 use rust_editor::plugins::redo::Redo;

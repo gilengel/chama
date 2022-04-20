@@ -1,9 +1,6 @@
 use geo::Coordinate;
 use rust_macro::editor_plugin;
-use web_sys::CanvasRenderingContext2d;
-
-use crate::{input::mouse, log};
-
+use crate::input::mouse;
 use super::plugin::Plugin;
 
 #[editor_plugin]
@@ -61,10 +58,10 @@ where
     fn mouse_down(
         &mut self,
         _mouse_pos: Coordinate<f64>,
-        button: mouse::Key,
+        button: mouse::Button,
         _: &App<Data>,
     ) -> bool {
-        self.active = button == mouse::Key::Middle;
+        self.active = button == mouse::Button::Middle;
         false
     }
 
@@ -72,6 +69,7 @@ where
         &mut self,
         _: Coordinate<f64>,
         mouse_movement: Coordinate<f64>,
+        _: mouse::Button,
         _: &mut App<Data>,
     ) -> bool {
         if !self.active {
@@ -85,10 +83,10 @@ where
     fn mouse_up(
         &mut self,
         _mouse_pos: Coordinate<f64>,
-        button: mouse::Key,
+        button: mouse::Button,
         _: &mut App<Data>,
     ) -> bool {
-        if self.active && button == mouse::Key::Middle {
+        if self.active && button == mouse::Button::Middle {
             self.active = false;
         }
 
@@ -110,7 +108,7 @@ mod tests {
         let app = App::<bool>::default();
         let mut camera = Camera::default();
 
-        camera.mouse_down(Coordinate { x: 0., y: 0. }, mouse::Key::Left, &app);
+        camera.mouse_down(Coordinate { x: 0., y: 0. }, mouse::Button::Left, &app);
 
         assert!(camera.active);
     }
@@ -120,7 +118,7 @@ mod tests {
         let app = App::<bool>::default();
         let mut camera = Camera::default();
 
-        camera.mouse_down(Coordinate { x: 0., y: 0. }, mouse::Key::Right, &app);
+        camera.mouse_down(Coordinate { x: 0., y: 0. }, mouse::Button::Right, &app);
 
         assert_eq!(camera.active, false);
     }
@@ -136,6 +134,7 @@ mod tests {
         camera.mouse_move(
             Coordinate { x: 0., y: 0. },
             Coordinate { x: 256., y: 256. },
+            mouse::Button::Left,
             &mut app,
         );
 
@@ -152,6 +151,7 @@ mod tests {
         camera.mouse_move(
             Coordinate { x: 0., y: 0. },
             Coordinate { x: 256., y: 256. },
+            mouse::Button::Left,
             &mut app,
         );
 
@@ -164,7 +164,7 @@ mod tests {
         let mut camera = Camera::default();
 
         camera.set_active(true);
-        camera.mouse_up(Coordinate { x: 0., y: 0. }, mouse::Key::Left, &mut app);
+        camera.mouse_up(Coordinate { x: 0., y: 0. }, mouse::Button::Left, &mut app);
         assert_eq!(camera.active(), false);
     }
 
@@ -174,7 +174,7 @@ mod tests {
         let mut camera = Camera::default();
 
         camera.set_active(true);
-        camera.mouse_up(Coordinate { x: 0., y: 0. }, mouse::Key::Right, &mut app);
+        camera.mouse_up(Coordinate { x: 0., y: 0. }, mouse::Button::Right, &mut app);
         assert!(camera.active());
     }
 }

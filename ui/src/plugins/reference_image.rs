@@ -185,8 +185,8 @@ impl Plugin<Map> for ReferenceImage {
         };
     }
 
-    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Key, _: &App<Map>) -> bool {
-        if button != mouse::Key::Left {
+    fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Button, _: &App<Map>) -> bool {
+        if button != mouse::Button::Left {
             return false;
         }
 
@@ -249,6 +249,7 @@ impl Plugin<Map> for ReferenceImage {
         &mut self,
         mouse_pos: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
+        _: mouse::Button,
         _: &mut App<Map>,
     ) -> bool {
         if self.drag_state == State::Idle {
@@ -269,7 +270,7 @@ impl Plugin<Map> for ReferenceImage {
         false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: mouse::Key, _: &mut App<Map>) -> bool {
+    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, _: mouse::Button, _: &mut App<Map>) -> bool {
         self.drag_state = State::Idle;
 
         false

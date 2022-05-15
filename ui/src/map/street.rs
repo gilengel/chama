@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
-    prelude::{Contains, EuclideanDistance},
+    prelude::{Contains, EuclideanDistance, Centroid},
     Coordinate, Line, LineString, Point, Polygon,
 };
 use rust_editor::{
@@ -76,7 +76,7 @@ impl Default for Street {
             norm: Coordinate { x: 0.0, y: 0.0 },
             inverse_norm: Coordinate { x: 0.0, y: 0.0 },
 
-            style: InteractiveElementStyle::default(),
+            style: InteractiveElementStyle::random(),
             state: InteractiveElementState::Normal,
         }
     }
@@ -210,7 +210,22 @@ impl Street {
     }
 
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
-        self.polygon.render(self.style(), &context)?;
+        //self.polygon.render(self.style(), &context)?;
+        self.line.render(self.style(), context)?;
+
+        context.set_fill_style(&"#FFFFFF".into());
+/*
+        context.fill_text(
+            &format!(
+                "{}",
+                &self.id.to_string()[..2],
+            )
+            .to_string(),
+            self.line.centroid().x(),
+            self.line.centroid().y(),
+        )?;
+*/
+
         
         Ok(())
     }

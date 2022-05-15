@@ -69,7 +69,9 @@ impl PrimitiveRenderer for Line<f64> {
         context.begin_path();
         context.move_to(self.start.x, self.start.y);
         context.line_to(self.end.x, self.end.y);
-        apply_style(style, context);
+        context.set_line_width(std::cmp::min(style.border_width, 1) as f64);
+        context.set_stroke_style(&style.background_color.clone().into());
+        context.stroke();
         context.close_path();
 
         Ok(())

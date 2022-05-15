@@ -1,15 +1,15 @@
 use std::fmt;
 
-use geo::{simplify::Simplify, Coordinate, LineString};
+use geo::{simplify::Simplify, Coordinate, LineString, Point};
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
     plugins::plugin::{Plugin, PluginWithOptions},
-    renderer::apply_style,
+    renderer::{PrimitiveRenderer},
     style::Style,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, input::{keyboard::Key, mouse},
+    }, input::{keyboard::Key, mouse}, log,
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -21,6 +21,9 @@ use crate::map::{actions::street::create::CreateStreet, map::Map};
 pub struct CreateFreeformStreet {
     #[option(skip)]
     raw_points: Vec<Coordinate<f64>>,
+
+    #[option(skip)]
+    points: Vec<Point<f64>>,
 
     #[option(skip)]
     raw_point_style: Style,
@@ -81,6 +84,7 @@ impl Redo<Map> for CreateFreeFormStreetAction {
         */
         let mut previous = &self.raw_points[0];
         for (point, street_id) in self.raw_points.iter().skip(1).zip(self.street_ids.iter()) {
+            
             self.action_stack
                 .push(CreateStreet::new(*previous, *point, *street_id));
 
@@ -142,6 +146,30 @@ impl Plugin<Map> for CreateFreeformStreet {
             self.raw_points.push(mouse_pos);
         }
 
+        let line_string = LineString(self.raw_points.clone());
+        let new_points =  line_string
+            .simplify(&self.simplification_factor)
+            .into_points();
+
+            /*
+        if self.points != new_points {
+            let old_line: LineString<f64> = self.points.clone().into_iter().collect();
+            let mut it = new_points.iter().rev();
+            let start = (it.next().unwrap().clone()).into();
+            let end: Coordinate<f64> = (it.next().unwrap().clone()).into();
+            let new_line_segment: Line<f64> = Line::new(start, end); 
+
+
+
+
+            
+            log!("{:?} {}", old_line.lines().position(|line| line.intersects(&new_line_segment)), old_line.lines().len());
+
+            self.points = new_points;
+        }
+        */
+
+
         false
     }
 
@@ -157,6 +185,8 @@ impl Plugin<Map> for CreateFreeformStreet {
         let points = line_string
             .simplify(&self.simplification_factor)
             .into_points();
+
+        log!("FINAL COUNT {}", points.len());
 
         let action = Rc::new(RefCell::new(CreateFreeFormStreetAction::new(
             points
@@ -189,6 +219,20 @@ impl Plugin<Map> for CreateFreeformStreet {
     }
 
     fn render(&self, context: &CanvasRenderingContext2d, _: &App<Map>) {
+        context.set_line_width(1.0);
+        context.set_stroke_style(&"#2A2A2B".into());
+
+        let line_string = LineString(self.raw_points.clone());
+        let points = line_string
+            .simplify(&self.simplification_factor)
+            .into_points();
+
+        let style = Style::default();
+        line_string.lines().for_each(|line| {
+            line.render(&style, context).unwrap();
+        });
+        
+        /*
         if self.brush_active && !self.raw_points.is_empty() {
             context.begin_path();
             context.move_to(self.raw_points[0].x, self.raw_points[0].y);
@@ -200,8 +244,9 @@ impl Plugin<Map> for CreateFreeformStreet {
             }
 
             context.close_path();
-            apply_style(&self.raw_point_style, &context);
+            //apply_style(&self.raw_point_style, &context);
         }
+        */
     }
 }
 

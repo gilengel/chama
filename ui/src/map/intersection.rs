@@ -94,32 +94,29 @@ impl Intersection {
         context.fill();
         context.restore();
 
-        /*
-        let num = self.connected_streets.len();
-        if additional_information_layer.contains(&InformationLayer::Debug) && num != 2 {
-            context.set_fill_style(&"#FFFFFF".into());
+        context.set_fill_style(&"#FFFFFF".into());
 
+        /*
+        context.fill_text(
+            &format!(
+                "c={}, {}",
+                self.connected_streets.len(),
+                &self.id.to_string()[..2]
+            )
+            .to_string(),
+            self.position.x,
+            self.position.y - 80.0,
+        )?;
+
+        let mut y = self.position.y - 60.0;
+        for street in &self.connected_streets {
             context.fill_text(
-                &format!(
-                    "c={}, {}",
-                    self.connected_streets.len(),
-                    &self.id.to_string()[..2]
-                )
-                .to_string(),
+                &format!("{:?} {}", street.0, &street.1.to_string()[..2]).to_string(),
                 self.position.x,
-                self.position.y - 80.0,
+                y,
             )?;
 
-            let mut y = self.position.y - 60.0;
-            for street in &self.connected_streets {
-                context.fill_text(
-                    &format!("{:?} {}", street.0, &street.1.to_string()[..2]).to_string(),
-                    self.position.x,
-                    y,
-                )?;
-
-                y += 16.0;
-            }
+            y += 16.0;
         }
         */
 

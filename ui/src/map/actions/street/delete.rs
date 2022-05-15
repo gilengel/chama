@@ -3,7 +3,7 @@ use std::fmt;
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
-    gizmo::Id,
+    gizmo::Id, log,
 };
 use uuid::Uuid;
 
@@ -77,7 +77,7 @@ impl Action<Map> for SimpleDeleteStreet {}
 
 impl fmt::Display for SimpleDeleteStreet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[delete_simple_street] street={}", self.street_id)
+        write!(f, "[delete_simple_street] start={:?} end={:?}", self.start_pos.unwrap().x_y(), self.end_pos.unwrap().x_y())
     }
 }
 

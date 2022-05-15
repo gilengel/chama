@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-
+use rand::{thread_rng, Rng};
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 
 /// Defines how an element will be displayed.
@@ -51,5 +51,32 @@ impl Default for InteractiveElementStyle {
                 background_color: "hsl(0, 100%, 50%)".to_string(),
             },
         }
+    }
+}
+
+impl InteractiveElementStyle {
+    pub fn random() -> Self {
+        let mut rng = thread_rng();
+        let r: u8 = rng.gen_range(0..255);
+        let g: u8 = rng.gen_range(0..255);
+        let b: u8 = rng.gen_range(0..255);
+
+        InteractiveElementStyle {
+            normal: Style {
+                border_width: 0,
+                border_color: "#FFFFFF".to_string(),
+                background_color: format!("rgb({},{},{})", r, g, b),
+            },
+            hover: Style {
+                border_width: 0,
+                border_color: "".to_string(),
+                background_color: "#1e88e5".to_string(),
+            },
+            selected: Style {
+                border_width: 0,
+                border_color: "".to_string(),
+                background_color: "hsl(0, 100%, 50%)".to_string(),
+            },
+        } 
     }
 }

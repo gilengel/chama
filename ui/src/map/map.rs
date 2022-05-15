@@ -1,3 +1,4 @@
+use geo::intersects::Intersects;
 use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect};
@@ -9,7 +10,6 @@ use uuid::Uuid;
 use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
-
 
 use super::district::District;
 use super::intersection::Intersection;
@@ -86,7 +86,7 @@ impl Map {
         self.height
     }
 
-    /// Removes all data (streets, districts, intersections) from the instance. 
+    /// Removes all data (streets, districts, intersections) from the instance.
     /// Be aware that calling this is permanent and not unduable.
     pub fn clear(&mut self) {
         self.streets.clear();
@@ -214,6 +214,39 @@ impl Map {
         None
     }
 
+    pub fn line_intersection_with_intersections(
+        &self,
+        line: &Line<f64>,
+    ) -> Vec<(Uuid, Coordinate<f64>)> {
+        let mut intersections: Vec<(Uuid, Coordinate<f64>)> = Vec::new();
+
+        for (_, intersection) in &self.intersections {
+            if line.intersects(&intersection.position())
+                && intersection.position() != line.start
+                && intersection.position() != line.end
+            {
+                intersections.push((intersection.id(), intersection.position()));
+            }
+        }
+
+        intersections.sort_by(|a, b| {
+            let d1 = a.1.euclidean_distance(&line.start);
+            let d2 = b.1.euclidean_distance(&line.start);
+
+            if d1 < d2 {
+                return Ordering::Less;
+            }
+
+            if d1 == d2 {
+                return Ordering::Equal;
+            }
+
+            Ordering::Greater
+        });
+
+        intersections
+    }
+
     pub fn line_intersection_with_streets(&self, line: &Line<f64>) -> Vec<(Uuid, Coordinate<f64>)> {
         let mut intersections: Vec<(Uuid, Coordinate<f64>)> = Vec::new();
 
@@ -249,6 +282,19 @@ impl Map {
         });
 
         intersections
+    }
+
+    pub fn has_street_connecting_intersections(&self, start: Uuid, end: Uuid) -> bool {
+// TODO
+        //        let s = self.intersections().get(&start).unwrap().position();
+//        let e = self.intersections().get(&end).unwrap().position();
+        for (_, street) in &self.streets {
+            if street.start == start && street.end == end || street.start == end && street.end == start {
+                return true;
+            }
+        }
+
+        false
     }
 
     pub fn line_intersection_with_street(

@@ -210,7 +210,7 @@ impl Street {
     }
 
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
-        //self.polygon.render(self.style(), &context)?;
+        self.polygon.render(self.style(), &context)?;
         self.line.render(self.style(), context)?;
 
         context.set_fill_style(&"#FFFFFF".into());

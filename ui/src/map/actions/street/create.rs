@@ -139,33 +139,27 @@ impl Redo<Map> for CreateStreet {
             .get_intersection_at_position(&position, 1., &vec![])
         {
             Some(intersection) => intersection,
-            None => match map.get_street_at_position(position, &vec![]) {
-                Some(_) => {
-                    let id = Uuid::new_v4();
-                    self.action_stack.push(SplitStreet::new(*position, id));
-                    id
-                }
-
-                None => {
-                    let id = Uuid::new_v4();
+            None => {
+                let id = Uuid::new_v4();
                     self.action_stack.push(CreateIntersection::new_with_id(
                         position.clone(),
                         id.clone(),
                     ));
 
                     id
-                }
-            },
+            }
         };
 
         let mut pts = vec![];
         pts.push((redo_intersection(&self.start_pos), self.start_pos));
 
+        /*
         let intersections = map.line_intersection_with_intersections(&new_street_line);
         if let Some(intersection) = intersections.first() {
             pts.push(*intersection);
             self.street_ids.push(Uuid::new_v4());
         }
+        */
 
         pts.push((redo_intersection(&self.end_pos), self.end_pos));
 
@@ -176,12 +170,11 @@ impl Redo<Map> for CreateStreet {
 
                 self.start_intersection_id = Some(start.0);
                 self.end_intersection_id = Some(end.0);
-        
-        
-                
+
+                /*
                 let intersections =
                     map.line_intersection_with_streets(&Line::new(start.1, end.1));
-        
+
                 // Split each street were an intersection occurs with the new street in order to properly create districts later on
                 if !intersections.is_empty() {
                     let mut intersection_ids: Vec<Uuid> = intersections
@@ -192,50 +185,51 @@ impl Redo<Map> for CreateStreet {
                                 *intersection,
                                 split_intersection_id,
                             ));
-        
+
                             split_intersection_id
                         })
                         .collect();
-        
+
                     // Add the original start and end position so that we can create streets for them too
                     intersection_ids.insert(0, start.0);
                     intersection_ids.push(end.0);
-        
+
                     let mut it = intersection_ids.iter().peekable();
                     while let (Some(current), Some(next)) = (it.next(), it.peek()) {
                         self.action_stack
                           .push(CreateSingleStreet::new(Uuid::new_v4(), *current, **next));
                     }
-        
-        
+
+
                     // Update is necessary to recalculate the shape of the newly created streets
                     intersection_ids.iter().for_each(|intersection| {
                         self.action_stack
                             .push(UpdateIntersection::new(*intersection))
                     });
-        
-        
+
+
                 // Happy path: The new street does not intersects existing streets and we can proceed with creating the street without the need
                 // of splitting others
                 } else {
-                    if !map.has_street_connecting_intersections(start.0, end.0) {
-                        self.action_stack
-                        .push(CreateSingleStreet::new(self.street_ids[i], start.0, end.0));
-                    }
 
-        
-                    self.action_stack.push(UpdateIntersection::new(start.0));
-                    self.action_stack.push(UpdateIntersection::new(end.0));
+                */
+                if !map.has_street_connecting_intersections(start.0, end.0) {
+                    self.action_stack.push(CreateSingleStreet::new(
+                        self.street_ids[i],
+                        start.0,
+                        end.0,
+                    ));
                 }
-                
+
+                self.action_stack.push(UpdateIntersection::new(start.0));
+                self.action_stack.push(UpdateIntersection::new(end.0));
+                //}
             }
         }
 
-        
-
         self.action_stack.redo(map);
 
-        log!("Create street \n{}", self.action_stack);
+        //log!("Create street \n{}", self.action_stack);
     }
 }
 

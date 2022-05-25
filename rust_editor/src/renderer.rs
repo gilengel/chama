@@ -7,7 +7,7 @@ use geo::{
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::style::Style;
+use crate::{style::Style, log};
 
 pub fn apply_style(style: &Style, context: &CanvasRenderingContext2d) {
     context.set_fill_style(&style.background_color.clone().into());
@@ -38,12 +38,22 @@ impl PrimitiveRenderer for Polygon<f64> {
             apply_style(style, context);
         }
 
+        context.save();
+        context.set_global_composite_operation("xor")?;
+
+        for line_string in self.interiors() {
+            line_string.render(&style, context)?;
+        }
+
+        context.restore();
+
         Ok(())
     }
 }
 
 impl PrimitiveRenderer for MultiPolygon<f64> {
     fn render(&self, style: &Style, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
+        //log!("{}", self.);
         for polygon in self {
             polygon.render(style, context)?;
         }

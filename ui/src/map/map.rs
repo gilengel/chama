@@ -1,11 +1,16 @@
 use geo::intersects::Intersects;
 use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
-use geo::{Coordinate, Line, LineString, Polygon, Rect};
+use geo::{Coordinate, Line, LineString, Polygon, Rect, MultiPolygon};
 use rust_editor::gizmo::{GetPosition, Id};
 use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
+use rust_editor::log;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+extern crate geo_booleanop;
+
+use geo_booleanop::boolean::BooleanOp;
 
 use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
@@ -19,6 +24,9 @@ use super::street::Street;
 pub struct Map {
     width: u32,
     height: u32,
+
+    
+    pub(crate) street_polygon: MultiPolygon<f64>,
 
     pub(crate) streets: HashMap<Uuid, Street>,
     pub(crate) intersections: HashMap<Uuid, Intersection>,
@@ -35,6 +43,8 @@ impl Default for Map {
             streets: HashMap::new(),
             intersections: HashMap::new(),
             districts: HashMap::new(),
+
+            street_polygon: MultiPolygon::new(vec![]),
 
             bounding_box: Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. }),
         }
@@ -173,8 +183,16 @@ impl Map {
     }
 
     pub fn add_street(&mut self, street: Street) -> Uuid {
+
+        self.street_polygon = street.polygon().union(&self.street_polygon);
+
+        log!("{}", self.street_polygon.iter().count());
+        
+
         let id = street.id();
         self.streets.insert(id, street);
+
+        
 
         id
     }

@@ -17,8 +17,8 @@ pub struct Style {
 impl Default for Style {
     fn default() -> Self {
         Style {
-            border_width: 1,
-            border_color: "#FFFFFF".to_string(),
+            border_width: 2,
+            border_color: "#0000FF".to_string(),
             background_color: "#FFFFFFF".to_string(),
         }
     }

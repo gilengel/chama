@@ -186,6 +186,7 @@ impl Plugin<Map> for ReferenceImage {
     }
 
     fn mouse_down(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Button, _: &App<Map>) -> bool {
+        /*
         if button != mouse::Button::Left {
             return false;
         }
@@ -241,6 +242,7 @@ impl Plugin<Map> for ReferenceImage {
         }
 
         self.drag_start = mouse_pos;
+        */
 
         false
     }

@@ -205,7 +205,7 @@ impl Map {
             let district = District {
                 polygon: polygon.clone(),
                 houses,
-                minimum_house_side: 50.,
+                minimum_house_side: 250.,
                 ..District::default()
             };
             self.districts_mut().insert(district.id(), district);

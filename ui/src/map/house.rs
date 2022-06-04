@@ -1,9 +1,9 @@
 use geo::{euclidean_length::EuclideanLength, prelude::Area, Line, Point, Polygon};
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use rust_editor::{style::Style};
+use rust_editor::{style::Style, log};
 
-use crate::algorithm::geo::{longest_line, split, AnnotatedPolygon};
+use crate::algorithm::geo::{longest_line, split, AnnotatedPolygon, longest_and_shortest_diameter};
 
 use super::district::House;
 
@@ -58,17 +58,20 @@ fn calculate_split_line(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_si
     let norm = Point::new(vec.x() / length, vec.y() / length);
     let perp = Point::new(-norm.y(), norm.x());
 
-    let split_pt = line.start_point() + norm * length * rng.gen_range(0.3..0.7);
+    let split_pt = line.start_point() + norm * length * 0.70; //* rng.gen_range(0.3..0.7);
 
     
     
     Line::new(split_pt - perp * 6000.0, split_pt + perp * 6000.0)
 }
 
-fn split_polygons_into_chunks(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<AnnotatedPolygon> {
+fn split_polygons_into_chunks(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_side_length: f64, cnt: u8, max_cnt: u8) -> Vec<AnnotatedPolygon> {
     let mut polygons: Vec<AnnotatedPolygon> = Vec::new();
 
-    if polygon.0.unsigned_area() < min_side_length * min_side_length {
+    let p = longest_and_shortest_diameter(&polygon.0);
+  
+    //if polygon.0.unsigned_area() < min_side_length * min_side_length {
+    if p.0 < min_side_length && p.1 < min_side_length {
         polygons.push(polygon.clone());
         return polygons;
     }
@@ -76,7 +79,7 @@ fn split_polygons_into_chunks(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, 
     let split_line = calculate_split_line(rng, polygon, min_side_length);
     let mut splits = split(&polygon, &split_line);
     for sub_polygon in splits.iter_mut() {
-        polygons.append(&mut split_polygons_into_chunks(rng, &sub_polygon, min_side_length));
+        polygons.append(&mut split_polygons_into_chunks(rng, &sub_polygon, min_side_length, cnt + 1, max_cnt));
     }
 
     polygons
@@ -93,7 +96,8 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
             polygon.exterior().lines().map(|_| true).collect(),
         ),
         min_side_length,
-
+        0,
+        4
     );
 
     let polygons = houses.iter().filter(|polygon| !polygon.enclosed());

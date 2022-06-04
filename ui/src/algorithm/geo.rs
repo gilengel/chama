@@ -1,8 +1,12 @@
+use core::num;
+use std::f64::consts::PI;
+
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::{line_intersection, LineIntersection},
-    Coordinate, Line, LineString, Point, Polygon,
+    Coordinate, Line, LineString, Point, Polygon, Rect, prelude::{ConvexHull, BoundingRect, Centroid, Area}, rotate::RotatePoint,
 };
+use rust_editor::log;
 type AnnotatedLine = (Line<f64>, bool);
 
 impl AnnotatedPolygon {
@@ -49,6 +53,11 @@ fn intersections(
         }
     }
 
+    let num_intersections = intersections.len();
+    if num_intersections > 2 {
+        intersections.drain(0..2);
+    }
+
     intersections
 }
 
@@ -73,6 +82,40 @@ struct Crossback<'a> {
     pub lines: Vec<(Line<f64>, &'a bool)>,
     pub crossback: Option<usize>,
 }
+
+
+pub fn longest_and_shortest_diameter(polygon: &Polygon<f64>) -> (f64, f64) {
+    let convex_hull = polygon.convex_hull();
+
+    let mut min_area = f64::MAX;
+    let mut min_angle = 0.;
+
+    let mut min_poly: Polygon<f64> = convex_hull.bounding_rect().unwrap().into();
+
+    let mut pair = (f64::MAX, f64::MAX);
+    for line in convex_hull.exterior().lines() {
+
+        let angle = (-1. * f64::atan2(line.end.y - line.start.y, line.end.x - line.start.x)) * 180.0 / PI;
+
+        
+        let mut bbox: Polygon<f64> = convex_hull.bounding_rect().unwrap().into();
+        bbox = convex_hull.rotate_around_point(angle, bbox.centroid().unwrap()).bounding_rect().unwrap().into();
+        let area = bbox.signed_area();
+
+        if area < min_area {
+            min_area = area;
+            min_angle = angle;
+            min_poly = bbox.clone();
+
+            bbox = bbox.rotate_around_point(-angle, bbox.centroid().unwrap());
+            let bbox = bbox.bounding_rect().unwrap();
+            pair = (bbox.width(), bbox.height());
+        }       
+    }
+
+    pair
+}
+
 
 pub fn split(polygon: &AnnotatedPolygon, line: &Line<f64>) -> Vec<AnnotatedPolygon> {
     let intersections = intersections(line, &polygon.lines());

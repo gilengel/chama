@@ -1,15 +1,15 @@
-use geo::{prelude::Centroid, Coordinate};
 use rust_editor::{
+    input::keyboard::Key,
     plugins::plugin::Plugin,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, gizmo::Id, input::keyboard::Key,
+    },
 };
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::map::{map::Map, intersection::Side};
+use crate::map::map::Map;
 
 #[editor_plugin(skip, specific_to=Map)]
 pub struct Debug {}
@@ -39,19 +39,19 @@ impl Plugin<Map> for Debug {
         }
     }
 
-    fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Map>) {
+    fn render(&self, _: &CanvasRenderingContext2d, _: &App<Map>) {
         /*
         let data = editor.data();
         for (_, street) in data.streets() {
             let mut owned_string: String = format!("{} ->", &street.id().to_string()[..2]);
 
-        
-   
+
+
             if let Some(position) = street.polygon().exterior().centroid() {
                 context.set_fill_style(&"#FFFFFF".into());
                 context.fill_text(&owned_string, position.x(), position.y()).unwrap();
             }
-    
+
             context.begin_path();
             let mut it = street.polygon().exterior().points();
             let start: Coordinate<f64> = it.next().unwrap().into();
@@ -62,16 +62,14 @@ impl Plugin<Map> for Debug {
             let p3 = _p + street.perp() * (width / 2.0 - 5.0);
             context.move_to(p1.x, p1.y);
             context.line_to(p2.x, p2.y);
-            context.line_to(p3.x, p3.y);    
+            context.line_to(p3.x, p3.y);
             context.close_path();
-    
+
             context.set_stroke_style(&"#FFFFFF".into());
             context.stroke();
         }
         */
     }
-
-
 }
 
 #[cfg(test)]

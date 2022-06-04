@@ -1,32 +1,14 @@
 use std::fmt;
 
-use geo::Coordinate;
-use rust_editor::{
-    actions::{Action, MultiAction, Redo, Undo},
-};
+use rust_editor::actions::{Action, MultiAction, Redo, Undo};
 use uuid::Uuid;
 
-use crate::map::{
-    actions::intersection::{
-        create::CreateIntersection,
-        update::UpdateIntersection,
-    },
-    map::Map,
-};
-
-
-
-
-
+use crate::map::map::Map;
 
 pub struct DeleteStreet {
     action_stack: MultiAction<Map>,
 
     street_id: Uuid,
-    start: Option<Coordinate<f64>>,
-    start_id: Option<Uuid>,
-    end: Option<Coordinate<f64>>,
-    end_id: Option<Uuid>,
 }
 
 impl DeleteStreet {
@@ -34,10 +16,6 @@ impl DeleteStreet {
         DeleteStreet {
             action_stack: MultiAction::new(),
             street_id,
-            start: None,
-            start_id: None,
-            end: None,
-            end_id: None,
         }
     }
 }
@@ -49,9 +27,7 @@ impl Undo<Map> for DeleteStreet {
 }
 
 impl Redo<Map> for DeleteStreet {
-    fn redo(&mut self, map: &mut Map) {
-        
-    }
+    fn redo(&mut self, _: &mut Map) {}
 }
 
 impl Action<Map> for DeleteStreet {}
@@ -67,6 +43,4 @@ impl fmt::Display for DeleteStreet {
 }
 
 #[cfg(test)]
-mod tests {
-
-}
+mod tests {}

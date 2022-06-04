@@ -1,13 +1,10 @@
-use geo::{
-    prelude::{Centroid, Contains},
-    Coordinate, LineString, Polygon,
-};
+use geo::{prelude::Contains, Coordinate, LineString, Polygon};
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    style::{InteractiveElementStyle, Style}, log,
+    style::{InteractiveElementStyle, Style},
 };
 use rust_editor::{gizmo::SetId, renderer::PrimitiveRenderer};
 use rust_macro::ElementId;
@@ -16,8 +13,7 @@ use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d; // TODO
 
-use super::{house::generate_houses_from_polygon, map::Map};
-use crate::map::intersection::Side;
+use super::house::generate_houses_from_polygon;
 
 #[derive(Serialize, Deserialize)]
 pub struct House {

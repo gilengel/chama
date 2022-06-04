@@ -1,19 +1,16 @@
 extern crate rust_editor;
 
-use std::collections::HashMap;
 
 use geo::{
-    euclidean_length::EuclideanLength,
     line_intersection::LineIntersection,
-    polygon,
     prelude::{Contains, EuclideanDistance},
-    Coordinate, Line, LineString, Point, Polygon, coords_iter::CoordsIter,
+    Coordinate, Line, LineString, Polygon,
 };
 use rust_editor::{
-    gizmo::{GetPosition, Id, SetId},
+    gizmo::{Id, SetId},
     interactive_element::{InteractiveElement, InteractiveElementState},
     renderer::PrimitiveRenderer,
-    style::{InteractiveElementStyle, Style}, log,
+    style::{InteractiveElementStyle, Style},
 };
 use rust_macro::ElementId;
 use serde::{Deserialize, Serialize};
@@ -22,10 +19,6 @@ use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
 use geo::line_intersection::line_intersection;
-
-use super::intersection::{Intersection, Side};
-
-use geo::line_string;
 
 #[derive(Clone, Serialize, Deserialize, ElementId, Debug, PartialEq)]
 pub struct Street {
@@ -253,22 +246,21 @@ impl Street {
         self.polygon.render(self.style(), context)?;
 
         /*
-        context.set_fill_style(&"#FFFFFF".into());
+                context.set_fill_style(&"#FFFFFF".into());
 
-        for it in self.lines.coords_iter() {
-            context.fill_text(
-                &format!(
-                    "{:?}",
-                    it.x_y()
-                )
-                .to_string(),
-                it.x,
-                it.y,
-            )?;
-        }
+                for it in self.lines.coords_iter() {
+                    context.fill_text(
+                        &format!(
+                            "{:?}",
+                            it.x_y()
+                        )
+                        .to_string(),
+                        it.x,
+                        it.y,
+                    )?;
+                }
 
-*/
-
+        */
 
         Ok(())
     }
@@ -291,31 +283,6 @@ impl Street {
         }
 
         false
-    }
-
-    fn line_intersect_line(
-        &self,
-        start: Coordinate<f64>,
-        start_dir: Coordinate<f64>,
-        end: Coordinate<f64>,
-        end_dir: Coordinate<f64>,
-    ) -> Option<Coordinate<f64>> {
-        let line1 = Line::new(start + start_dir * -1000.0, start + start_dir * 1000.0);
-        let line2 = Line::new(end + end_dir * -1000.0, end + end_dir * 1000.0);
-
-        if let Some(intersection) = line_intersection(line1, line2) {
-            match intersection {
-                LineIntersection::SinglePoint {
-                    intersection,
-                    is_proper: _,
-                } => {
-                    return Some(intersection);
-                }
-                _ => {}
-            }
-        }
-
-        None
     }
 
     pub fn is_point_on_street(&self, point: &Coordinate<f64>) -> bool {

@@ -3,8 +3,6 @@ use geo::{
     line_intersection::{line_intersection, LineIntersection},
     Coordinate, Line, LineString, Point, Polygon,
 };
-use rust_editor::log;
-
 type AnnotatedLine = (Line<f64>, bool);
 
 impl AnnotatedPolygon {

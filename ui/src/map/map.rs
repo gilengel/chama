@@ -1,11 +1,10 @@
 use geo::intersects::Intersects;
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
-use geo::{Coordinate, Line, LineString, Polygon, Rect, MultiPolygon};
+use geo::{Coordinate, Line, LineString, MultiPolygon, Polygon, Rect};
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_editor::gizmo::{GetPosition, Id};
 use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
-use rust_editor::log;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -16,7 +15,6 @@ use geo_booleanop::boolean::BooleanOp;
 use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
-use std::panic;
 
 use super::district::{District, House};
 use super::house::generate_houses_from_polygon;
@@ -28,7 +26,6 @@ pub struct Map {
     width: u32,
     height: u32,
 
-    
     pub(crate) street_polygon: MultiPolygon<f64>,
     pub(crate) district_polygons: Vec<Polygon<f64>>,
 
@@ -197,14 +194,14 @@ impl Map {
         for polygon in self.street_polygon.iter() {
             district_polygons.append(&mut polygon.interiors().to_vec());
         }
-        
+
         self.districts_mut().clear();
         for i in 0..district_polygons.len() {
             let polygon = Polygon::new(district_polygons[i].clone(), vec![]);
 
             let seed = <ChaCha8Rng as SeedableRng>::Seed::default();
             let houses: Vec<House> = generate_houses_from_polygon(&polygon, 50., seed);
-        
+
             let district = District {
                 polygon: polygon.clone(),
                 houses,
@@ -217,15 +214,11 @@ impl Map {
         }
     }
 
-    pub fn add_street(&mut self, street: &Street) -> Uuid {       
+    pub fn add_street(&mut self, street: &Street) -> Uuid {
         let id = street.id();
-        self.streets.insert(id, street.clone());        
+        self.streets.insert(id, street.clone());
 
         self.update_districts();
-
-
-
-
 
         id
     }
@@ -302,12 +295,6 @@ impl Map {
         });
 
         intersections
-    }
-
-
-
-    pub fn intersection_with_street(&self, street: &Street) -> Option<Coordinate<f64>> {
-        None
     }
 
     pub fn get_street_at_position(
@@ -412,6 +399,4 @@ impl Map {
     pub fn remove_district(&mut self, id: &Uuid) {
         self.districts.remove(id);
     }
-
-
 }

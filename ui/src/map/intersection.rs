@@ -22,12 +22,6 @@ pub enum Direction {
     Out,
 }
 
-#[derive(Clone, PartialEq, Copy, Debug)]
-pub enum Side {
-    Left,
-    Right,
-}
-
 #[derive(Clone, Serialize, Deserialize, ElementId)]
 pub struct Intersection {
     id: Uuid,

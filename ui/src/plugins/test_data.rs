@@ -1,7 +1,6 @@
 use geo::{coord, LineString};
-use rust_editor::{actions::Action, plugins::plugin::Plugin, ui::app::EditorError, log};
+use rust_editor::{actions::Action, plugins::plugin::Plugin, ui::app::EditorError};
 use rust_macro::editor_plugin;
-use uuid::Uuid;
 
 use crate::map::{map::Map};
 
@@ -79,7 +78,7 @@ impl Plugin<Map> for TestData {
             coord! { x: 537., y: 303. },
         ]));
         action.execute(editor.data_mut()); 
-                
+
         Ok(())
     }
 }

@@ -16,8 +16,7 @@ use uuid::Uuid;
 
 use crate::map::actions::street::delete::DeleteStreet as ActionDeleteStreet;
 
-use crate::map::intersection::Intersection;
-use crate::map::{intersection::Side, map::Map, street::Street};
+use crate::map::map::Map;
 
 #[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
 pub struct DeleteStreet {
@@ -31,8 +30,6 @@ impl DeleteStreet {
             street.set_state(InteractiveElementState::Normal);
         }
     }
-
-
 }
 impl Plugin<Map> for DeleteStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
@@ -62,7 +59,7 @@ impl Plugin<Map> for DeleteStreet {
 
     fn mouse_move(
         &mut self,
-        mouse_pos: Coordinate<f64>,
+        _: Coordinate<f64>,
         _mouse_movement: Coordinate<f64>,
         _: mouse::Button,
         editor: &mut App<Map>,
@@ -70,16 +67,14 @@ impl Plugin<Map> for DeleteStreet {
         let map = editor.data_mut();
         self.clean_hovered_street_state(map);
 
-
-
         false
     }
 
     fn mouse_down(
         &mut self,
-        mouse_pos: Coordinate<f64>,
+        _: Coordinate<f64>,
         button: mouse::Button,
-        editor: &App<Map>,
+        _: &App<Map>,
     ) -> bool {
         if button != mouse::Button::Left {
             return false;
@@ -99,7 +94,10 @@ impl Plugin<Map> for DeleteStreet {
         }
 
         // Only continue if we selected streets before and we are currently hovering a street
-        if let (Some(hovered_streets), Some(street_at_mouse_pos)) = (&self.hovered_streets, app.data().get_street_at_position(&mouse_pos, &vec![])) {
+        if let (Some(hovered_streets), Some(street_at_mouse_pos)) = (
+            &self.hovered_streets,
+            app.data().get_street_at_position(&mouse_pos, &vec![]),
+        ) {
             // Don't delete if the currently hovered street was not previously selected
             if !hovered_streets.contains(&street_at_mouse_pos) {
                 return false;
@@ -129,6 +127,4 @@ impl Plugin<Map> for DeleteStreet {
 }
 
 #[cfg(test)]
-mod tests {
-
-}
+mod tests {}

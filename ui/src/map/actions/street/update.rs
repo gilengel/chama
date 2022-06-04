@@ -28,7 +28,7 @@ impl Undo<Map> for UpdateStreet {
 
 impl Redo<Map> for UpdateStreet {
     fn redo(&mut self, map: &mut Map) {
-        if let Some(mut street) = map.streets.remove(&self.id) {
+        if let Some(street) = map.streets.remove(&self.id) {
             map.streets.insert(street.id(), street);
         }
     }

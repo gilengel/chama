@@ -1,12 +1,10 @@
 use std::fmt;
 
-use geo::{polygon, simplify::Simplify, Coordinate, LineString, MultiPolygon, Point};
-use geo_booleanop::boolean::BooleanOp;
+use geo::{simplify::Simplify, Coordinate, LineString, Point};
 use rust_editor::{
-    actions::{Action, MultiAction, Redo, Undo},
+    actions::{Action, Redo, Undo},
     gizmo::Id,
     input::{keyboard::Key, mouse},
-    log,
     plugins::plugin::{Plugin, PluginWithOptions},
     renderer::PrimitiveRenderer,
     style::Style,
@@ -19,7 +17,7 @@ use rust_macro::editor_plugin;
 use uuid::Uuid;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::map::{actions::street::create::CreateStreet, map::Map, street::Street};
+use crate::map::{map::Map, street::Street};
 
 #[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {

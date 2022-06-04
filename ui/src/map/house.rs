@@ -1,7 +1,7 @@
 use geo::{euclidean_length::EuclideanLength, prelude::Area, Line, Point, Polygon};
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use rust_editor::{style::Style, log};
+use rust_editor::{style::Style};
 
 use crate::algorithm::geo::{longest_line, split, AnnotatedPolygon};
 
@@ -58,7 +58,7 @@ fn calculate_split_line(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_si
     let norm = Point::new(vec.x() / length, vec.y() / length);
     let perp = Point::new(-norm.y(), norm.x());
 
-    let split_pt = line.start_point() + norm * length * 0.70; //* rng.gen_range(0.3..0.7);
+    let split_pt = line.start_point() + norm * length * rng.gen_range(0.3..0.7);
 
     
     

@@ -4,11 +4,10 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_macro::editor_plugin;
 
-use crate::{map::intersection::Side, Map};
+use crate::{Map};
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, Redo, Undo},
-    gizmo::Id,
     input::{keyboard::Key, mouse},
     plugins::plugin::{Plugin, PluginWithOptions},
     ui::{
@@ -38,7 +37,6 @@ pub struct CreateDistrict {
 
 struct CreateDistrictAction {
     street: Uuid,
-    side: Side,
     minimum_house_side: f64,
     seed: <ChaCha8Rng as SeedableRng>::Seed,
 
@@ -68,13 +66,11 @@ impl fmt::Display for CreateDistrictAction {
 impl CreateDistrictAction {
     pub fn new(
         street: Uuid,
-        side: Side,
         minimum_house_side: f64,
         seed: <ChaCha8Rng as SeedableRng>::Seed,
     ) -> Self {
         CreateDistrictAction {
             street,
-            side,
             minimum_house_side,
             seed,
             district: None,
@@ -121,19 +117,19 @@ impl Plugin<Map> for CreateDistrict {
 
     fn mouse_move(
         &mut self,
-        mouse_pos: Coordinate<f64>,
+        _: Coordinate<f64>,
         _: Coordinate<f64>,
         _: mouse::Button,
-        editor: &mut App<Map>,
+        _: &mut App<Map>,
     ) -> bool {
         false
     }
 
     fn mouse_up(
         &mut self,
-        mouse_pos: Coordinate<f64>,
-        button: mouse::Button,
-        app: &mut App<Map>,
+        _: Coordinate<f64>,
+        _: mouse::Button,
+        _: &mut App<Map>,
     ) -> bool {
         false
     }

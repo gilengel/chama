@@ -1,7 +1,7 @@
 use geo::{euclidean_length::EuclideanLength, prelude::Area, Line, Point, Polygon};
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use rust_editor::{style::Style};
+use rust_editor::{style::Style, log};
 
 use crate::algorithm::geo::{longest_line, split, AnnotatedPolygon};
 
@@ -58,7 +58,7 @@ fn calculate_split_line(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_si
     let norm = Point::new(vec.x() / length, vec.y() / length);
     let perp = Point::new(-norm.y(), norm.x());
 
-    let split_pt = line.start_point() + norm * length * rng.gen_range(0.3..0.7);
+    let split_pt = line.start_point() + norm * length * 0.70; //* rng.gen_range(0.3..0.7);
 
     
     
@@ -74,7 +74,8 @@ fn split_polygons_into_chunks(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, 
     }
 
     let split_line = calculate_split_line(rng, polygon, min_side_length);
-    for sub_polygon in split(&polygon, &split_line).iter_mut() {
+    let mut splits = split(&polygon, &split_line);
+    for sub_polygon in splits.iter_mut() {
         polygons.append(&mut split_polygons_into_chunks(rng, &sub_polygon, min_side_length));
     }
 
@@ -92,17 +93,21 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
             polygon.exterior().lines().map(|_| true).collect(),
         ),
         min_side_length,
+
     );
+
     let polygons = houses.iter().filter(|polygon| !polygon.enclosed());
 
     
     polygons
         .map(|sub_polygon| {
-            //let r: u8 = rng.gen_range(0..255);
-            //let g: u8 = rng.gen_range(0..255);
-            //let b: u8 = rng.gen_range(0..255);
+            /*
+            let r: u8 = rng.gen_range(0..255);
+            let g: u8 = rng.gen_range(0..255);
+            let b: u8 = rng.gen_range(0..255);
 
-            //let rng_color = format!("rgba({},{},{}, 0.3)", r, g, b).to_string();
+            let rng_color = format!("rgba({},{},{}, 0.3)", r, g, b).to_string();
+            */
 
             let line_styles: Vec<Style> = sub_polygon
                 .lines()

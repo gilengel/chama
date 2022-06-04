@@ -3,6 +3,7 @@ use geo::{
     line_intersection::{line_intersection, LineIntersection},
     Coordinate, Line, LineString, Point, Polygon,
 };
+use rust_editor::log;
 
 type AnnotatedLine = (Line<f64>, bool);
 
@@ -58,10 +59,10 @@ fn calc_intersection_pairs(
 ) -> Vec<(PolygonLineIntersection, PolygonLineIntersection)> {
     let mut pairs: Vec<(PolygonLineIntersection, PolygonLineIntersection)> = Vec::new();
 
-    let mut it = intersections.iter().peekable();
+    let mut it = intersections.iter();
     while let Some(line_intersection) = it.next() {
-        match it.peek() {
-            Some(x) => pairs.push((*line_intersection, **x)),
+        match it.next() {
+            Some(x) => pairs.push((*line_intersection, *x)),
             None => {}
         };
     }
@@ -69,6 +70,7 @@ fn calc_intersection_pairs(
     pairs
 }
 
+#[derive(PartialEq)]
 struct Crossback<'a> {
     pub lines: Vec<(Line<f64>, &'a bool)>,
     pub crossback: Option<usize>,
@@ -87,7 +89,6 @@ fn calc_split_polygons(
     let mut result: Vec<Crossback> = Vec::new();
 
     let intersection_pairs = calc_intersection_pairs(intersections);
-
     let mut current_index = 0;
 
     result.push(Crossback {
@@ -109,7 +110,7 @@ fn calc_split_polygons(
                         other_point_index = Some(k.0.line_segment_index);
                     }
 
-                    let start = if i == 0 {
+                    let start = if intersection.line_segment_index == 0 {
                         line.start
                     } else {
                         result[current_index].lines.last().unwrap().0.end
@@ -119,42 +120,46 @@ fn calc_split_polygons(
                         Line::new(start, intersection.intersection),
                         &lines[intersection.line_segment_index].1,
                     ));
-                    result[current_index].crossback = other_point_index;
 
-                    match result.iter().position(|x| {
+                    result[current_index].crossback = other_point_index;
+                }
+
+                match result
+                    .iter()
+                    .filter(|x| **x != result[current_index])
+                    .position(|x| {
                         x.crossback.is_some()
                             && x.crossback.unwrap() == intersection.line_segment_index
                     }) {
-                        Some(k) => {
-                            let line = Line::new(
-                                result[current_index].lines.last().unwrap().0.end,
-                                result[k].lines.first().unwrap().0.start,
-                            );
+                    Some(k) => {
+                        let line = Line::new(
+                            result[current_index].lines.last().unwrap().0.end,
+                            result[k].lines.first().unwrap().0.start,
+                        );
 
-                            result[current_index].lines.push((line, &false));
+                        result[current_index].lines.push((line, &false));
 
-                            let opposide_line = Line::new(
-                                result[k].lines.last().unwrap().0.end,
-                                result[current_index].lines.last().unwrap().0.end,
-                            );
+                        let opposide_line = Line::new(
+                            result[k].lines.last().unwrap().0.end,
+                            result[current_index].lines.last().unwrap().0.end,
+                        );
 
-                            current_index = k;
-                            result[current_index].lines.push((opposide_line, &false));
-                        }
-                        None => {
-                            result.push(Crossback {
-                                lines: Vec::new(),
-                                crossback: None,
-                            });
-                            current_index = result.len() - 1;
-                        }
+                        current_index = k;
+                        result[current_index].lines.push((opposide_line, &false));
                     }
-
-                    result[current_index].lines.push((
-                        Line::new(intersection.intersection, line.end),
-                        &lines[intersection.line_segment_index].1,
-                    ));
+                    None => {
+                        result.push(Crossback {
+                            lines: Vec::new(),
+                            crossback: None,
+                        });
+                        current_index = result.len() - 1;
+                    }
                 }
+
+                result[current_index].lines.push((
+                    Line::new(intersection.intersection, line.end),
+                    &lines[intersection.line_segment_index].1,
+                ));
             }
             None => result[current_index].lines.push((line.clone(), is_street)),
         }
@@ -197,11 +202,11 @@ pub fn longest_line(polygon: &AnnotatedPolygon, min_side_length: f64) -> Annotat
 
 #[cfg(test)]
 mod tests {
-    use geo::{LineString, Point, Polygon, Line, Coordinate};
+    use geo::{Coordinate, Line, LineString, Point, Polygon};
 
     use crate::algorithm::geo::longest_line;
 
-    use super::{AnnotatedPolygon, split};
+    use super::{split, AnnotatedPolygon};
 
     #[test]
     fn unit_split_polygon() {
@@ -216,7 +221,13 @@ mod tests {
 
         let polygon = AnnotatedPolygon(poly, is_street);
 
-        let splits = split(&polygon, &Line::new(Coordinate { x: 128., y: 0. }, Coordinate { x: 128., y: 256. }));
+        let splits = split(
+            &polygon,
+            &Line::new(
+                Coordinate { x: 128., y: 0. },
+                Coordinate { x: 128., y: 256. },
+            ),
+        );
 
         assert_eq!(splits.len(), 2);
         assert_eq!(splits[0].enclosed(), false);
@@ -238,7 +249,13 @@ mod tests {
 
         let result = longest_line(&polygon, 5.0);
 
-        assert_eq!(result.0, Line::new(Coordinate { x: 256., y: 0. }, Coordinate { x: 256., y: 512. }));
+        assert_eq!(
+            result.0,
+            Line::new(
+                Coordinate { x: 256., y: 0. },
+                Coordinate { x: 256., y: 512. }
+            )
+        );
         assert_eq!(result.1, true);
     }
 }

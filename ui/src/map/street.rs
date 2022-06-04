@@ -7,7 +7,7 @@ use geo::{
     line_intersection::LineIntersection,
     polygon,
     prelude::{Contains, EuclideanDistance},
-    Coordinate, Line, LineString, Point, Polygon,
+    Coordinate, Line, LineString, Point, Polygon, coords_iter::CoordsIter,
 };
 use rust_editor::{
     gizmo::{GetPosition, Id, SetId},
@@ -134,8 +134,6 @@ where
         .collect::<Vec<EnhancedLine>>();
     let mut it = streets.iter().peekable();
 
-    log!("{}", it.len());
-
     let mut points: Vec<Coordinate<f64>> = vec![]; //Vec::with_capacity(num_pts * 2 + 2);
     let mut points2: Vec<Coordinate<f64>> = vec![];
 
@@ -224,7 +222,6 @@ impl InteractiveElement for Street {
 
 impl Street {
     pub fn new(line_string: LineString<f64>) -> Self {
-        log!("NEW STREET? {:?}", line_string);
         let it = line_string.lines().into_iter().peekable();
         let polygon = calc_polygon_points(it, 20.);
 
@@ -254,6 +251,24 @@ impl Street {
 
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         self.polygon.render(self.style(), context)?;
+
+        /*
+        context.set_fill_style(&"#FFFFFF".into());
+
+        for it in self.lines.coords_iter() {
+            context.fill_text(
+                &format!(
+                    "{:?}",
+                    it.x_y()
+                )
+                .to_string(),
+                it.x,
+                it.y,
+            )?;
+        }
+
+*/
+
 
         Ok(())
     }

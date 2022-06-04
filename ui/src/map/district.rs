@@ -4,12 +4,12 @@ use geo::{
 };
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use rust_editor::{gizmo::SetId, renderer::PrimitiveRenderer};
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    style::{InteractiveElementStyle, Style},
+    style::{InteractiveElementStyle, Style}, log,
 };
+use rust_editor::{gizmo::SetId, renderer::PrimitiveRenderer};
 use rust_macro::ElementId;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -28,14 +28,14 @@ pub struct House {
 
 #[derive(Serialize, Deserialize, ElementId)]
 pub struct District {
-    id: Uuid,
-    polygon: Polygon<f64>,
-    style: InteractiveElementStyle,
-    state: InteractiveElementState,
-    pub minimum_house_side: f64,
-    pub seed: <ChaCha8Rng as SeedableRng>::Seed,
+    pub(crate) id: Uuid,
+    pub(crate) polygon: Polygon<f64>,
+    pub(crate) style: InteractiveElementStyle,
+    pub(crate) state: InteractiveElementState,
+    pub(crate) minimum_house_side: f64,
+    pub(crate) seed: <ChaCha8Rng as SeedableRng>::Seed,
 
-    houses: Vec<House>,
+    pub(crate) houses: Vec<House>,
 }
 
 impl Default for District {
@@ -63,7 +63,7 @@ impl Default for District {
             state: InteractiveElementState::Normal,
             minimum_house_side: 500.0,
             houses: Vec::new(),
-            seed: Default::default()
+            seed: Default::default(),
         }
     }
 }
@@ -96,7 +96,8 @@ impl District {
     }
 
     pub fn update_houses(&mut self) {
-        self.houses = generate_houses_from_polygon(&self.polygon, self.minimum_house_side, self.seed);
+        self.houses =
+            generate_houses_from_polygon(&self.polygon, self.minimum_house_side, self.seed);
     }
 
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
@@ -126,21 +127,21 @@ impl District {
         */
 
         /*
-        fn muu(ty: LineSegmentType) -> Style {
-            if ty == LineSegmentType::Street { Style {
-                border_width: 2,
-                border_color: "#C45D53".to_string(),
-                background_color: "#C45D53".to_string(),
-            }
-            } else {
-                Style {
-                    border_width: 2,
-                    border_color: "#C45D53".to_string(),
-                    background_color: "#C45D53".to_string(),
+                fn muu(ty: LineSegmentType) -> Style {
+                    if ty == LineSegmentType::Street { Style {
+                        border_width: 2,
+                        border_color: "#C45D53".to_string(),
+                        background_color: "#C45D53".to_string(),
+                    }
+                    } else {
+                        Style {
+                            border_width: 2,
+                            border_color: "#C45D53".to_string(),
+                            background_color: "#C45D53".to_string(),
+                        }
+                    }
                 }
-            }
-        }
-*/
+        */
         for p in &self.houses {
             p.polygon.render(&p.style, context)?;
 
@@ -148,7 +149,6 @@ impl District {
                 line.render(style, context)?;
             }
         }
-        
 
         context.restore();
 
@@ -156,44 +156,7 @@ impl District {
     }
 }
 
-struct Enclosed {
-    enclosed: bool,
-    _streets: Vec<(Side, Uuid)>,
-    points: Vec<Coordinate<f64>>,
-}
-
-pub fn create_district_for_street(side: Side, street: Uuid, map: &mut Map, minimum_house_side: f64, seed: <ChaCha8Rng as SeedableRng>::Seed) -> Option<District> {
-    let district = enclosed(side, street, map);
-
-    let factor = match side {
-        Side::Left => -1.0,
-        Side::Right => 1.0,
-    };
-    let street_perp = map.street(&street).unwrap().perp();
-    let street_start: Coordinate<f64> = map.street(&street).unwrap().line.centroid().into();
-    let intersected_streets = map.streets_intersecting_ray(
-        &(street_start + street_perp * 10.0 * factor),
-        &street_perp,
-        10000.0 * factor,
-    );
-
-
-    if !district.enclosed || intersected_streets.is_empty() {
-        return None;
-    }
-
-    // Generate the houses
-    let polygon = Polygon::new(LineString::from(district.points), vec![]);
-    let houses: Vec<House> = generate_houses_from_polygon(&polygon, minimum_house_side, seed);
-
-    return Some(District {
-        polygon,
-        houses,
-        minimum_house_side,
-        ..District::default()
-    });
-}
-
+/*
 fn enclosed(side: Side, street: Uuid, map: &mut Map) -> Enclosed {
     let mut side = side;
     let start = street;
@@ -247,3 +210,4 @@ fn enclosed(side: Side, street: Uuid, map: &mut Map) -> Enclosed {
         points: points,
     }
 }
+*/

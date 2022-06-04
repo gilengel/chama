@@ -4,19 +4,17 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_macro::editor_plugin;
 
-use crate::{
-    map::{district::create_district_for_street, intersection::Side},
-    Map,
-};
+use crate::{map::intersection::Side, Map};
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, Redo, Undo},
     gizmo::Id,
+    input::{keyboard::Key, mouse},
     plugins::plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, input::{keyboard::Key, mouse},
+    },
 };
 use uuid::Uuid;
 
@@ -48,20 +46,7 @@ struct CreateDistrictAction {
 }
 
 impl Redo<Map> for CreateDistrictAction {
-    fn redo(&mut self, map: &mut Map) {
-        if let Some(district) = create_district_for_street(
-            self.side,
-            self.street,
-            map,
-            self.minimum_house_side,
-            self.seed,
-        ) {
-            let id = district.id().clone();
-            map.add_district(district);
-
-            self.district = Some(id);
-        }
-    }
+    fn redo(&mut self, _map: &mut Map) {}
 }
 
 impl Undo<Map> for CreateDistrictAction {
@@ -141,43 +126,16 @@ impl Plugin<Map> for CreateDistrict {
         _: mouse::Button,
         editor: &mut App<Map>,
     ) -> bool {
-        match editor.data().get_nearest_street_to_position(&mouse_pos) {
-            Some(street) => self.hovered_street = Some(street.id()),
-            None => self.hovered_street = None,
-        }
-
         false
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, button: mouse::Button, app: &mut App<Map>) -> bool {
-        if button != mouse::Button::Left {
-            return false;
-        }
-
-        if let Some(hovered_street_id) = self.hovered_street {
-            let mut create_district_action = CreateDistrictAction::new(
-                hovered_street_id,
-                app.data()
-                    .street(&hovered_street_id)
-                    .unwrap()
-                    .get_side_of_position(&mouse_pos),
-                self.minimum_house_side,
-                self.seed,
-            );
-            create_district_action.execute(app.data_mut());
-
-            let action = Rc::new(RefCell::new(create_district_action));
-
-            app.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
-                redo.clear();
-            });
-
-            app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
-                undo.push(Rc::clone(&action));
-            });
-        }
-
-        return false;
+    fn mouse_up(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        button: mouse::Button,
+        app: &mut App<Map>,
+    ) -> bool {
+        false
     }
 }
 

@@ -1,7 +1,8 @@
 use geo::intersects::Intersects;
-use geo::line_intersection::{line_intersection, LineIntersection};
 use geo::prelude::{BoundingRect, Contains, EuclideanDistance};
 use geo::{Coordinate, Line, LineString, Polygon, Rect, MultiPolygon};
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use rust_editor::gizmo::{GetPosition, Id};
 use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
 use rust_editor::log;
@@ -15,8 +16,10 @@ use geo_booleanop::boolean::BooleanOp;
 use std::cmp::Ordering;
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
+use std::panic;
 
-use super::district::District;
+use super::district::{District, House};
+use super::house::generate_houses_from_polygon;
 use super::intersection::Intersection;
 use super::street::Street;
 
@@ -27,6 +30,7 @@ pub struct Map {
 
     
     pub(crate) street_polygon: MultiPolygon<f64>,
+    pub(crate) district_polygons: Vec<Polygon<f64>>,
 
     pub(crate) streets: HashMap<Uuid, Street>,
     pub(crate) intersections: HashMap<Uuid, Intersection>,
@@ -45,6 +49,7 @@ impl Default for Map {
             districts: HashMap::new(),
 
             street_polygon: MultiPolygon::new(vec![]),
+            district_polygons: vec![],
 
             bounding_box: Rect::new(Coordinate { x: 0., y: 0. }, Coordinate { x: 0., y: 0. }),
         }
@@ -182,19 +187,53 @@ impl Map {
             .filter(move |intersection| intersection.state() == state)
     }
 
-    pub fn add_street(&mut self, street: Street) -> Uuid {
+    fn update_districts(&mut self) {
+        self.street_polygon = MultiPolygon::new(vec![]);
+        for (_, street) in &self.streets {
+            self.street_polygon = self.street_polygon.union(street.polygon());
+        }
 
-        self.street_polygon = street.polygon().union(&self.street_polygon);
-
-        log!("{}", self.street_polygon.iter().count());
+        let mut district_polygons = vec![];
+        for polygon in self.street_polygon.iter() {
+            district_polygons.append(&mut polygon.interiors().to_vec());
+        }
         
+        self.districts_mut().clear();
+        for i in 0..district_polygons.len() {
+            let polygon = Polygon::new(district_polygons[i].clone(), vec![]);
 
+            let seed = <ChaCha8Rng as SeedableRng>::Seed::default();
+            let houses: Vec<House> = generate_houses_from_polygon(&polygon, 50., seed);
+        
+            let district = District {
+                polygon: polygon.clone(),
+                houses,
+                minimum_house_side: 50.,
+                ..District::default()
+            };
+            self.districts_mut().insert(district.id(), district);
+
+            self.district_polygons.push(polygon);
+        }
+    }
+
+    pub fn add_street(&mut self, street: &Street) -> Uuid {       
         let id = street.id();
-        self.streets.insert(id, street);
+        self.streets.insert(id, street.clone());        
 
-        
+        self.update_districts();
+
+
+
+
 
         id
+    }
+
+    pub fn remove_street(&mut self, street: &Street) {
+        self.streets.remove(&street.id());
+
+        self.update_districts();
     }
 
     pub fn add_district(&mut self, district: District) -> Uuid {
@@ -265,107 +304,10 @@ impl Map {
         intersections
     }
 
-    pub fn line_intersection_with_streets(&self, line: &Line<f64>) -> Vec<(Uuid, Coordinate<f64>)> {
-        let mut intersections: Vec<(Uuid, Coordinate<f64>)> = Vec::new();
 
-        for (_, street) in &self.streets {
-            if let Some(line_intersection) = street.intersect_with_line(line) {
-                match line_intersection {
-                    LineIntersection::SinglePoint {
-                        intersection,
-                        is_proper,
-                    } => {
-                        if is_proper {
-                            intersections.push((street.id(), intersection));
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
 
-        intersections.sort_by(|a, b| {
-            let d1 = a.1.euclidean_distance(&line.start);
-            let d2 = b.1.euclidean_distance(&line.start);
-
-            if d1 < d2 {
-                return Ordering::Less;
-            }
-
-            if d1 == d2 {
-                return Ordering::Equal;
-            }
-
-            Ordering::Greater
-        });
-
-        intersections
-    }
-
-    pub fn has_street_connecting_intersections(&self, start: Uuid, end: Uuid) -> bool {
-// TODO
-        //        let s = self.intersections().get(&start).unwrap().position();
-//        let e = self.intersections().get(&end).unwrap().position();
-        for (_, street) in &self.streets {
-            if street.start == start && street.end == end || street.start == end && street.end == start {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    pub fn line_intersection_with_street(
-        &self,
-        line: &Line<f64>,
-    ) -> Option<(Uuid, Coordinate<f64>)> {
-        let intersections = self.line_intersection_with_streets(line);
-
-        if intersections.is_empty() {
-            return None;
-        }
-
-        Some(intersections.first().unwrap().clone())
-    }
     pub fn intersection_with_street(&self, street: &Street) -> Option<Coordinate<f64>> {
-        let mut intersections = vec![];
-
-        for (_, another_street) in &self.streets {
-            if let Some(line_intersection) = street.intersect_with_street(another_street) {
-                match line_intersection {
-                    LineIntersection::SinglePoint {
-                        intersection,
-                        is_proper,
-                    } => {
-                        if is_proper {
-                            intersections.push(intersection);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        intersections.sort_by(|a, b| {
-            let d1 = a.euclidean_distance(&street.start());
-            let d2 = b.euclidean_distance(&street.start());
-
-            if d1 < d2 {
-                return Ordering::Less;
-            }
-
-            if d1 == d2 {
-                return Ordering::Equal;
-            }
-
-            Ordering::Greater
-        });
-
-        if intersections.is_empty() {
-            return None;
-        }
-
-        Some(intersections.first().unwrap().clone())
+        None
     }
 
     pub fn get_street_at_position(
@@ -381,29 +323,6 @@ impl Map {
             if street.is_point_on_street(position) {
                 return Some(*id);
             }
-        }
-
-        None
-    }
-
-    pub fn get_nearest_street_to_position(&self, position: &Coordinate<f64>) -> Option<&Street> {
-        if let Some((_, nearest_street)) = self.streets.iter().min_by(|(_, x), (_, y)| {
-            let x = x.line;
-            let y = y.line;
-
-            let d1 = x.euclidean_distance(position);
-            let d2 = y.euclidean_distance(position);
-            if d1 < d2 {
-                return Ordering::Less;
-            }
-
-            if d1 > d2 {
-                return Ordering::Greater;
-            }
-
-            Ordering::Equal
-        }) {
-            return Some(nearest_street);
         }
 
         None
@@ -494,29 +413,5 @@ impl Map {
         self.districts.remove(id);
     }
 
-    pub fn streets_intersecting_ray(
-        &self,
-        ray_start_pos: &Coordinate<f64>,
-        ray_direction: &Coordinate<f64>,
-        ray_length: f64,
-    ) -> Vec<Uuid> {
-        let line = Line::new(*ray_start_pos, *ray_direction * ray_length);
-        let mut intersected_streets = vec![];
-        for (_, street) in &self.streets {
-            let s: &Line<f64> = street.into();
-            if let Some(intersection) = line_intersection(*s, line) {
-                match intersection {
-                    LineIntersection::SinglePoint {
-                        intersection: _,
-                        is_proper: _,
-                    } => {
-                        intersected_streets.push(street.id());
-                    }
-                    _ => {}
-                }
-            }
-        }
 
-        intersected_streets
-    }
 }

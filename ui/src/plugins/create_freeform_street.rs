@@ -1,21 +1,25 @@
 use std::fmt;
 
-use geo::{simplify::Simplify, Coordinate, LineString, Point};
+use geo::{polygon, simplify::Simplify, Coordinate, LineString, MultiPolygon, Point};
+use geo_booleanop::boolean::BooleanOp;
 use rust_editor::{
     actions::{Action, MultiAction, Redo, Undo},
+    gizmo::Id,
+    input::{keyboard::Key, mouse},
+    log,
     plugins::plugin::{Plugin, PluginWithOptions},
-    renderer::{PrimitiveRenderer},
+    renderer::PrimitiveRenderer,
     style::Style,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, input::{keyboard::Key, mouse}, log,
+    },
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::map::{actions::street::create::CreateStreet, map::Map};
+use crate::map::{actions::street::create::CreateStreet, map::Map, street::Street};
 
 #[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {
@@ -32,7 +36,7 @@ pub struct CreateFreeformStreet {
     brush_active: bool,
 
     #[option(
-        default = 4.,
+        default = 1.,
         min = 0.,
         max = 10.,
         label = "Simplification Factor",
@@ -42,56 +46,34 @@ pub struct CreateFreeformStreet {
 }
 
 pub struct CreateFreeFormStreetAction {
-    raw_points: Vec<Coordinate<f64>>,
-    action_stack: MultiAction<Map>,
-    street_ids: Vec<Uuid>,
+    id: Option<Uuid>,
+    street: LineString<f64>,
 }
 
 impl CreateFreeFormStreetAction {
-    pub fn new(raw_points: Vec<Coordinate<f64>>) -> Self {
-        let street_ids: Vec<Uuid> = raw_points.iter().skip(1).map(|_| Uuid::new_v4()).collect();
-        CreateFreeFormStreetAction {
-            raw_points,
-            action_stack: MultiAction::new(),
-            street_ids,
-        }
+    pub fn new(street: LineString<f64>) -> Self {
+        CreateFreeFormStreetAction { id: None, street }
     }
 }
 
 impl Undo<Map> for CreateFreeFormStreetAction {
     fn undo(&mut self, map: &mut Map) {
-        self.action_stack.undo(map);
+        let copy = map.street(&self.id.unwrap()).unwrap().clone();
+        map.remove_street(&copy);
     }
 }
 
 impl Redo<Map> for CreateFreeFormStreetAction {
     fn redo(&mut self, map: &mut Map) {
-        self.action_stack.actions.clear();
-
-        if self.raw_points.is_empty() {
+        // TODO: Rework editor logic, if I press a button the action is still triggered if the plugin was activated before (e.g. by drawing a street)
+        if self.street.points().len() == 0{
             return;
         }
 
-        /*
-            // skip the first n points if at that position already a street exists
-            let mut index_to_be_skipped = 0;
-            for (index, point) in self.raw_points.iter().enumerate() {
-                if map.get_street_at_position(point, &vec![]).is_none() && index != 0 {
-                    index_to_be_skipped = index - 1;
-                    break;
-                }
-            }
-        */
-        let mut previous = &self.raw_points[0];
-        for (point, street_id) in self.raw_points.iter().skip(1).zip(self.street_ids.iter()) {
-            
-            self.action_stack
-                .push(CreateStreet::new(*previous, *point, *street_id));
+        let street = Street::new(self.street.clone());
 
-            previous = point;
-        }
-
-        self.action_stack.redo(map);
+        self.id = Some(street.id());
+        map.add_street(&street);
     }
 }
 
@@ -99,11 +81,7 @@ impl Action<Map> for CreateFreeFormStreetAction {}
 
 impl fmt::Display for CreateFreeFormStreetAction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "[create_freeform_street]\n\u{251C}  {}",
-            self.action_stack
-        )
+        write!(f, "[create_freeform_street]\n\u{251C}",)
     }
 }
 
@@ -126,8 +104,13 @@ impl Plugin<Map> for CreateFreeformStreet {
 
         Ok(())
     }
-    
-    fn mouse_down(&mut self, _mouse_pos: Coordinate<f64>, button: mouse::Button, _: &App<Map>) -> bool {
+
+    fn mouse_down(
+        &mut self,
+        _mouse_pos: Coordinate<f64>,
+        button: mouse::Button,
+        _: &App<Map>,
+    ) -> bool {
         if button == mouse::Button::Left {
             self.brush_active = true;
         }
@@ -146,34 +129,15 @@ impl Plugin<Map> for CreateFreeformStreet {
             self.raw_points.push(mouse_pos);
         }
 
-        let line_string = LineString(self.raw_points.clone());
-        let new_points =  line_string
-            .simplify(&self.simplification_factor)
-            .into_points();
-
-            /*
-        if self.points != new_points {
-            let old_line: LineString<f64> = self.points.clone().into_iter().collect();
-            let mut it = new_points.iter().rev();
-            let start = (it.next().unwrap().clone()).into();
-            let end: Coordinate<f64> = (it.next().unwrap().clone()).into();
-            let new_line_segment: Line<f64> = Line::new(start, end); 
-
-
-
-
-            
-            log!("{:?} {}", old_line.lines().position(|line| line.intersects(&new_line_segment)), old_line.lines().len());
-
-            self.points = new_points;
-        }
-        */
-
-
         false
     }
 
-    fn mouse_up(&mut self, _mouse_pos: Coordinate<f64>, button: mouse::Button, app: &mut App<Map>) -> bool {
+    fn mouse_up(
+        &mut self,
+        _mouse_pos: Coordinate<f64>,
+        button: mouse::Button,
+        app: &mut App<Map>,
+    ) -> bool {
         // Only proceed if the left button was released
         if button != mouse::Button::Left {
             return false;
@@ -182,18 +146,9 @@ impl Plugin<Map> for CreateFreeformStreet {
         self.brush_active = false;
 
         let line_string = LineString(self.raw_points.clone());
-        let points = line_string
-            .simplify(&self.simplification_factor)
-            .into_points();
+        let simplified = line_string.simplify(&self.simplification_factor);
 
-        log!("FINAL COUNT {}", points.len());
-
-        let action = Rc::new(RefCell::new(CreateFreeFormStreetAction::new(
-            points
-                .iter()
-                .map(|x| Coordinate { x: x.x(), y: x.y() })
-                .collect(),
-        )));
+        let action = Rc::new(RefCell::new(CreateFreeFormStreetAction::new(simplified)));
 
         action.borrow_mut().execute(app.data_mut());
 
@@ -223,15 +178,11 @@ impl Plugin<Map> for CreateFreeformStreet {
         context.set_stroke_style(&"#2A2A2B".into());
 
         let line_string = LineString(self.raw_points.clone());
-        let points = line_string
-            .simplify(&self.simplification_factor)
-            .into_points();
-
         let style = Style::default();
         line_string.lines().for_each(|line| {
             line.render(&style, context).unwrap();
         });
-        
+
         /*
         if self.brush_active && !self.raw_points.is_empty() {
             context.begin_path();

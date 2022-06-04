@@ -184,52 +184,7 @@ impl Intersection {
 
         self.connected_streets.sort_by(sort_ascending_by_angle);
 
-        for i in 0..self.connected_streets.len() {
-            let (direction, id) = self.connected_streets[i];
 
-            let (_, previous_street) = if i > 0 {
-                &self.connected_streets[i - 1]
-            } else {
-                self.connected_streets.last().unwrap()
-            };
-
-            let (_, next_street) = if i < self.connected_streets.len() - 1 {
-                &self.connected_streets[i + 1]
-            } else {
-                self.connected_streets.first().unwrap()
-            };
-
-            match direction {
-                Direction::In => {
-                    if let Some(street_borrowed) = streets.get_mut(&id) {
-                        street_borrowed.set_next(Side::Right, None);
-                        street_borrowed.set_next(Side::Left, None);
-
-                        if street_borrowed.id() != *previous_street {
-                            street_borrowed.set_next(Side::Right, Some(*previous_street));
-                        }
-
-                        if street_borrowed.id() != *next_street {
-                            street_borrowed.set_next(Side::Left, Some(*next_street));
-                        }
-                    }
-                }
-
-                Direction::Out => {
-                    let street_borrowed = streets.get_mut(&id).unwrap();
-                    street_borrowed.set_previous(Side::Right, None);
-                    street_borrowed.set_previous(Side::Left, None);
-
-                    if street_borrowed.id() != *next_street {
-                        street_borrowed.set_previous(Side::Right, Some(*next_street));
-                    }
-
-                    if street_borrowed.id() != *previous_street {
-                        street_borrowed.set_previous(Side::Left, Some(*previous_street));
-                    }
-                }
-            }
-        }
     }
 }
 

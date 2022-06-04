@@ -40,29 +40,13 @@ impl Plugin<Map> for Debug {
     }
 
     fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Map>) {
+        /*
         let data = editor.data();
         for (_, street) in data.streets() {
             let mut owned_string: String = format!("{} ->", &street.id().to_string()[..2]);
 
         
-            match &street.get_previous(Side::Left) {
-                Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
-                None => owned_string.push_str("#,"),
-            }
-            match &street.get_previous(Side::Right) {
-                Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
-                None => owned_string.push_str("#,"),
-            }
-            match &street.get_next(Side::Left) {
-                Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
-                None => owned_string.push_str("#,"),
-            }
-            match &street.get_next(Side::Right) {
-                Some(l) => owned_string.push_str(&format!("{},", &l.to_string()[..2])),
-                None => owned_string.push_str("#"),
-            }
-            
-    
+   
             if let Some(position) = street.polygon().exterior().centroid() {
                 context.set_fill_style(&"#FFFFFF".into());
                 context.fill_text(&owned_string, position.x(), position.y()).unwrap();
@@ -84,6 +68,7 @@ impl Plugin<Map> for Debug {
             context.set_stroke_style(&"#FFFFFF".into());
             context.stroke();
         }
+        */
     }
 
 

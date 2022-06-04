@@ -1,6 +1,4 @@
-use geo::{polygon, Polygon};
-use geo_booleanop::boolean::BooleanOp;
-use rust_editor::{plugins::plugin::Plugin, renderer::PrimitiveRenderer, style::Style, log};
+use rust_editor::{plugins::plugin::Plugin, renderer::PrimitiveRenderer, style::Style};
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
 
@@ -26,6 +24,21 @@ impl Plugin<Map> for MapRender {
             intersection.render(&context).unwrap();
         }
 
+        /*
+        
         data.street_polygon.render(&Style::default(), &context).unwrap();
+
+        let district_style = Style {
+                border_width: 0,
+                border_color: "#0000".to_string(),
+                background_color: "#00FF00FF".to_string(),
+            };
+        
+        for polys in &data.street_polygon {
+            for district_polygon in polys.interiors() {
+                //district_polygon.render(&district_style, &context).unwrap();
+            }
+        }
+        */
     }
 }

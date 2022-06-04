@@ -35,7 +35,6 @@ fn main() {
     editor.add_plugin(DeleteDistrict::default());
     editor.add_plugin(MapRender::default());
     editor.add_plugin(TestData::default());
-    //editor.add_plugin(ReferenceImage::default());
 }
 
 #[cfg(test)]
@@ -55,7 +54,6 @@ mod tests {
     use crate::plugins::load::Load;
     use crate::plugins::map_render::MapRender;
     use crate::plugins::save::Save;
-    use crate::plugins::test_data::TestData;
     use rust_editor::plugins::camera::Camera;
     use rust_editor::plugins::redo::Redo;
     use rust_editor::plugins::undo::Undo;
@@ -99,7 +97,6 @@ mod tests {
         editor.add_plugin(CreateDistrict::default());
         editor.add_plugin(DeleteDistrict::default());
         editor.add_plugin(MapRender::default());
-        editor.add_plugin(TestData::default());
         editor.add_plugin(crate::plugins::debug::Debug::default());
 
         // The headless test plugin contains the asserts. We chose this approach to avoid hardcoding timeouts

@@ -221,7 +221,13 @@ where
     type Message = EditorMessages<Data>;
     type Properties = EditorProps;
 
-    fn create(_ctx: &yew::Context<Self>) -> Self {
+    fn create(ctx: &yew::Context<Self>) -> Self {
+        let window = web_sys::window().expect("no global `window` exists");
+        let document = window.document().expect("should have a document on window");
+        let body = document.body().expect("should have a body");
+
+        // TODO handle resize of window properly. Currently the canvas size is fixed to the initial window size
+
         App {
             data: Data::default(),
             plugins: BTreeMap::new(),
@@ -233,7 +239,10 @@ where
             context: None,
 
             pressed_keys: Vec::new(),
-            canvas_size: Coordinate { x: 1920, y: 1080 },
+            canvas_size: Coordinate {
+                x: body.client_width(),
+                y: body.client_height(),
+            },
             last_mouse_pos: Coordinate { x: 0., y: 0. },
         }
     }
@@ -261,8 +270,7 @@ where
                 y: canvas.offset_height(),
             };
 
-            // A reference to the handle must be stored, otherwise it is dropped and the render won't
-            // occur.
+            // A reference to the handle must be stored, otherwise it is dropped and the render won't occur.
             self._render_loop = Some(handle);
         }
     }
@@ -304,11 +312,12 @@ where
                 let mouse_diff = mouse_pos - self.last_mouse_pos;
 
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
-                    if plugin
-                        .as_ref()
-                        .borrow_mut()
-                        .mouse_move(mouse_pos, mouse_diff, e.button().into(), self)
-                    {
+                    if plugin.as_ref().borrow_mut().mouse_move(
+                        mouse_pos,
+                        mouse_diff,
+                        e.button().into(),
+                        self,
+                    ) {
                         break;
                     }
                 }
@@ -444,15 +453,20 @@ where
     }
 
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
+        // Mouse events
         let onmousedown = ctx.link().callback(|e| EditorMessages::MouseDown(e));
         let onmouseup = ctx.link().callback(|e| EditorMessages::MouseUp(e));
         let onmousemove = ctx.link().callback(|e| EditorMessages::MouseMove(e));
 
+        // Key events
         let onkeyup = ctx.link().callback(|e| EditorMessages::KeyUp(e));
         let onkeydown = ctx.link().callback(|e| EditorMessages::KeyDown(e));
 
+        // Drag/Drop events
         let ondrop = ctx.link().callback(|e| EditorMessages::Drop(e));
         let ondragover = ctx.link().callback(|e| EditorMessages::DragOver(e));
+
+        // Graphic tablet events
         let onpointermove = ctx
             .link()
             .callback(|_: PointerEvent| EditorMessages::Render(0.0));
@@ -470,16 +484,22 @@ where
         });
 
         html! {
-        <main {ondrop}
-        {ondragover}
-        {onmousedown}
-        {onmouseup}
-        {onmousemove}
-        {onkeyup}
-        {onkeydown}
-        {onpointermove}>
-            <canvas ref={self.canvas_ref.clone()} width="2560" height="1440"
-             tabindex="0"></canvas>
+        <main
+            {ondrop}
+            {ondragover}
+            {onmousedown}
+            {onmouseup}
+            {onmousemove}
+            {onkeyup}
+            {onkeydown}
+            {onpointermove}
+        >
+            <canvas
+                ref={self.canvas_ref.clone()}
+                width={Some(self.canvas_size.x.to_string())}
+                height={Some(self.canvas_size.y.to_string())}
+                tabindex="0"
+            ></canvas>
 
             {
                 plugin_elements

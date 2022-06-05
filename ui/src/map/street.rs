@@ -118,16 +118,16 @@ fn line_intersect_line(
     None
 }
 
-fn calc_polygon_points<I>(it: I, width: f64) -> Polygon<f64>
+pub fn calc_polygon_points<I>(it: I, width: f64) -> Polygon<f64>
 where
     I: Iterator<Item = Line<f64>>,
 {
     let streets = it
         .map(|line| EnhancedLine::new(line))
         .collect::<Vec<EnhancedLine>>();
-    let mut it = streets.iter().peekable();
+    let mut it = streets.iter().peekable(); 
 
-    let mut points: Vec<Coordinate<f64>> = vec![]; //Vec::with_capacity(num_pts * 2 + 2);
+    let mut points: Vec<Coordinate<f64>> = vec![]; 
     let mut points2: Vec<Coordinate<f64>> = vec![];
 
     let half_width = width / 2.0;
@@ -245,23 +245,6 @@ impl Street {
     pub fn render(&self, context: &CanvasRenderingContext2d) -> Result<(), JsValue> {
         self.polygon.render(self.style(), context)?;
 
-        /*
-                context.set_fill_style(&"#FFFFFF".into());
-
-                for it in self.lines.coords_iter() {
-                    context.fill_text(
-                        &format!(
-                            "{:?}",
-                            it.x_y()
-                        )
-                        .to_string(),
-                        it.x,
-                        it.y,
-                    )?;
-                }
-
-        */
-
         Ok(())
     }
 
@@ -270,19 +253,6 @@ impl Street {
             x: -self.norm.y,
             y: self.norm.x,
         }
-    }
-
-    pub fn are_norms_equal(&self, another_street: &Street) -> bool {
-        let pt1 = self.norm();
-        let pt2 = another_street.norm();
-        let r = pt1 - pt2;
-        let r2 = pt1 + pt2;
-
-        if (r.x.abs() < 0.001 && r.y.abs() < 0.001) || (r2.x.abs() < 0.001 && r2.y.abs() < 0.001) {
-            return true;
-        }
-
-        false
     }
 
     pub fn is_point_on_street(&self, point: &Coordinate<f64>) -> bool {

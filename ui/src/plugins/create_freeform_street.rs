@@ -17,7 +17,7 @@ use rust_macro::editor_plugin;
 use uuid::Uuid;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::map::{map::Map, street::Street};
+use crate::map::{map::Map, street::{Street, calc_polygon_points}};
 
 #[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {
@@ -177,30 +177,28 @@ impl Plugin<Map> for CreateFreeformStreet {
     }
 
     fn render(&self, context: &CanvasRenderingContext2d, _: &App<Map>) {
-        context.set_line_width(1.0);
+        context.set_line_width(20.0);
         context.set_stroke_style(&"#2A2A2B".into());
 
         let line_string = LineString(self.raw_points.clone());
-        let style = Style::default();
-        line_string.lines().for_each(|line| {
-            line.render(&style, context).unwrap();
-        });
 
-        /*
-        if self.brush_active && !self.raw_points.is_empty() {
-            context.begin_path();
-            context.move_to(self.raw_points[0].x, self.raw_points[0].y);
-
-            for point in self.raw_points.iter().skip(1) {
-                context.line_to(point.x, point.y);
-                context.stroke();
-                context.move_to(point.x, point.y);
-            }
-
-            context.close_path();
-            //apply_style(&self.raw_point_style, &context);
+        if line_string.lines().len() == 0 {
+            return; 
         }
-        */
+
+        // TODO better performance: To simplify and calc the polygon each render time is quite costly. 
+        // a (slightly) better way is to calculate it each time a point is added. 
+        // We need to find a way to make this really fast
+        let line_string = line_string.simplify(&self.simplification_factor);
+        let polygon = calc_polygon_points(line_string.lines(), 20.);
+
+        let style =         Style {
+            border_width: 0,
+            border_color: "#0000FF".to_string(),
+            background_color: "#FFFFFFF".to_string(),
+        };
+
+        polygon.render(&style, context).unwrap();
     }
 }
 

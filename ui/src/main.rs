@@ -94,11 +94,11 @@ mod tests {
         editor.add_plugin(Camera::default());
         editor.add_plugin(Undo::<Map>::default());
         editor.add_plugin(Redo::<Map>::default());
-        editor.add_plugin(CreateFreeformStreet::default());
+        editor.add_plugin(MapRender::default());        
         editor.add_plugin(DeleteStreet::default());
         editor.add_plugin(CreateDistrict::default());
         editor.add_plugin(DeleteDistrict::default());
-        editor.add_plugin(MapRender::default());
+        editor.add_plugin(CreateFreeformStreet::default());        
         editor.add_plugin(crate::plugins::debug::Debug::default());
 
         // The headless test plugin contains the asserts. We chose this approach to avoid hardcoding timeouts

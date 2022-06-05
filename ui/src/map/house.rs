@@ -65,7 +65,7 @@ fn calculate_split_line(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_si
     Line::new(split_pt - perp * 6000.0, split_pt + perp * 6000.0)
 }
 
-fn split_polygons_into_chunks(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_side_length: f64, cnt: u8, max_cnt: u8) -> Vec<AnnotatedPolygon> {
+fn split_polygons_into_chunks(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Vec<AnnotatedPolygon> {
     let mut polygons: Vec<AnnotatedPolygon> = Vec::new();
 
     let p = longest_and_shortest_diameter(&polygon.0);
@@ -79,7 +79,7 @@ fn split_polygons_into_chunks(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, 
     let split_line = calculate_split_line(rng, polygon, min_side_length);
     let mut splits = split(&polygon, &split_line);
     for sub_polygon in splits.iter_mut() {
-        polygons.append(&mut split_polygons_into_chunks(rng, &sub_polygon, min_side_length, cnt + 1, max_cnt));
+        polygons.append(&mut split_polygons_into_chunks(rng, &sub_polygon, min_side_length));
     }
 
     polygons
@@ -95,9 +95,7 @@ pub fn generate_houses_from_polygon(polygon: &Polygon<f64>, min_side_length: f64
             polygon.clone(),
             polygon.exterior().lines().map(|_| true).collect(),
         ),
-        min_side_length,
-        0,
-        4
+        min_side_length
     );
 
     let polygons = houses.iter().filter(|polygon| !polygon.enclosed());

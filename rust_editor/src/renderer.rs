@@ -46,7 +46,7 @@ impl PrimitiveRenderer for Polygon<f64> {
         }
 
         context.restore();
-
+        
         Ok(())
     }
 }

@@ -518,6 +518,9 @@ where
         let onmouseup = ctx.link().callback(|e| EditorMessages::MouseUp(e));
         let onmousemove = ctx.link().callback(|e| EditorMessages::MouseMove(e));
 
+        // Context menu event aka right click
+        let oncontextmenu = ctx.link().callback(|e: MouseEvent| { e.prevent_default();  EditorMessages::MouseUp(e) });
+
         // Key events
         let onkeyup = ctx.link().callback(|e| EditorMessages::KeyUp(e));
         let onkeydown = ctx.link().callback(|e| EditorMessages::KeyDown(e));
@@ -553,6 +556,7 @@ where
             {onkeyup}
             {onkeydown}
             {onpointermove}
+            {oncontextmenu}
         >
             <canvas
                 ref={self.canvas_ref.clone()}

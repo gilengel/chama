@@ -10,15 +10,17 @@ wasm-bindgen = "0.2.78"
 wasm-bindgen-futures = "0.4.30"
 console_error_panic_hook = "0.1.7"
 geo-types = "0.7.2"
-geo = { version = "0.19.0", features = ["use-serde"] }
-uuid = { version = "0.8.2", features = ["v4", "wasm-bindgen", "serde"] }
+geo = { version = "0.20.1", features = ["use-serde"] }
+uuid = { version = "1.1.1", features = ["v4", "js", "serde"] }
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
-gloo = "0.6.0"
-enum-as-inner = "0.4.0"
+gloo = "0.7.0"
+enum-as-inner = "0.5.0"
 rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }
-yew = { git = "https://github.com/yewstack/yew", branch = "master", features=["csr"] }
+yew = { git = "https://github.com/yewstack/yew", branch = "master", features = [
+  "csr",
+] }
 gloo-render = "0.1"
 thiserror = "1.0"
 rand = "0.8.5"
@@ -52,10 +54,9 @@ features = [
   'DomRect',
   'DomTokenList',
   'EventListener',
-  'DataTransfer', 
+  'DataTransfer',
   'DataTransferItem',
   'DataTransferItemList',
   'EventTarget',
-  'ImageBitmap'
+  'ImageBitmap',
 ]
-

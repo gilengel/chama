@@ -14,7 +14,7 @@ categories = ["gui", "wasm", "web-programming"]
 geo = { version = "0.20.1", features = ["use-serde"] }
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
-uuid = { version = "0.8.2", features = ["v4", "wasm-bindgen", "serde"] }
+uuid = { version = "1.1.1", features = ["v4", "js", "serde"] }
 rust_editor = { path = "../rust_editor" }
 rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }

@@ -124,18 +124,33 @@ impl<Data> App<Data>
 where
     Data: Default + 'static,
 {
+    /// Returns a non mutable reference to the data hold by the editor.
     pub fn data(&self) -> &Data {
         &self.data
     }
 
+    /// Returns a mutable reference to the data hold by the editor.
     pub fn data_mut(&mut self) -> &mut Data {
         &mut self.data
     }
 
+    /// Replaces the data hold by the editor by `data`.
     pub fn set_data(&mut self, data: Data) {
         self.data = data
     }
 
+    /// Finds a plugin that was registered to the editor instance and let you perform non mutable actions on it.
+    /// To perform the action you need to specify a closure `f`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// app.plugin(move |plugin: &DataPlugin<Map>| {
+    ///     plugin.read();
+    /// });
+    ///
+    /// ```
     pub fn plugin<'a, Plugin, F>(&self, mut f: F)
     where
         Plugin: PluginWithOptions<Data> + Default + 'static,
@@ -149,6 +164,18 @@ where
         }
     }
 
+    /// Finds a plugin that was registered to the editor instance and let you perform mutable actions on it.
+    /// To perform the action you need to specify a closure `f`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// app.plugin_mut(move |plugin: &mut DataPlugin<Map>| {
+    ///     plugin.write("some_data");
+    /// });
+    ///
+    /// ```
     pub fn plugin_mut<'a, Plugin, F>(&mut self, mut f: F)
     where
         Plugin: PluginWithOptions<Data> + Default + 'static,
@@ -162,6 +189,38 @@ where
         }
     }
 
+    /// Registers a shortkey that is handled by the editor. 
+    /// 
+    /// Shortkeys are usally used for plugins to allow fast execution of specific actions for expert users. 
+    /// Each plugin can register multiple shortkeys so that they can be mapped to different actions.
+    /// Each plugin has a event handler that is triggered if a registered shortkey was processed by the app.
+    /// 
+    /// # Errors
+    /// 
+    /// An [ShortkeyExists](EditorError) error will be returned if the shortkey already exists.
+    /// 
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// impl<Data> Plugin<Data> for MyPlugin<Data>
+    /// where
+    ///     Data: Default + 'static,
+    /// {
+    ///     fn startup(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
+    ///         editor.add_shortkey::<MyPlugin<Data>>(vec![Key::Ctrl, Key::Z])?;
+    /// 
+    ///         Ok(())
+    ///     }
+    /// 
+    ///     fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Data>>, editor: &mut App<Data>) {
+    ///         if *key == vec![Key::Ctrl, Key::Z] {
+    ///             ...
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// ```
     pub fn add_shortkey<T>(&mut self, keys: Shortkey) -> Result<(), EditorError>
     where
         T: PluginWithOptions<Data>,
@@ -180,10 +239,11 @@ where
         }
     }
 
+    /// Returns if a shortkey exists or not
     pub fn has_shortkey(&self, key: Shortkey) -> bool {
         self.shortkeys.values().any(|x| x.contains(&&key))
     }
-
+    
     pub fn add_toolbar(
         &mut self,
         toolbar_id: &'static str,

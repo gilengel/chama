@@ -1,7 +1,7 @@
-use geo::{euclidean_length::EuclideanLength, prelude::Area, Line, Point, Polygon};
+use geo::{euclidean_length::EuclideanLength, Line, Point, Polygon};
 use rand::{thread_rng, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use rust_editor::{style::Style, log};
+use rust_editor::{style::Style};
 
 use crate::algorithm::geo::{longest_line, split, AnnotatedPolygon, longest_and_shortest_diameter};
 

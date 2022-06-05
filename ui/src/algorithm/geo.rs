@@ -1,12 +1,11 @@
-use core::num;
 use std::f64::consts::PI;
 
 use geo::{
     euclidean_length::EuclideanLength,
     line_intersection::{line_intersection, LineIntersection},
-    Coordinate, Line, LineString, Point, Polygon, Rect, prelude::{ConvexHull, BoundingRect, Centroid, Area}, rotate::RotatePoint,
+    Coordinate, Line, LineString, Point, Polygon, prelude::{ConvexHull, BoundingRect, Centroid, Area}, rotate::RotatePoint,
 };
-use rust_editor::log;
+
 type AnnotatedLine = (Line<f64>, bool);
 
 impl AnnotatedPolygon {
@@ -88,9 +87,9 @@ pub fn longest_and_shortest_diameter(polygon: &Polygon<f64>) -> (f64, f64) {
     let convex_hull = polygon.convex_hull();
 
     let mut min_area = f64::MAX;
-    let mut min_angle = 0.;
+    //let mut min_angle = 0.;
 
-    let mut min_poly: Polygon<f64> = convex_hull.bounding_rect().unwrap().into();
+    //let mut min_poly: Polygon<f64> = convex_hull.bounding_rect().unwrap().into();
 
     let mut pair = (f64::MAX, f64::MAX);
     for line in convex_hull.exterior().lines() {
@@ -104,8 +103,8 @@ pub fn longest_and_shortest_diameter(polygon: &Polygon<f64>) -> (f64, f64) {
 
         if area < min_area {
             min_area = area;
-            min_angle = angle;
-            min_poly = bbox.clone();
+            //min_angle = angle;
+            //min_poly = bbox.clone();
 
             bbox = bbox.rotate_around_point(-angle, bbox.centroid().unwrap());
             let bbox = bbox.bounding_rect().unwrap();

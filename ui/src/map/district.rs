@@ -1,12 +1,10 @@
-use std::f64::consts::PI;
-
-use geo::{prelude::{Contains, BoundingRect, ConvexHull, Centroid, Area}, Coordinate, LineString, Polygon, rotate::RotatePoint, line_string};
+use geo::{prelude::{Contains}, Coordinate, LineString, Polygon};
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    style::{InteractiveElementStyle, Style}, log,
+    style::{InteractiveElementStyle, Style},
 };
 use rust_editor::{gizmo::SetId, renderer::PrimitiveRenderer};
 use rust_macro::ElementId;

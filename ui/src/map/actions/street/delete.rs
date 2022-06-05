@@ -1,6 +1,6 @@
 use std::fmt;
 
-use rust_editor::{actions::{Action, Redo, Undo}, log, interactive_element::{InteractiveElement, InteractiveElementState}};
+use rust_editor::{actions::{Action, Redo, Undo}, interactive_element::{InteractiveElement, InteractiveElementState}};
 use uuid::Uuid;
 
 use crate::map::{map::Map, street::Street};

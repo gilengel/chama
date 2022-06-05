@@ -19,9 +19,6 @@ use uuid::Uuid;
 
 #[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateDistrict {
-    #[option(skip)]
-    hovered_street: Option<Uuid>,
-
     #[option(
         default = 500.,
         min = 0.,

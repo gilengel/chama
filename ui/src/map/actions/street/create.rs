@@ -1,11 +1,10 @@
 use std::fmt;
 
-use geo::{Coordinate, Line};
+use geo::Coordinate;
 use rust_editor::actions::{Action, MultiAction, Redo, Undo};
 use uuid::Uuid;
 
 use crate::map::{actions::intersection::create::CreateIntersection, map::Map};
-
 
 pub(crate) struct CreateStreet {
     start_intersection_id: Option<Uuid>,
@@ -41,10 +40,6 @@ impl Undo<Map> for CreateStreet {
 impl Redo<Map> for CreateStreet {
     fn redo(&mut self, map: &mut Map) {
         self.action_stack.clear();
-
-        // Check if the new streets intersects an existing intersection, in this case we create two streets one
-        // ending in the intersection and the other one starting there
-        let new_street_line = Line::new(self.start_pos, self.end_pos);
 
         // Check if an intersection at start and end exists and if not add CreateIntersection action(s) to the stack
         let mut redo_intersection = |position: &Coordinate<f64>| match map

@@ -11,7 +11,7 @@ use rust_editor::{
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    },
+    }, log,
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -46,6 +46,7 @@ pub struct CreateFreeformStreet {
 pub struct CreateFreeFormStreetAction {
     id: Option<Uuid>,
     street: LineString<f64>,
+    
 }
 
 impl CreateFreeFormStreetAction {
@@ -56,6 +57,10 @@ impl CreateFreeFormStreetAction {
 
 impl Undo<Map> for CreateFreeFormStreetAction {
     fn undo(&mut self, map: &mut Map) {
+        if let None = self.id {
+            return;
+        }
+        
         let copy = map.street(&self.id.unwrap()).unwrap().clone();
         map.remove_street(&copy);
     }

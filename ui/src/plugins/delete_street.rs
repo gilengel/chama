@@ -10,16 +10,13 @@ use rust_editor::{
     },
 };
 use rust_macro::editor_plugin;
-use uuid::Uuid;
-
 use crate::map::actions::street::delete::DeleteStreet as ActionDeleteStreet;
 
 use crate::map::map::Map;
 
 #[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
 pub struct DeleteStreet {
-    #[option(skip)]
-    hovered_street: Option<Uuid>,
+
 }
 
 impl DeleteStreet {

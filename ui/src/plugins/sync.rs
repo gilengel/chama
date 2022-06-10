@@ -92,7 +92,7 @@ impl Plugin<Map> for Sync {
         Ok(())
     }
 
-    fn property_updated(&mut self, _: &str, editor: &mut App<Map>) {
+    fn property_updated(&mut self, _: &str, _: &mut App<Map>) {
         let url = &self.url;
         let port = &self.port;
 

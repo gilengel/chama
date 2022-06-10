@@ -1,6 +1,3 @@
-
-
-use proc_macro2::Span;
 use proc_macro_error::abort;
 
 use syn::parse::{ParseStream, Parse};

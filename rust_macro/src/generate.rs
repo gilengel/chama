@@ -103,7 +103,7 @@ pub(crate) fn generate_option_element(
     result.callback = callback(&callback_name, &ty);
 
     result.arm = quote! {
-        #attribute => { if let Some(value) = value.as_ref().downcast_ref::<#ty>() { self.#attr_ident = *value; } }
+        #attribute => { if let Some(value) = value.as_ref().downcast_ref::<#ty>() { self.#attr_ident = value.clone() } }
     };
 
     let default = generate_default_arm(&attr_ident, &ty, &metas);
@@ -162,6 +162,22 @@ pub(crate) fn generate_option_element(
                 on_value_change={#callback_name}
             />
         </div>};
+    } else {
+        result.element = quote! {
+            <div class="setting">
+                <label>{#label}</label>
+                <TextBox
+                    plugin={#plugin}
+                    attribute={#attribute}
+                    default={"".to_string()}
+                    value={"".to_string()}
+                    on_value_change={#callback_name}
+                />
+            </div>
+            <div class="setting">
+                <label class="description">{#description}</label>
+            </div>
+        };
     }
 
     result.default = default;

@@ -1,0 +1,51 @@
+.textbox {
+   //height: 4em;
+    display: flex;
+    flex-direction: column;
+
+    .info {
+      color: $error;
+      font-size: 0.8em;
+      text-align: right;
+      padding: 0;
+      padding-top: 0.1em;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      -moz-appearance: textfield;
+
+      background-color: $background;
+      border: none;
+      border-bottom: solid transparent 2px !important;
+      border-radius: calc($border-radius / 2);
+      color: $text;
+      padding-left: $padding;
+
+      font-size: 1em;
+      height: 2em;
+      transition: border .125s ease-out;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      outline: none;
+    }
+
+    input[type="number"]:focus:not(.error),
+    input[type="text"]:focus:not(.error) {
+      outline: none;
+      border-bottom: solid $primary 2px !important;
+    }
+
+    .error {
+      border: none !important;
+      border-bottom: solid $error 2px !important;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  }

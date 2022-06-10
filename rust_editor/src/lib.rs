@@ -35,6 +35,5 @@ pub fn get_plugin_mut<Data>(_plugins: &mut Vec<Box<dyn PluginWithOptions<Data>>>
 where
     Data:  'static,
 {
-    todo!()
 }
 */

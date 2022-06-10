@@ -9,7 +9,7 @@ use quote::{quote, ToTokens};
 use structs::{EditorPluginArg, EditorPluginArgs, GenericParam, PluginAttribute};
 use syn::parse::Parser;
 
-use syn::{parse_macro_input, DeriveInput, Expr, ItemFn, Type};
+use syn::{parse_macro_input, DeriveInput, ItemFn, Type};
 
 extern crate proc_macro2;
 extern crate quote;
@@ -61,16 +61,6 @@ fn plugin_execution_behaviour(args: &Vec<EditorPluginArg>) -> Ident {
     Ident::new("Always", Span::call_site())
 }
 
-fn plugin_shortkey_expr(args: &Vec<EditorPluginArg>) -> Option<Expr> {
-    for arg in args {
-        if let EditorPluginArg::ShortKey(x) = arg {
-            return Some(x.clone());
-        }
-    }
-
-    None
-}
-
 fn derive_plugin_params(ast: &syn::DeriveInput) -> GenericParam {
     let attribute = ast
         .attrs
@@ -100,7 +90,6 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
     let args = parse_macro_input!(args as EditorPluginArgs);
     let generic_type = plugin_generic_type(&args.args);
     let execution_behaviour = plugin_execution_behaviour(&args.args);
-    let shortkey_expr = plugin_shortkey_expr(&args.args);
 
     match &mut ast.data {
         syn::Data::Struct(ref mut struct_data) => {
@@ -126,14 +115,9 @@ pub fn editor_plugin(args: TokenStream, input: TokenStream) -> TokenStream {
                 false => quote! {},
             };
 
-            let type_trait = match shortkey_expr {
-                Some(e) => quote! { #[type_trait(#generic_type,#execution_behaviour,#e)] },
-                None => quote! { #[type_trait(#generic_type, #execution_behaviour)] },
-            };
-
             return quote! {
                 #[derive(rust_macro::PluginWithOptions)]
-                #type_trait
+                #[type_trait(#generic_type, #execution_behaviour)]
                 #skip
 
                 #ast
@@ -198,30 +182,28 @@ pub fn data_source(args: TokenStream, input: TokenStream) -> TokenStream {
     let struct_name = &ast.ident;
 
     match &mut ast.data {
-        syn::Data::Struct(ref mut struct_data) => {
-            match &mut struct_data.fields {
-                syn::Fields::Named(fields) => {
-                    for data_type_arg in args_parsed {
-                        let data_type_arg = data_type_arg.segments[0].ident.clone();
+        syn::Data::Struct(ref mut struct_data) => match &mut struct_data.fields {
+            syn::Fields::Named(fields) => {
+                for data_type_arg in args_parsed {
+                    let data_type_arg = data_type_arg.segments[0].ident.clone();
 
-                        let name = Ident::new(
-                            &format!("{}s", data_type_arg.to_string().to_lowercase()).to_string(),
-                            Span::call_site(),
-                        );
+                    let name = Ident::new(
+                        &format!("{}s", data_type_arg.to_string().to_lowercase()).to_string(),
+                        Span::call_site(),
+                    );
 
-                        var_names.push(name.clone());
-                        var_types.push(data_type_arg.clone());
+                    var_names.push(name.clone());
+                    var_types.push(data_type_arg.clone());
 
-                        fields.named.push(
-                            syn::Field::parse_named
-                                .parse2(quote! { pub #name: HashMap<Uuid, #data_type_arg> })
-                                .unwrap_or_abort(),
-                        );
-                    }
+                    fields.named.push(
+                        syn::Field::parse_named
+                            .parse2(quote! { pub #name: HashMap<Uuid, #data_type_arg> })
+                            .unwrap_or_abort(),
+                    );
                 }
-                _ => (),
             }
-        }
+            _ => (),
+        },
         _ => panic!("`add_field` has to be used with structs "),
     }
 

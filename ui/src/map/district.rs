@@ -15,20 +15,32 @@ use web_sys::CanvasRenderingContext2d; // TODO
 
 use super::house::generate_houses_from_polygon;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct House {
     pub polygon: Polygon<f64>,
+
+    #[serde(skip_serializing)]
     pub line_styles: Vec<Style>,
+
+    #[serde(skip_serializing)]
     pub style: Style,
 }
 
-#[derive(Serialize, Deserialize, ElementId)]
+#[derive(Serialize, Deserialize, ElementId, Clone)]
 pub struct District {
     pub(crate) id: Uuid,
     pub(crate) polygon: Polygon<f64>,
+
+    #[serde(skip_serializing)]
     pub(crate) style: InteractiveElementStyle,
+
+    #[serde(skip_serializing)]
     pub(crate) state: InteractiveElementState,
+
+    #[serde(skip_serializing)]
     pub(crate) minimum_house_side: f64,
+
+    #[serde(skip_serializing)]
     pub(crate) seed: <ChaCha8Rng as SeedableRng>::Seed,
 
     pub(crate) houses: Vec<House>,

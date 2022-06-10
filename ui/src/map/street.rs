@@ -30,12 +30,16 @@ pub struct Street {
 
     width: f64,
 
+    #[serde(skip_serializing)]
     norm: Coordinate<f64>,
 
+    #[serde(skip_serializing)]
     inverse_norm: Coordinate<f64>,
 
+    #[serde(skip_serializing)]
     pub style: InteractiveElementStyle,
 
+    #[serde(skip_serializing)]
     state: InteractiveElementState,
 }
 

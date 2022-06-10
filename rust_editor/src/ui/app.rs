@@ -12,7 +12,7 @@ use crate::input::keyboard::Key;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::error;
+use crate::{error, log};
 use geo::Coordinate;
 use web_sys::{
     CanvasRenderingContext2d, DragEvent, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent,
@@ -281,7 +281,7 @@ where
     type Message = EditorMessages<Data>;
     type Properties = EditorProps;
 
-    fn create(ctx: &yew::Context<Self>) -> Self {
+    fn create(_: &yew::Context<Self>) -> Self {
         let window = web_sys::window().expect("no global `window` exists");
         let document = window.document().expect("should have a document on window");
         let body = document.body().expect("should have a body");
@@ -548,21 +548,23 @@ where
 
         html! {
         <main
-            {ondrop}
-            {ondragover}
-            {onmousedown}
-            {onmouseup}
-            {onmousemove}
-            {onkeyup}
-            {onkeydown}
-            {onpointermove}
-            {oncontextmenu}
+
         >
             <canvas
                 ref={self.canvas_ref.clone()}
                 width={Some(self.canvas_size.x.to_string())}
                 height={Some(self.canvas_size.y.to_string())}
                 tabindex="0"
+
+                {ondrop}
+                {ondragover}
+                {onmousedown}
+                {onmouseup}
+                {onmousemove}
+                {onkeyup}
+                {onkeydown}
+                {onpointermove}
+                //{oncontextmenu}
             ></canvas>
 
             {

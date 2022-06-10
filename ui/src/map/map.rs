@@ -5,6 +5,7 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_editor::gizmo::{GetPosition, Id};
 use rust_editor::interactive_element::{InteractiveElement, InteractiveElementState};
+use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -21,7 +22,24 @@ use super::house::generate_houses_from_polygon;
 use super::intersection::Intersection;
 use super::street::Street;
 
-#[derive(Serialize, Deserialize)]
+
+impl Serialize for Map {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("Map", 3)?;
+        state.serialize_field("width", &self.width)?;
+        state.serialize_field("height", &self.height)?;
+        state.serialize_field("streets", &self.streets.values().cloned().collect::<Vec<Street>>())?;
+        state.serialize_field("districts", &self.districts.values().cloned().collect::<Vec<District>>())?;
+
+        state.end()
+    }
+}
+
+#[derive(Deserialize, Clone)]
 pub struct Map {
     width: u32,
     height: u32,
@@ -30,9 +48,13 @@ pub struct Map {
     pub(crate) district_polygons: Vec<Polygon<f64>>,
 
     pub(crate) streets: HashMap<Uuid, Street>,
+
+    #[serde(skip_serializing)]
     pub(crate) intersections: HashMap<Uuid, Intersection>,
+
     districts: HashMap<Uuid, District>,
 
+    #[serde(skip_serializing)]
     bounding_box: Rect<f64>,
 }
 

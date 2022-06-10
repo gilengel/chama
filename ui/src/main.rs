@@ -8,7 +8,8 @@ use plugins::map_render::MapRender;
 use plugins::new::New;
 use plugins::reference_image::ReferenceImage;
 use plugins::save::Save;
-use plugins::test_data::TestData;
+use plugins::settings::Settings;
+use plugins::sync::Sync;
 use rust_editor::plugins::camera::Camera;
 use rust_editor::plugins::redo::Redo;
 use rust_editor::plugins::undo::Undo;
@@ -26,7 +27,7 @@ fn main() {
     editor.add_plugin(New::default());
     editor.add_plugin(Save::default());
     editor.add_plugin(Load::default());
-    //editor.add_plugin(Settings::default());
+    editor.add_plugin(Settings::default());
     editor.add_plugin(Camera::default());
     editor.add_plugin(Undo::<Map>::default());
     editor.add_plugin(Redo::<Map>::default());
@@ -35,8 +36,10 @@ fn main() {
     editor.add_plugin(CreateDistrict::default());
     editor.add_plugin(DeleteDistrict::default());
     editor.add_plugin(MapRender::default());
-    editor.add_plugin(TestData::default());
+    //editor.add_plugin(TestData::default());
     editor.add_plugin(ReferenceImage::default());
+    editor.add_plugin(Sync::default());
+
 }
 
 #[cfg(test)]
@@ -100,7 +103,7 @@ mod tests {
         editor.add_plugin(DeleteDistrict::default());
         editor.add_plugin(CreateFreeformStreet::default());        
         editor.add_plugin(crate::plugins::debug::Debug::default());
-
+        
         // The headless test plugin contains the asserts. We chose this approach to avoid hardcoding timeouts
         // or other workarounds.
         editor.add_plugin(HeadlessTestPlugin::default());

@@ -39,7 +39,7 @@ pub(crate) enum EditorPluginArg {
     Skip,
     SpecificTo(Ident),
     ExecutionBehaviour(Ident),
-    ShortKey(Expr)
+    Description(Expr)
 }
 
 #[derive(Debug)]

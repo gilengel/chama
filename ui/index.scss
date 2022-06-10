@@ -2,6 +2,7 @@
 
 // Editor components
 @import "../rust_internal/src/ui/switch";
+@import "../rust_internal/src/ui/textbox.scss";
 @import "../rust_editor/src/ui/panel";
 @import "../rust_editor/src/ui/dialog";
 
@@ -62,7 +63,7 @@ body {
 main {
   canvas {
     position: absolute;
-    z-index: 100;
+    z-index: 0;
   }
 
   #left_primary_toolbar {

@@ -10,3 +10,4 @@ pub mod settings;
 pub mod debug;
 pub mod reference_image;
 pub mod test_data;
+pub mod sync;

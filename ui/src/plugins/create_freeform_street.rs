@@ -1,5 +1,6 @@
 use std::fmt;
 
+use futures::executor::block_on;
 use geo::{simplify::Simplify, Coordinate, LineString, Point};
 use rust_editor::{
     actions::{Action, Redo, Undo},
@@ -11,13 +12,16 @@ use rust_editor::{
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
-    }, log,
+    },
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::map::{map::Map, street::{Street, calc_polygon_points}};
+use crate::map::{
+    map::Map,
+    street::{calc_polygon_points, Street},
+};
 
 #[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateFreeformStreet {
@@ -46,7 +50,6 @@ pub struct CreateFreeformStreet {
 pub struct CreateFreeFormStreetAction {
     id: Option<Uuid>,
     street: LineString<f64>,
-    
 }
 
 impl CreateFreeFormStreetAction {
@@ -60,7 +63,7 @@ impl Undo<Map> for CreateFreeFormStreetAction {
         if let None = self.id {
             return;
         }
-        
+
         let copy = map.street(&self.id.unwrap()).unwrap().clone();
         map.remove_street(&copy);
     }
@@ -69,7 +72,7 @@ impl Undo<Map> for CreateFreeFormStreetAction {
 impl Redo<Map> for CreateFreeFormStreetAction {
     fn redo(&mut self, map: &mut Map) {
         // TODO: Rework editor logic, if I press a button the action is still triggered if the plugin was activated before (e.g. by drawing a street)
-        if self.street.points().len() == 0{
+        if self.street.points().len() == 0 {
             return;
         }
 
@@ -163,6 +166,11 @@ impl Plugin<Map> for CreateFreeformStreet {
             undo.push(Rc::clone(&action));
         });
 
+        let cloned_data = app.data().clone();
+        app.plugin_mut(move |sync: &mut crate::plugins::sync::Sync| {
+            block_on(sync.send(cloned_data.clone()));
+        });
+
         self.raw_points.clear();
 
         false
@@ -183,16 +191,16 @@ impl Plugin<Map> for CreateFreeformStreet {
         let line_string = LineString(self.raw_points.clone());
 
         if line_string.lines().len() == 0 {
-            return; 
+            return;
         }
 
-        // TODO better performance: To simplify and calc the polygon each render time is quite costly. 
-        // a (slightly) better way is to calculate it each time a point is added. 
+        // TODO better performance: To simplify and calc the polygon each render time is quite costly.
+        // a (slightly) better way is to calculate it each time a point is added.
         // We need to find a way to make this really fast
         let line_string = line_string.simplify(&self.simplification_factor);
         let polygon = calc_polygon_points(line_string.lines(), 20.);
 
-        let style =         Style {
+        let style = Style {
             border_width: 0,
             border_color: "#0000FF".to_string(),
             background_color: "#FFFFFFF".to_string(),

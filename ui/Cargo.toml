@@ -24,6 +24,15 @@ wasm-bindgen-futures = "0.4.30"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 geo-booleanop = { git = "https://github.com/21re/rust-geo-booleanop", branch = "master" }
+js-sys = "0.3.57"
+
+ws_stream_wasm = "0.7.3"
+pharos = "0.5.3"
+futures = "0.3.21"
+futures_cbor_codec = "0.3.1"
+futures_codec = "0.4.1"
+async_io_stream = "0.3.3"
+
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.0"

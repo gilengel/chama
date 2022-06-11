@@ -50,7 +50,7 @@ pub(crate) fn parse_attr(attr: &syn::Attribute) -> (Vec<Meta>, bool) {
     if attr.path.is_ident("option") {
         let (skip, metas)= attr
             .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
-            .unwrap_or_else(|_| abort!(attr, "no parameters defined"))
+            .unwrap_or_else(|_| abort!(attr, format!("Could not parse plugin option due to invalid punctuation.\n\n{}: Have you forgotten an `,`?", Cyan.paint("help"))))
             .into_iter()
             .inspect(|meta| {
                 if !(meta.path().is_ident("default")
@@ -58,9 +58,10 @@ pub(crate) fn parse_attr(attr: &syn::Attribute) -> (Vec<Meta>, bool) {
                     || meta.path().is_ident("max")
                     || meta.path().is_ident("label")
                     || meta.path().is_ident("description")
-                    || meta.path().is_ident("skip"))
+                    || meta.path().is_ident("skip")
+                    || meta.path().is_ident("validator"))
                 {
-                    abort!(meta.path().span(), "unknown parameter");
+                    abort!(meta.path().span(), "unknown parameter {:?}", meta.path().get_ident());
                 }
             })
             .fold((false, Vec::<Meta>::new()), |(skip, mut metas), meta| {  
@@ -138,13 +139,13 @@ pub(crate) fn parse_attrs(ast: &DeriveInput) -> Vec<PluginAttribute>{
 pub(crate) fn get_mandatory_meta_value<'a>(
     meta_attrs: &'a Vec<Meta>,
     identifier: &str,
-) -> Option<&'a Lit> {
+) -> Option<Lit> {
     if let Some(default_meta) = meta_attrs
         .iter()
         .find(|meta| meta.path().is_ident(identifier))
     {
         if let Meta::NameValue(e) = &default_meta {
-            return Some(&e.lit);
+            return Some(e.lit.clone());
         }
     }
 

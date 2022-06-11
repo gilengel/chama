@@ -17,18 +17,21 @@ use crate::map::map::Map;
 
 type Writer = WriteHalf<async_io_stream::IoStream<WsStreamIo, Vec<u8>>>;
 
-#[editor_plugin(specific_to=Map, description="muuuu")]
+#[editor_plugin(specific_to=Map, description="Creates a connection to a remote application to stream made changes live.")]
 pub struct Sync {
     
     #[option(
         label = "URL",
-        description = ""
+        description = "",
+        validator = r"(^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}
+        (?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$)|127.0.0.1|localhost"
     )]
     url: String,
 
     #[option(
         label = "Port",
-        description = ""
+        description = "",
+        validator = r"^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$" 
     )]
     port: String,
 

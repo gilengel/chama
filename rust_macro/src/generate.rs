@@ -3,7 +3,7 @@ use proc_macro_error::abort;
 use quote::TokenStreamExt;
 use quote::{format_ident, quote};
 use std::str::FromStr;
-use syn::{DataStruct, DeriveInput, Ident, Meta};
+use syn::{DataStruct, DeriveInput, Ident, Meta, LitStr, Lit};
 
 use crate::GenericParam;
 
@@ -162,7 +162,11 @@ pub(crate) fn generate_option_element(
                 on_value_change={#callback_name}
             />
         </div>};
-    } else {
+    } else { // String type
+        let validator = get_mandatory_meta_value(&metas, "validator").unwrap_or_else(|| {
+            Lit::Str(LitStr::new("", Span::call_site()))
+        });
+
         result.element = quote! {
             <div class="setting">
                 <label>{#label}</label>
@@ -172,6 +176,7 @@ pub(crate) fn generate_option_element(
                     default={"".to_string()}
                     value={"".to_string()}
                     on_value_change={#callback_name}
+                    validation_regex = {#validator}
                 />
             </div>
             <div class="setting">

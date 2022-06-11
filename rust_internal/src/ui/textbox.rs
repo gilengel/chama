@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+use regex::Regex;
 use wasm_bindgen::JsCast;
 use web_sys::{EventTarget, HtmlInputElement};
 use yew::{classes, function_component, html, use_state, Callback, Html, InputEvent};
@@ -14,6 +15,9 @@ pub struct TextBoxProps
 
     #[prop_or_default]
     pub default: String,
+
+    #[prop_or_default]
+    pub validation_regex: &'static str,
 
     pub value: String,
     pub on_value_change: Callback<(&'static str, &'static str, String)>,
@@ -34,12 +38,17 @@ pub fn TextBox(props: &TextBoxProps) -> Html
     let plugin = props.plugin;
     let attribute = props.attribute;
 
+    let re = Regex::new(props.validation_regex).unwrap();
     let oninput = Callback::from(move |e: InputEvent| {
         let target: EventTarget = e
             .target()
             .expect("Event should have a target when dispatched");
 
         let value = target.unchecked_into::<HtmlInputElement>().value();
+
+        error_handle.set(!(re.is_match(&value)));
+        web_sys::console::log_1(&format!("{}={}",  value, re.is_match(&value)  ).into());
+
 
         value_handle.set(value.clone());
         callback.emit((plugin, attribute, value));
@@ -49,6 +58,10 @@ pub fn TextBox(props: &TextBoxProps) -> Html
     html! {
         <div class="textbox">
             <input class={classes!(error.then(|| Some("error")))} type="text" {oninput} value={value} />
+
+            if error {
+                <label class="info">{format!{"Invalid value"}}</label>
+            }
         </div>
     }
 }

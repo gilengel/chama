@@ -118,7 +118,7 @@ pub(crate) fn parse_attrs(ast: &DeriveInput) -> Vec<PluginAttribute>{
                                 
                             if !hidden {
                                 let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "label", name));
-                                let description = get_mandatory_meta_value(&metas, "description").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "description", name));
+                                let description = get_mandatory_meta_value(&metas, "description");
 
                                 attrs.push((Attribute::Visible(VisibleAttribute { name: name.clone(), label: label.clone(), description: description.clone() }), ty.clone(), metas.clone()));
                             } else {

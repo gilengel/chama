@@ -14,9 +14,6 @@ pub struct TextBoxProps
     pub attribute: &'static str,
 
     #[prop_or_default]
-    pub default: String,
-
-    #[prop_or_default]
     pub validation_regex: &'static str,
 
     pub value: String,
@@ -29,6 +26,8 @@ pub fn TextBox(props: &TextBoxProps) -> Html
     
     let value_handle = use_state(|| props.value.to_string());
     let value = value_handle.deref().clone();
+
+    web_sys::console::log_1(&format!("{}",  value  ).into());
 
     let error_handle = use_state(|| false);
     let error = error_handle.deref().clone();
@@ -47,8 +46,6 @@ pub fn TextBox(props: &TextBoxProps) -> Html
         let value = target.unchecked_into::<HtmlInputElement>().value();
 
         error_handle.set(!(re.is_match(&value)));
-        web_sys::console::log_1(&format!("{}={}",  value, re.is_match(&value)  ).into());
-
 
         value_handle.set(value.clone());
         callback.emit((plugin, attribute, value));

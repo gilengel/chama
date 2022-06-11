@@ -11,8 +11,8 @@ pub(crate) struct VisibleAttribute {
     /// Short label that will displayed before the input
     pub label: Lit,
 
-    /// Longer description to help the user to understand what the attribute represents
-    pub description: Lit,
+    /// Optional longer description to help the user to understand what the attribute represents
+    pub description: Option<Lit>,
 }
 
 #[derive(Debug)]

@@ -12,7 +12,7 @@ use crate::input::keyboard::Key;
 use crate::plugins::camera::Camera;
 use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
-use crate::{error, log};
+use crate::error;
 use geo::Coordinate;
 use web_sys::{
     CanvasRenderingContext2d, DragEvent, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent,
@@ -189,16 +189,16 @@ where
         }
     }
 
-    /// Registers a shortkey that is handled by the editor. 
-    /// 
-    /// Shortkeys are usally used for plugins to allow fast execution of specific actions for expert users. 
+    /// Registers a shortkey that is handled by the editor.
+    ///
+    /// Shortkeys are usally used for plugins to allow fast execution of specific actions for expert users.
     /// Each plugin can register multiple shortkeys so that they can be mapped to different actions.
     /// Each plugin has a event handler that is triggered if a registered shortkey was processed by the app.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// An [ShortkeyExists](EditorError) error will be returned if the shortkey already exists.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -209,10 +209,10 @@ where
     /// {
     ///     fn startup(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
     ///         editor.add_shortkey::<MyPlugin<Data>>(vec![Key::Ctrl, Key::Z])?;
-    /// 
+    ///
     ///         Ok(())
     ///     }
-    /// 
+    ///
     ///     fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Data>>, editor: &mut App<Data>) {
     ///         if *key == vec![Key::Ctrl, Key::Z] {
     ///             ...
@@ -243,7 +243,7 @@ where
     pub fn has_shortkey(&self, key: Shortkey) -> bool {
         self.shortkeys.values().any(|x| x.contains(&&key))
     }
-    
+
     pub fn add_toolbar(
         &mut self,
         toolbar_id: &'static str,
@@ -519,7 +519,10 @@ where
         let onmousemove = ctx.link().callback(|e| EditorMessages::MouseMove(e));
 
         // Context menu event aka right click
-        let oncontextmenu = ctx.link().callback(|e: MouseEvent| { e.prevent_default();  EditorMessages::MouseUp(e) });
+        let oncontextmenu = ctx.link().callback(|e: MouseEvent| {
+            e.prevent_default();
+            EditorMessages::MouseUp(e)
+        });
 
         // Key events
         let onkeyup = ctx.link().callback(|e| EditorMessages::KeyUp(e));

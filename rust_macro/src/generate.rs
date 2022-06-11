@@ -3,7 +3,7 @@ use proc_macro_error::abort;
 use quote::TokenStreamExt;
 use quote::{format_ident, quote};
 use std::str::FromStr;
-use syn::{DataStruct, DeriveInput, Ident, Meta, LitStr, Lit};
+use syn::{DataStruct, DeriveInput, Ident, Lit, LitStr, Meta};
 
 use crate::GenericParam;
 
@@ -135,7 +135,7 @@ pub(crate) fn generate_option_element(
             )
         });
 
-        result.element = quote! {
+        let element = quote! {
             <div class="setting">
                 <label>{#label}</label>
                 <NumberBox<#ty>
@@ -147,10 +147,17 @@ pub(crate) fn generate_option_element(
                     on_value_change={#callback_name}
                 />
             </div>
-            <div class="setting">
+        };
+
+        result.element = match description {
+            Some(description) => quote! {
+                #element
+                <div class="setting">
                 <label class="description">{#description}</label>
             </div>
-        };
+            },
+            None => element,
+        }
     } else if ty.to_string() == "bool" {
         result.element = quote! {
         <div class="setting">
@@ -162,27 +169,33 @@ pub(crate) fn generate_option_element(
                 on_value_change={#callback_name}
             />
         </div>};
-    } else { // String type
-        let validator = get_mandatory_meta_value(&metas, "validator").unwrap_or_else(|| {
-            Lit::Str(LitStr::new("", Span::call_site()))
-        });
+    } else {
+        // String type
+        let validator = get_mandatory_meta_value(&metas, "validator")
+            .unwrap_or_else(|| Lit::Str(LitStr::new("", Span::call_site())));
 
-        result.element = quote! {
+        let element = quote! {
             <div class="setting">
                 <label>{#label}</label>
                 <TextBox
                     plugin={#plugin}
                     attribute={#attribute}
-                    default={"".to_string()}
                     value={"".to_string()}
                     on_value_change={#callback_name}
                     validation_regex = {#validator}
                 />
             </div>
-            <div class="setting">
+        };
+
+        result.element = match description {
+            Some(description) => quote! {
+                #element
+                <div class="setting">
                 <label class="description">{#description}</label>
             </div>
-        };
+            },
+            None => element,
+        }
     }
 
     result.default = default;

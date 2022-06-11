@@ -22,15 +22,15 @@ pub struct Sync {
     
     #[option(
         label = "URL",
-        description = "",
+        description = "Remote applications url used to connect to",
         validator = r"(^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}
-        (?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$)|127.0.0.1|localhost"
+        (?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$)|127.0.0.1|localhost",
     )]
     url: String,
 
     #[option(
         label = "Port",
-        description = "",
+        description = "Remote applications port used to connect to. Make sure the port is accessible",
         validator = r"^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$" 
     )]
     port: String,

@@ -309,11 +309,14 @@ fn produce_ui_impl(
 
     // Now for all attributes defined be the plugin developer
     for (attr, ty, metas) in attrs {
-        if let Attribute::Visible(attr) = attr {
-            let attr = generate_option_element(&plugin, attr, ty, metas);
-            elements.push(attr.element);
-            callbacks.push(attr.callback);
-            arms.push(attr.arm);
+        match attr {
+            Attribute::Visible(attr) => {
+                let attr = generate_option_element(&plugin, attr, ty, metas);
+                elements.push(attr.element);
+                callbacks.push(attr.callback);
+                arms.push(attr.arm);
+            }
+            Attribute::Hidden(_) => {}
         }
     }
 

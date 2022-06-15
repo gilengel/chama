@@ -23,7 +23,7 @@ pub(crate) struct HiddenAttribute {
 #[derive(Debug)]
 pub(crate) enum Attribute {
     Visible(VisibleAttribute),
-    Hidden(HiddenAttribute),
+    Hidden(HiddenAttribute)
 }
 
 pub(crate) type PluginAttribute = (Attribute, TokenStream2, Vec<Meta>);

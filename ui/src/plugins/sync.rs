@@ -22,7 +22,6 @@ pub struct Sync {
     
     #[option(
         label = "URL",
-        description = "Remote applications url used to connect to",
         validator = r"(^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}
         (?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$)|127.0.0.1|localhost",
     )]
@@ -30,10 +29,9 @@ pub struct Sync {
 
     #[option(
         label = "Port",
-        description = "Remote applications port used to connect to. Make sure the port is accessible",
         validator = r"^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$" 
     )]
-    port: String,
+    port: String,    
 
     #[option(skip)]
     ws: Rc<Mutex<Option<Writer>>>,
@@ -105,6 +103,9 @@ impl Plugin<Map> for Sync {
 }
 
 impl Sync {
+    pub fn connect(&self) {
+        log!("Clicked on connect");
+    }
     pub async fn send(&mut self, map: Map) {
         let ws: Rc<Mutex<Option<Writer>>> = self.ws.clone();
 

@@ -2,12 +2,12 @@
 
 // Editor components
 @import "../rust_internal/src/ui/switch";
-@import "../rust_internal/src/ui/textbox.scss";
+@import "../rust_internal/src/ui/textbox";
 @import "../rust_editor/src/ui/panel";
 @import "../rust_editor/src/ui/dialog";
 
 // Local plugins
-@import "src/plugins/reference_image.scss";
+@import "src/plugins/reference_image";
 
 html,
 body {

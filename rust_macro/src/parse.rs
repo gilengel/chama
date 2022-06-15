@@ -109,21 +109,20 @@ pub(crate) fn parse_attrs(ast: &DeriveInput) -> Vec<PluginAttribute>{
                         let name = named.ident.as_ref().unwrap_or_else(|| abort!(named, "MUU"));
                         let ty = attribute_type(named.ty.clone());
                         
-                        for attribute in &named.attrs {                            
-                            if !attribute.path.is_ident("option") {
-                                panic!("attribute {} has no option annotation.", name.to_string());
-                            }
+                        for attribute in &named.attrs {   
+                            // option                                      
+                            if attribute.path.is_ident("option") {
+                                let ( metas, hidden) = parse_attr(attribute);
+                                    
+                                if !hidden {
+                                    let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "label", name));
+                                    let description = get_mandatory_meta_value(&metas, "description");
 
-                            let ( metas, hidden) = parse_attr(attribute);
-                                
-                            if !hidden {
-                                let label = get_mandatory_meta_value(&metas, "label").unwrap_or_else(|| abort!(name, "the attribute {} is missing for {}", "label", name));
-                                let description = get_mandatory_meta_value(&metas, "description");
-
-                                attrs.push((Attribute::Visible(VisibleAttribute { name: name.clone(), label: label.clone(), description: description.clone() }), ty.clone(), metas.clone()));
-                            } else {
-                                attrs.push((Attribute::Hidden(HiddenAttribute { name: name.clone() }), ty.clone(), metas.clone()));
-                            }                              
+                                    attrs.push((Attribute::Visible(VisibleAttribute { name: name.clone(), label: label.clone(), description: description.clone() }), ty.clone(), metas.clone()));
+                                } else {
+                                    attrs.push((Attribute::Hidden(HiddenAttribute { name: name.clone() }), ty.clone(), metas.clone()));
+                                }    
+                            }  
                         }                        
                     }
                 },

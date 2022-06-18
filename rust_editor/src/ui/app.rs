@@ -20,6 +20,8 @@ use web_sys::{
 
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
+
+
 use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
 
 pub enum EditorMessages<Data> {
@@ -293,7 +295,6 @@ where
             plugins: BTreeMap::new(),
             shortkeys: HashMap::new(),
             toolbars: Toolbars::new(),
-
             canvas_ref: NodeRef::default(),
             _render_loop: None,
             context: None,
@@ -550,33 +551,32 @@ where
         });
 
         html! {
-        <main
-
-        >
-            <canvas
-                ref={self.canvas_ref.clone()}
-                width={Some(self.canvas_size.x.to_string())}
-                height={Some(self.canvas_size.y.to_string())}
-                tabindex="0"
-
-                {ondrop}
-                {ondragover}
-                {onmousedown}
-                {onmouseup}
-                {onmousemove}
-                {onkeyup}
-                {onkeydown}
-                {onpointermove}
-                //{oncontextmenu}
-            ></canvas>
-
+            <main>
             {
                 plugin_elements
             }
+            <content>
+                <canvas
+                    ref={self.canvas_ref.clone()}
+                    width={Some(self.canvas_size.x.to_string())}
+                    height={Some(self.canvas_size.y.to_string())}
+                    tabindex="0"
 
-            {
-                self.toolbars.view(ctx)
-            }
+                    {ondrop}
+                    {ondragover}
+                    {onmousedown}
+                    {onmouseup}
+                    {onmousemove}
+                    {onkeyup}
+                    {onkeydown}
+                    {onpointermove}
+                    //{oncontextmenu}
+                ></canvas>
+                
+                {
+                    self.toolbars.view(ctx)
+                }
+            </content>
         </main>
         }
     }

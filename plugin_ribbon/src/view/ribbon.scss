@@ -1,0 +1,112 @@
+.ribbon {
+    height: 160px;
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    background-color: lighten($background, 5%);
+
+    ul.tabs {
+        position: relative;
+        display: flex;
+        list-style: none;
+        padding: 0;
+        color: $text;
+
+        $tabs-width: 10em;
+
+        li {
+            box-sizing:  border-box;
+            padding-left: 1em;
+            padding-right: 1em;
+            padding-bottom: 0.5em;
+
+            width: $tabs-width;
+
+            text-align: center;
+        }
+
+        li:nth-of-type(1) {
+            color: $text;
+        }
+
+        li:hover {
+            cursor: pointer;
+        }
+
+
+
+        @for $i from 1 through 20 {
+            li.selected:nth-child(#{$i}) ~ hr {
+              left: #{($i - 1)  * $tabs-width};
+            }
+          }        
+
+        hr {
+            position: absolute;
+            height: .25rem;
+            border-radius: .1125rem;
+            left: 0;
+            width: $tabs-width;
+            bottom: 0;
+            margin: 0;
+            background: $primary;
+            border: none;
+            transition: .3s ease-in-out;
+          }        
+    }
+
+    div {
+        //flex-grow: 2;
+        
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+
+        height: 100%;
+        
+
+        
+
+        .ribbon_tab {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+
+
+            
+
+            .heading {
+                color: $text;
+                margin: 0 auto;    
+            }
+            .ribbon_tab_group {
+                padding-left: 0.5em;
+                padding-right: 0.5em;
+                display: flex;
+                flex-direction: column;
+                button.error {
+                    color: $error;
+                }
+
+                button.selected {
+                    color: $primary;
+                }
+
+                button {
+                    position: relative;
+
+                    .tooltip {
+                        top: 100%;
+                    }
+                }
+                button:hover {
+                    .tooltip {
+                        visibility: visible;
+                    }
+                }
+            }
+        }
+    }
+}

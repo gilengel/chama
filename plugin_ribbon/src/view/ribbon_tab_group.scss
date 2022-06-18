@@ -1,0 +1,32 @@
+.ribbon_tab_group {
+    color: $text;
+    border-right: 1px $border-color solid;
+
+    padding: $padding;
+    margin-top: $padding;
+    margin-bottom: $padding;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    .content {
+        display: flex;
+        justify-content: center;
+
+        button {
+            color: $text;
+            background: none;
+            border: none;
+        }
+
+        button:hover {
+            cursor: pointer;
+            color: $primary;
+        }
+    }
+
+    span {
+        text-align: center;
+    }
+}

@@ -51,7 +51,7 @@ pub fn longest_muu(polygon: &Polygon<f64>) -> Line<f64> {
 }
 */
 
-fn calculate_split_line(rng: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Line<f64> {
+fn calculate_split_line(_: &mut ChaCha8Rng, polygon: &AnnotatedPolygon, min_side_length: f64) -> Line<f64> {
     let line = longest_line(&polygon, min_side_length).0; //longest_muu(polygon);
     let vec = line.end_point() - line.start_point();
     let length = line.euclidean_length();

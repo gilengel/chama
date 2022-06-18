@@ -1,5 +1,6 @@
 use map::map::Map;
 
+use plugin_ribbon::RibbonPlugin;
 use plugins::create_district::CreateDistrict;
 use plugins::delete_district::DeleteDistrict;
 use plugins::delete_street::DeleteStreet;
@@ -24,6 +25,8 @@ mod algorithm;
 fn main() {
     let mut editor = x_launch::<Map>();
 
+    
+
     editor.add_plugin(New::default());
     editor.add_plugin(Save::default());
     editor.add_plugin(Load::default());
@@ -38,6 +41,7 @@ fn main() {
     editor.add_plugin(MapRender::default());
     //editor.add_plugin(TestData::default());
     editor.add_plugin(ReferenceImage::default());
+    editor.add_plugin(RibbonPlugin::default());
     editor.add_plugin(Sync::default());
 
 }

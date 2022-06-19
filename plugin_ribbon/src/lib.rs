@@ -1,5 +1,4 @@
 use model::ribbon_tab::RibbonTab;
-use rust_editor::log;
 use rust_editor::plugins::plugin::Plugin;
 use rust_editor::ui::app::{EditorError, Shortkey};
 use rust_macro::editor_plugin;

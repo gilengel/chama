@@ -5,34 +5,17 @@
 @import "../rust_internal/src/ui/textbox";
 @import "../rust_editor/src/ui/panel";
 @import "../rust_editor/src/ui/dialog";
+@import "../rust_editor/src/ui/tooltip";
 
 // Ribbon components
 @import "../plugin_ribbon/src/view/ribbon";
 @import "../plugin_ribbon/src/view/ribbon_tab";
 @import "../plugin_ribbon/src/view/ribbon_tab_group";
-@import "../plugin_ribbon/src/view/ribbon_button";
 
 // Local plugins
 @import "src/plugins/reference_image";
 
-.tooltip {
-  position: absolute;
-  left: 0;
-  white-space: nowrap;
 
-
-  visibility: hidden;
-
-  background: darken($background, 8);
-  color: $text;
-
-  border-radius: $border-radius;
-
-  padding: $padding * 2;
-
-  font-family: "Heebo", sans-serif;
-  font-size: 14px;
-}
 
 html,
 body {

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
-use rust_editor::{ui::app::{App, EditorMessages}, log};
-use yew::{html, Context, classes, use_state};
+use rust_editor::ui::app::App;
+use yew::{html, Context};
 
 use super::ribbon_action::{ClickableRibbonAction, RibbonAction};
 
@@ -13,29 +13,23 @@ pub enum RibbonButtonState {
     Warning,
     Error,
 }
-pub struct RibbonButton<Data>
-where
-    Data: Default,
-{
+pub struct RibbonButton {
     pub icon: &'static str,
     pub identifier: &'static str,
-    pub tooltip: String,
+    pub tooltip: Option<String>,
     pub state: Rc<RefCell<RibbonButtonState>>,
-    pub on_click_callback: Rc<dyn Fn(Rc<RefCell<RibbonButtonState>>) -> EditorMessages<Data>>,
+    pub on_click_callback: Rc<dyn Fn(Rc<RefCell<RibbonButtonState>>)>,
 }
 
-impl<Data> RibbonButton<Data>
-where
-    Data: Default,
-{
+impl RibbonButton {
     pub fn new<T>(
         identifier: &'static str,
         icon: &'static str,
-        tooltip: String,
+        tooltip: Option<String>,
         on_click_callback: T,
     ) -> Self
     where
-        T: Fn(Rc<RefCell<RibbonButtonState>>) -> EditorMessages<Data> + 'static,
+        T: Fn(Rc<RefCell<RibbonButtonState>>) + 'static,
     {
         RibbonButton {
             identifier,
@@ -47,33 +41,24 @@ where
     }
 }
 
-impl<Data> RibbonAction<Data> for RibbonButton<Data>
+impl<Data> RibbonAction<Data> for RibbonButton
 where
     Data: Default,
 {
-    fn view(&self, ctx: &Context<App<Data>>) -> yew::virtual_dom::VNode {
-        let state = self.state.clone();
-        let callback = Rc::clone(&self.on_click_callback);
-        let onclick = ctx.link().callback(move |_| (*callback)(state.clone()));
-        
-        let state_class = match *self.state.borrow() {
-            RibbonButtonState::Enabled => "",
-            RibbonButtonState::Disabled => "disabled",
-            RibbonButtonState::Selected => "selected",
-            RibbonButtonState::Warning => "warning",
-            RibbonButtonState::Error => "error",
-        };
-
+    fn view(&self, _: &Context<App<Data>>) -> yew::virtual_dom::VNode {
+        use crate::view::ribbon_button::RibbonButton as UiRibbonButton;
         html! {
-            <button onclick={onclick} class={state_class} >
-                <span class="material-icons">{&self.icon}</span>
-                <span class="tooltip">{&self.tooltip}</span>
-            </button>
+            <UiRibbonButton
+                state={self.state.clone()}
+                tooltip={self.tooltip.clone()}
+                icon={self.icon}
+                on_click_callback={self.on_click_callback.clone()}
+            />
         }
     }
 }
 
-impl<Data> ClickableRibbonAction<Data> for RibbonButton<Data>
+impl<Data> ClickableRibbonAction<Data> for RibbonButton
 where
     Data: Default,
 {

@@ -45,10 +45,9 @@ impl Plugin<Map> for Sync {
 
                 let ws = self.ws.clone();
                 let connect_btn = RibbonButton::new(
-                    "Malagueña Salerosa",
                     "cast",
-
-                    "Malagueña Salerosa".to_string(),
+                    "cast",
+                    None,
                     move |state| connect(ws.clone(), state));
                 
                 group.add_action(connect_btn);
@@ -81,7 +80,7 @@ impl Sync {
     }
 }
 
-fn connect(ws: Rc<Mutex<Option<Writer>>>, state: Rc<RefCell<RibbonButtonState>>) -> EditorMessages<Map> {
+fn connect(ws: Rc<Mutex<Option<Writer>>>, state: Rc<RefCell<RibbonButtonState>>) {
     let program = async move {
         match WsMeta::connect("ws://127.0.0.1:8765", None).await {
             Ok((mut meta, stream)) => {
@@ -125,13 +124,11 @@ fn connect(ws: Rc<Mutex<Option<Writer>>>, state: Rc<RefCell<RibbonButtonState>>)
             Err(e) => {
                 *state.borrow_mut() = RibbonButtonState::Error;
 
-                //error!("{}", e);
+                error!("{}", e);
                 return;
             }
         };
     };
 
     spawn_local(program);
-
-    EditorMessages::UpdateElements()
 }

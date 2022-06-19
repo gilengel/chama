@@ -1,0 +1,22 @@
+.tooltip {
+    position: absolute;
+    left: 0;
+    white-space: nowrap;
+  
+  
+    //visibility: hidden;
+  
+    background: darken($background, 8);
+    color: $text;
+  
+    border-radius: $border-radius;
+  
+    padding: $padding * 2;
+  
+    font-family: "Heebo", sans-serif;
+    font-size: 14px;
+  }
+
+  .below, .above {
+    transform: translateX(-50%);
+  }

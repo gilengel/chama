@@ -106,7 +106,9 @@ where
               <span class="material-icons">{button.icon}</span>
 
             </button>
+            /*
             <span class="tooltip">{&button.tooltip}</span>
+            */
           </li>
         }
     }

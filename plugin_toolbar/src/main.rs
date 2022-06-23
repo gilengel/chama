@@ -1,5 +1,5 @@
 use model::ribbon_tab::RibbonTab;
-use rust_editor::plugin::Plugin;
+use rust_editor::plugins::plugin::Plugin;
 use rust_editor::ui::app::{EditorError, Shortkey};
 use rust_macro::editor_plugin;
 use wasm_bindgen::JsCast;
@@ -11,7 +11,7 @@ pub mod model;
 pub mod view;
 
 #[editor_plugin(skip)]
-pub struct RibbonPlugin<Data> {
+pub struct ToolbarPlugin<Data> {
     #[option(skip)]
     pub tabs: HashMap<&'static str, RibbonTab<Data>>,
 
@@ -19,34 +19,35 @@ pub struct RibbonPlugin<Data> {
     pub selected_tab: Rc<RefCell<&'static str>>
 }
 
-impl<Data> RibbonPlugin<Data> {
-    pub fn get_or_add_tab(
+impl<Data> ToolbarPlugin<Data> {
+    pub fn add_toolbar(
         &mut self,
-        id: &'static str,
-        label: &'static str,
-    ) -> Result<&RibbonTab<Data>, EditorError> {
-
-        if !self.tabs.contains_key(id) {
-            let tab = RibbonTab::new(id, label);
-            self.tabs.insert(id, tab);
-            
-        }
-
-        return Ok(self.tabs.get(id).unwrap()); 
+        toolbar_id: &'static str,
+        position: ToolbarPosition,
+    ) -> Result<&mut Toolbar<Data>, EditorError> {
+        self.toolbars.add_toolbar(toolbar_id, position)
     }
 
-    pub fn get_or_add_tab_mut(
+    pub fn get_or_add_toolbar(
         &mut self,
-        id: &'static str,
-        label: &'static str,
-    ) -> Result<&mut RibbonTab<Data>, EditorError> {
-        self.get_or_add_tab(id, label)?;
+        toolbar_id: &'static str,
+        position: ToolbarPosition,
+    ) -> Result<&mut Toolbar<Data>, EditorError> {
+        match self.toolbars.index_and_position_of_toolbar(toolbar_id) {
+            Ok((pos, index)) => Ok(self
+                .toolbars
+                .toolbars
+                .get_mut(&pos)
+                .unwrap()
+                .get_mut(index)
+                .unwrap()),
 
-        Ok(self.tabs.get_mut(id).unwrap())
+            Err(_) => return self.toolbars.add_toolbar(toolbar_id, position),
+        }
     }
 }
 
-impl<Data> Plugin<Data> for RibbonPlugin<Data>
+impl<Data> Plugin<Data> for ToolbarPlugin<Data>
 where
     Data: Default + 'static,
 {

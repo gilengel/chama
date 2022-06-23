@@ -1,5 +1,5 @@
 use geo::Coordinate;
-use rust_editor::{input::{keyboard::Key, mouse}, plugins::plugin::Plugin, log};
+use rust_editor::{input::{keyboard::Key, mouse}, plugin::Plugin, log};
 use rust_macro::editor_plugin;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};

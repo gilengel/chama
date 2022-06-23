@@ -4,12 +4,12 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rust_macro::editor_plugin;
 
-use crate::{Map};
+use crate::Map;
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, Redo, Undo},
     input::{keyboard::Key, mouse},
-    plugins::plugin::{Plugin, PluginWithOptions},
+    plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
@@ -122,12 +122,7 @@ impl Plugin<Map> for CreateDistrict {
         false
     }
 
-    fn mouse_up(
-        &mut self,
-        _: Coordinate<f64>,
-        _: mouse::Button,
-        _: &mut App<Map>,
-    ) -> bool {
+    fn mouse_up(&mut self, _: Coordinate<f64>, _: mouse::Button, _: &mut App<Map>) -> bool {
         false
     }
 }

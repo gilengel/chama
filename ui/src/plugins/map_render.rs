@@ -1,16 +1,14 @@
-use rust_editor::{plugins::plugin::Plugin};
+use rust_editor::plugin::Plugin;
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
 
 use crate::map::map::Map;
-
 
 #[editor_plugin(skip, specific_to=Map)]
 pub struct MapRender {}
 
 impl Plugin<Map> for MapRender {
     fn render(&self, context: &CanvasRenderingContext2d, editor: &App<Map>) {
-        
         let data = editor.data();
         for (_, district) in data.districts() {
             district.render(context).unwrap();
@@ -25,7 +23,7 @@ impl Plugin<Map> for MapRender {
         }
 
         /*
-        
+
         data.street_polygon.render(&Style::default(), &context).unwrap();
 
         let district_style = Style {
@@ -33,7 +31,7 @@ impl Plugin<Map> for MapRender {
                 border_color: "#0000".to_string(),
                 background_color: "#00FF00FF".to_string(),
             };
-        
+
         for polys in &data.street_polygon {
             for district_polygon in polys.interiors() {
                 //district_polygon.render(&district_style, &context).unwrap();

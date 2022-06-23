@@ -1,5 +1,5 @@
 use rust_editor::{
-    plugins::plugin::Plugin,
+    plugin::Plugin,
     store::Store,
     ui::{
         app::{EditorError, Shortkey},

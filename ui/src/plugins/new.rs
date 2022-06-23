@@ -1,7 +1,7 @@
 use rust_editor::input::keyboard::Key;
 use rust_editor::ui::dialog::Dialog;
 use rust_editor::{
-    plugins::plugin::Plugin,
+    plugin::Plugin,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
@@ -41,11 +41,11 @@ impl Plugin<Map> for New {
                 let map = editor.data_mut();
                 map.clear();
 
-                editor.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
+                editor.plugin_mut(move |redo: &mut plugin_undo_redo::Redo<Map>| {
                     redo.clear();
                 });
 
-                editor.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
+                editor.plugin_mut(move |undo: &mut plugin_undo_redo::undo::Undo<Map>| {
                     undo.clear();
                 });
             }

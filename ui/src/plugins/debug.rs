@@ -1,6 +1,6 @@
 use rust_editor::{
     input::keyboard::Key,
-    plugins::plugin::Plugin,
+    plugin::Plugin,
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,

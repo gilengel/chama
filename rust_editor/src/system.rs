@@ -4,7 +4,7 @@ use geo::Coordinate;
 use wasm_bindgen::JsValue;
 use web_sys::CanvasRenderingContext2d;
 
-use crate::{plugins::{plugin::PluginWithOptions}, InformationLayer};
+use crate::{plugin::PluginWithOptions, InformationLayer};
 
 
 /// Editing functionality is encapsuled into different states. Each state is responsible to render the map and all additional information needed.

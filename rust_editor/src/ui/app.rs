@@ -9,10 +9,11 @@ use wasm_bindgen::JsCast;
 use yew::html::Scope;
 
 use crate::input::keyboard::Key;
-use crate::plugins::camera::Camera;
-use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
+//use crate::plugins::camera::Camera;
+//use crate::plugins::plugin::{PluginWithOptions, SpecialKey};
 
 use crate::error;
+use crate::plugin::{PluginWithOptions, SpecialKey};
 use geo::Coordinate;
 use web_sys::{
     CanvasRenderingContext2d, DragEvent, HtmlCanvasElement, KeyboardEvent, MouseEvent, PointerEvent,
@@ -600,12 +601,14 @@ where
     fn mouse_pos(&self, x: u32, y: u32) -> Coordinate<f64> {
         let mut offset: Coordinate<f64> = Coordinate { x: 0., y: 0. };
 
+        /*
         self.plugin(|camera: &Camera| {
             offset = Coordinate {
                 x: camera.x(),
                 y: camera.y(),
             };
         });
+        */
 
         return Coordinate {
             x: x as f64 - offset.x,
@@ -635,9 +638,11 @@ where
             self.canvas_size.y.into(),
         );
 
+        /*
         self.plugin(|camera: &Camera| {
             context.translate(camera.x(), camera.y()).unwrap();
         });
+        */
 
         for (_, plugin) in enabled_plugins(&mut self.plugins) {
             plugin.as_ref().borrow_mut().render(context, self);

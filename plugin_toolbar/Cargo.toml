@@ -1,0 +1,19 @@
+[package]
+name = "plugin_toolbar"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rust_editor = { path = "../rust_editor" }
+rust_macro = { path = "../rust_macro" }
+rust_internal = { path = "../rust_internal" }
+yew = { git = "https://github.com/yewstack/yew", branch = "master", features=["csr"] }
+wasm-bindgen = "0.2.*"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  'console',
+]

@@ -3,7 +3,7 @@ use rust_editor::{
     actions::{Action},
     input::{keyboard::Key, mouse},
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::plugin::{Plugin, PluginWithOptions},
+    plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,
@@ -98,11 +98,11 @@ impl Plugin<Map> for DeleteStreet {
             let action = Rc::new(RefCell::new(ActionDeleteStreet::new(street)));
             action.as_ref().borrow_mut().execute(app.data_mut());
     
-            app.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
+            app.plugin_mut(move |redo: &mut plugin_undo_redo::Redo<Map>| {
                 redo.clear();
             });
     
-            app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
+            app.plugin_mut(move |undo: &mut plugin_undo_redo::Undo<Map>| {
                 undo.push(Rc::clone(&action));
             });
         }

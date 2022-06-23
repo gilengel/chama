@@ -2,7 +2,7 @@ use geo::Coordinate;
 use rust_editor::{
     gizmo::Id,
     interactive_element::{InteractiveElement, InteractiveElementState},
-    plugins::plugin::{Plugin, PluginWithOptions},
+    plugin::{Plugin, PluginWithOptions},
     ui::{
         app::{EditorError, Shortkey},
         toolbar::ToolbarPosition,

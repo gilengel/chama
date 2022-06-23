@@ -1,4 +1,4 @@
-use super::plugin::Plugin;
+use rust_editor::plugin::Plugin;
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
 

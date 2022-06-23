@@ -349,7 +349,7 @@ fn produce_use_statements(crate_name: &Ident) -> TokenStream2 {
         use rust_internal::ui::{numberbox::NumberBox, switch::Switch};
         use #crate_name::ui::app::App;
         use #crate_name::ui::app::EditorMessages;
-        use #crate_name::plugins::plugin::SpecialKey;
+        use #crate_name::plugin::SpecialKey;
         use std::any::Any;
         use std::borrow::Borrow;
         use std::cell::RefCell;
@@ -417,7 +417,7 @@ pub(crate) fn produce(
         let muu = quote! {
             #use_statements
 
-            #impl_plugins_with_options #crate_name::plugins::plugin::PluginWithOptions<#generic_type> for #name #ty_generics #where_clause_plugins_with_options
+            #impl_plugins_with_options #crate_name::plugin::PluginWithOptions<#generic_type> for #name #ty_generics #where_clause_plugins_with_options
             {
                 #identifier_impl
                 #enabled_impl
@@ -429,7 +429,7 @@ pub(crate) fn produce(
             }
 
 
-            #impl_any_plugin #crate_name::plugins::plugin::AnyPlugin<#generic_type> for #name #ty_generics #where_clause_any_plugin
+            #impl_any_plugin #crate_name::plugin::AnyPlugin<#generic_type> for #name #ty_generics #where_clause_any_plugin
             {
                 #produce_as_any_impl
             }

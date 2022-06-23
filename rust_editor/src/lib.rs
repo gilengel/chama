@@ -2,13 +2,13 @@ pub mod actions;
 pub mod gizmo;
 pub mod interactive_element;
 pub mod macros;
-pub mod plugins;
 pub mod renderer;
 pub mod store;
 pub mod style;
 pub mod system;
 pub mod ui;
 pub mod input;
+pub mod plugin;
 
 #[derive(PartialEq)]
 pub enum InformationLayer {

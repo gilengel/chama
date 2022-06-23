@@ -1,8 +1,15 @@
 use rust_macro::editor_plugin;
 
-use crate::{actions::Action, ui::{app::{EditorError, Shortkey}, toolbar::ToolbarPosition}, input::keyboard::Key};
+use rust_editor::{
+    actions::Action,
+    input::keyboard::Key,
+    ui::{
+        app::{EditorError, Shortkey},
+        toolbar::ToolbarPosition,
+    },
+};
 
-use super::plugin::{Plugin};
+use rust_editor::plugin::Plugin;
 
 #[editor_plugin(skip)]
 pub struct Redo<Data> {
@@ -11,7 +18,10 @@ pub struct Redo<Data> {
 }
 
 impl<T> Redo<T> {
-    pub fn push<S>(&mut self, action: Rc<RefCell<S>>) where S : Action<T> + 'static {
+    pub fn push<S>(&mut self, action: Rc<RefCell<S>>)
+    where
+        S: Action<T> + 'static,
+    {
         self.stack.push(action);
     }
 
@@ -31,8 +41,7 @@ where
     fn startup(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
         editor.add_shortkey::<Redo<Data>>(vec![Key::Ctrl, Key::Y])?;
 
-        let toolbar =
-            editor.get_or_add_toolbar("primary.undo_redo", ToolbarPosition::Left)?;
+        let toolbar = editor.get_or_add_toolbar("primary.undo_redo", ToolbarPosition::Left)?;
 
         toolbar.add_toggle_button(
             "redo",
@@ -44,17 +53,16 @@ where
 
         Ok(())
     }
-    
+
     fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Data>>, editor: &mut App<Data>) {
         if *key == vec![Key::Ctrl, Key::Y] {
             if let Some(action) = self.stack.pop() {
                 action.borrow_mut().redo(editor.data_mut());
 
-                editor.plugin_mut(|undo: &mut crate::plugins::undo::Undo<Data>| {
+                editor.plugin_mut(|undo: &mut super::Undo<Data>| {
                     undo.push_generic(Rc::clone(&action));
                 });
             }
         }
-
-    }        
+    }
 }

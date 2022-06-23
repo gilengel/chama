@@ -1,7 +1,7 @@
 use geo::Coordinate;
 use rust_macro::editor_plugin;
-use crate::input::mouse;
-use super::plugin::Plugin;
+use rust_editor::input::mouse;
+use rust_editor::plugin::Plugin;
 
 #[editor_plugin]
 pub struct Camera {

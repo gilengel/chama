@@ -1,11 +1,15 @@
 use rust_macro::editor_plugin;
 
-use crate::{
+use rust_editor::{
     actions::Action,
-    ui::{app::{EditorError, Shortkey}, toolbar::ToolbarPosition}, input::keyboard::Key,
+    input::keyboard::Key,
+    ui::{
+        app::{EditorError, Shortkey},
+        toolbar::ToolbarPosition,
+    },
 };
 
-use super::plugin::{Plugin};
+use rust_editor::plugin::Plugin;
 
 #[editor_plugin(skip)]
 pub struct Undo<Data> {
@@ -14,7 +18,10 @@ pub struct Undo<Data> {
 }
 
 impl<T> Undo<T> {
-    pub fn push<S>(&mut self, action: Rc<RefCell<S>>) where S : Action<T> + Sized + 'static {
+    pub fn push<S>(&mut self, action: Rc<RefCell<S>>)
+    where
+        S: Action<T> + Sized + 'static,
+    {
         self.stack.push(action);
     }
 
@@ -52,8 +59,7 @@ where
             if let Some(action) = self.stack.pop() {
                 action.borrow_mut().undo(editor.data_mut());
 
-
-                editor.plugin_mut(|redo: &mut crate::plugins::redo::Redo<Data>| {
+                editor.plugin_mut(|redo: &mut super::Redo<Data>| {
                     redo.push_generic(Rc::clone(&action));
                 });
             }

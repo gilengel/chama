@@ -11,11 +11,20 @@ categories = ["gui", "wasm", "web-programming"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
+
+# EditAll
 rust_editor = { path = "../rust_editor" }
 rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }
+
+# Plugins
+plugin_camera = { path = "../plugin_camera" }
+plugin_grid = { path = "../plugin_grid" }
+plugin_undo_redo = { path = "../plugin_undo_redo" }
 plugin_ribbon = { path = "../plugin_ribbon" }
-geo = { version = "0.20.1", features = ["use-serde"] }
+
+
+geo = { version = "0.21.0", features = ["use-serde"] }
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
 uuid = { version = "1.1.1", features = ["v4", "js", "serde"] }

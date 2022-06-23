@@ -2,7 +2,7 @@ use pharos::{Filter, Observable};
 use plugin_ribbon::model::ribbon_button::{RibbonButton, RibbonButtonState};
 use rust_editor::{
     error, log,
-    plugins::plugin::Plugin,
+    plugin::Plugin,
     ui::{app::EditorError},
 };
 use rust_macro::editor_plugin;

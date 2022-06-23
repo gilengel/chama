@@ -1,5 +1,5 @@
 use geo::{coord, LineString};
-use rust_editor::{actions::Action, plugins::plugin::Plugin, ui::app::EditorError};
+use rust_editor::{actions::Action, plugin::Plugin, ui::app::EditorError};
 use rust_macro::editor_plugin;
 
 use crate::map::{map::Map};

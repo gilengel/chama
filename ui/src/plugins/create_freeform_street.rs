@@ -6,7 +6,7 @@ use rust_editor::{
     actions::{Action, Redo, Undo},
     gizmo::Id,
     input::{keyboard::Key, mouse},
-    plugins::plugin::{Plugin, PluginWithOptions},
+    plugin::{Plugin, PluginWithOptions},
     renderer::PrimitiveRenderer,
     style::Style,
     ui::{
@@ -157,11 +157,11 @@ impl Plugin<Map> for CreateFreeformStreet {
 
         action.borrow_mut().execute(app.data_mut());
 
-        app.plugin_mut(move |redo: &mut rust_editor::plugins::redo::Redo<Map>| {
+        app.plugin_mut(move |redo: &mut plugin_undo_redo::Redo<Map>| {
             redo.clear();
         });
 
-        app.plugin_mut(move |undo: &mut rust_editor::plugins::undo::Undo<Map>| {
+        app.plugin_mut(move |undo: &mut plugin_undo_redo::Undo<Map>| {
             undo.push(Rc::clone(&action));
         });
 

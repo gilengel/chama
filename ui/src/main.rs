@@ -11,9 +11,8 @@ use plugins::reference_image::ReferenceImage;
 use plugins::save::Save;
 use plugins::settings::Settings;
 use plugins::sync::Sync;
-use rust_editor::plugins::camera::Camera;
-use rust_editor::plugins::redo::Redo;
-use rust_editor::plugins::undo::Undo;
+use plugin_camera::Camera;
+use plugin_undo_redo::{Undo, Redo};
 
 use plugins::create_freeform_street::CreateFreeformStreet;
 use rust_editor::ui::app::x_launch;

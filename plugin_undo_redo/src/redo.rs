@@ -5,9 +5,10 @@ use rust_editor::{
     input::keyboard::Key,
     ui::{
         app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
+        
     },
 };
+use plugin_toolbar::toolbar::ToolbarPosition;
 
 use rust_editor::plugin::Plugin;
 
@@ -41,15 +42,18 @@ where
     fn startup(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
         editor.add_shortkey::<Redo<Data>>(vec![Key::Ctrl, Key::Y])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.undo_redo", ToolbarPosition::Left)?;
+        editor.plugin_mut(move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Data>| {
+            
+                let toolbar = toolbar_plugin.get_or_add_toolbar("primary.undo_redo", ToolbarPosition::Left).unwrap();
 
-        toolbar.add_toggle_button(
-            "redo",
-            "redo",
-            "Redo".to_string(),
-            || false,
-            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::Y]),
-        )?;
+                toolbar.add_toggle_button(
+                    "redo",
+                    "redo",
+                    "Redo".to_string(),
+                    || false,
+                    || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::Y]),
+                ).unwrap();
+        });  
 
         Ok(())
     }

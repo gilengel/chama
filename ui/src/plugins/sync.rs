@@ -60,8 +60,6 @@ impl Plugin<Map> for Sync {
     fn property_updated(&mut self, _: &str, _: &mut App<Map>) {
         let url = &self.url;
         let port = &self.port;
-
-        log!("url={}, port={}", url, port)
     }
 }
 

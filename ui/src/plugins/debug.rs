@@ -1,10 +1,8 @@
+use plugin_toolbar::toolbar::ToolbarPosition;
 use rust_editor::{
     input::keyboard::Key,
     plugin::Plugin,
-    ui::{
-        app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
-    },
+    ui::app::{EditorError, Shortkey},
 };
 use rust_macro::editor_plugin;
 use web_sys::CanvasRenderingContext2d;
@@ -18,16 +16,21 @@ impl Plugin<Map> for Debug {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<Debug>(vec![Key::Ctrl, Key::U])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.actions", ToolbarPosition::Left)?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Map>| {
+                let toolbar =
+                    toolbar_plugin.get_or_add_toolbar("primary.actions", ToolbarPosition::Left).unwrap();
 
-        let enabled = Rc::clone(&self.__enabled);
-        toolbar.add_toggle_button(
-            "info",
-            "debug",
-            "Show/Hide debug information".to_string(),
-            move || *enabled.as_ref().borrow(),
-            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::U]),
-        )?;
+                let enabled = Rc::clone(&self.__enabled);
+                toolbar.add_toggle_button(
+                    "info",
+                    "debug",
+                    "Show/Hide debug information".to_string(),
+                    move || *enabled.as_ref().borrow(),
+                    || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::U]),
+                ).unwrap();
+            },
+        );
 
         Ok(())
     }

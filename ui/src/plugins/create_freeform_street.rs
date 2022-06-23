@@ -2,6 +2,7 @@ use std::fmt;
 
 use futures::executor::block_on;
 use geo::{simplify::Simplify, Coordinate, LineString, Point};
+use plugin_toolbar::toolbar::ToolbarPosition;
 use rust_editor::{
     actions::{Action, Redo, Undo},
     gizmo::Id,
@@ -9,10 +10,7 @@ use rust_editor::{
     plugin::{Plugin, PluginWithOptions},
     renderer::PrimitiveRenderer,
     style::Style,
-    ui::{
-        app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
-    },
+    ui::app::{EditorError, Shortkey},
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -37,12 +35,7 @@ pub struct CreateFreeformStreet {
     #[option(skip)]
     brush_active: bool,
 
-    #[option(
-        default = 1.,
-        min = 0.,
-        max = 10.,
-        label = "Simplification Factor",
-    )]
+    #[option(default = 1., min = 0., max = 10., label = "Simplification Factor")]
     simplification_factor: f64,
 }
 
@@ -94,18 +87,25 @@ impl Plugin<Map> for CreateFreeformStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<CreateFreeformStreet>(vec![Key::Ctrl, Key::A])?;
 
-        let toolbar =
-            editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Map>| {
+                let toolbar = toolbar_plugin
+                    .get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)
+                    .unwrap();
 
-        let enabled = Rc::clone(&self.__enabled);
+                let enabled = Rc::clone(&self.__enabled);
 
-        toolbar.add_toggle_button(
-            "brush",
-            "create_street",
-            "Create Freeform Streets".to_string(),
-            move || *enabled.as_ref().borrow(),
-            move || EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()),
-        )?;
+                toolbar
+                    .add_toggle_button(
+                        "brush",
+                        "create_street",
+                        "Create Freeform Streets".to_string(),
+                        move || *enabled.as_ref().borrow(),
+                        move || EditorMessages::ActivatePlugin(CreateFreeformStreet::identifier()),
+                    )
+                    .unwrap();
+            },
+        );
 
         Ok(())
     }

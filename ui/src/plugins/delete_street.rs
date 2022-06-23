@@ -1,23 +1,19 @@
+use crate::map::actions::street::delete::DeleteStreet as ActionDeleteStreet;
 use geo::Coordinate;
+use plugin_toolbar::toolbar::{ToolbarPosition, self};
 use rust_editor::{
-    actions::{Action},
+    actions::Action,
     input::{keyboard::Key, mouse},
     interactive_element::{InteractiveElement, InteractiveElementState},
     plugin::{Plugin, PluginWithOptions},
-    ui::{
-        app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
-    },
+    ui::app::{EditorError, Shortkey},
 };
 use rust_macro::editor_plugin;
-use crate::map::actions::street::delete::DeleteStreet as ActionDeleteStreet;
 
 use crate::map::map::Map;
 
 #[editor_plugin(skip, specific_to=Map, execution=Exclusive)]
-pub struct DeleteStreet {
-
-}
+pub struct DeleteStreet {}
 
 impl DeleteStreet {
     fn clean_hovered_street_state(&self, map: &mut Map) {
@@ -30,17 +26,24 @@ impl Plugin<Map> for DeleteStreet {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<DeleteStreet>(vec![Key::Ctrl, Key::D2])?;
 
-        let toolbar =
-            editor.get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Map>| {
+                let toolbar = toolbar_plugin
+                    .get_or_add_toolbar("primary.edit.modes.street", ToolbarPosition::Left)
+                    .unwrap();
 
-        let enabled = Rc::clone(&self.__enabled);
-        toolbar.add_toggle_button(
-            "delete_outline",
-            "delete_street",
-            "Delete Streets".to_string(),
-            move || *enabled.as_ref().borrow(),
-            move || EditorMessages::ActivatePlugin(DeleteStreet::identifier()),
-        )?;
+                let enabled = Rc::clone(&self.__enabled);
+                toolbar
+                    .add_toggle_button(
+                        "delete_outline",
+                        "delete_street",
+                        "Delete Streets".to_string(),
+                        move || *enabled.as_ref().borrow(),
+                        move || EditorMessages::ActivatePlugin(DeleteStreet::identifier()),
+                    )
+                    .unwrap();
+            },
+        );
 
         Ok(())
     }
@@ -71,12 +74,7 @@ impl Plugin<Map> for DeleteStreet {
         false
     }
 
-    fn mouse_down(
-        &mut self,
-        _: Coordinate<f64>,
-        button: mouse::Button,
-        _: &App<Map>,
-    ) -> bool {
+    fn mouse_down(&mut self, _: Coordinate<f64>, button: mouse::Button, _: &App<Map>) -> bool {
         if button != mouse::Button::Left {
             return false;
         }
@@ -97,11 +95,11 @@ impl Plugin<Map> for DeleteStreet {
         if let Some(street) = app.data().get_street_at_position(&mouse_pos, &vec![]) {
             let action = Rc::new(RefCell::new(ActionDeleteStreet::new(street)));
             action.as_ref().borrow_mut().execute(app.data_mut());
-    
+
             app.plugin_mut(move |redo: &mut plugin_undo_redo::Redo<Map>| {
                 redo.clear();
             });
-    
+
             app.plugin_mut(move |undo: &mut plugin_undo_redo::Undo<Map>| {
                 undo.push(Rc::clone(&action));
             });

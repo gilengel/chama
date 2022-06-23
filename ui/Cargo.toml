@@ -22,6 +22,7 @@ plugin_camera = { path = "../plugin_camera" }
 plugin_grid = { path = "../plugin_grid" }
 plugin_undo_redo = { path = "../plugin_undo_redo" }
 plugin_ribbon = { path = "../plugin_ribbon" }
+plugin_toolbar = { path = "../plugin_toolbar" }
 
 
 geo = { version = "0.21.0", features = ["use-serde"] }

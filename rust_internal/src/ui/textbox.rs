@@ -27,8 +27,6 @@ pub fn TextBox(props: &TextBoxProps) -> Html
     let value_handle = use_state(|| props.value.to_string());
     let value = value_handle.deref().clone();
 
-    web_sys::console::log_1(&format!("{}",  value  ).into());
-
     let error_handle = use_state(|| false);
     let error = error_handle.deref().clone();
 

@@ -9,6 +9,9 @@ edition = "2021"
 rust_editor = { path = "../rust_editor" }
 rust_macro = { path = "../rust_macro" }
 rust_internal = { path = "../rust_internal" }
+
+plugin_toolbar = { path = "../plugin_toolbar" }
+
 yew = { git = "https://github.com/yewstack/yew", branch = "master", features=["csr"] }
 wasm-bindgen = "0.2.*"
 

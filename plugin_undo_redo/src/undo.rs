@@ -3,12 +3,11 @@ use rust_macro::editor_plugin;
 use rust_editor::{
     actions::Action,
     input::keyboard::Key,
-    ui::{
-        app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
-    },
+    ui::app::{EditorError, Shortkey},
 };
 
+use plugin_toolbar;
+use plugin_toolbar::toolbar::ToolbarPosition;
 use rust_editor::plugin::Plugin;
 
 #[editor_plugin(skip)]
@@ -41,15 +40,23 @@ where
     fn startup(&mut self, editor: &mut App<Data>) -> Result<(), EditorError> {
         editor.add_shortkey::<Undo<Data>>(vec![Key::Ctrl, Key::Z])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.undo_redo", ToolbarPosition::Left)?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Data>| {
+                let toolbar = toolbar_plugin
+                    .get_or_add_toolbar("primary.undo_redo", ToolbarPosition::Left)
+                    .unwrap();
 
-        toolbar.add_toggle_button(
-            "undo",
-            "undo",
-            "Undo".to_string(),
-            || false,
-            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::Z]),
-        )?;
+                toolbar
+                    .add_toggle_button(
+                        "undo",
+                        "undo",
+                        "Undo".to_string(),
+                        || false,
+                        || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::Z]),
+                    )
+                    .unwrap();
+            },
+        );
 
         Ok(())
     }

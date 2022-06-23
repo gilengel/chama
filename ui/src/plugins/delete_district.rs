@@ -1,12 +1,11 @@
 use geo::Coordinate;
+use plugin_toolbar::toolbar::ToolbarPosition;
 use rust_editor::{
     gizmo::Id,
+    input::{keyboard::Key, mouse},
     interactive_element::{InteractiveElement, InteractiveElementState},
     plugin::{Plugin, PluginWithOptions},
-    ui::{
-        app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
-    }, input::{keyboard::Key, mouse},
+    ui::app::{EditorError, Shortkey},
 };
 use rust_macro::editor_plugin;
 use uuid::Uuid;
@@ -23,17 +22,24 @@ impl Plugin<Map> for DeleteDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<DeleteDistrict>(vec![Key::Ctrl, Key::F])?;
 
-        let toolbar =
-            editor.get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Map>| {
+                let toolbar = toolbar_plugin
+                    .get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)
+                    .unwrap();
 
-        let enabled = Rc::clone(&self.__enabled);
-        toolbar.add_toggle_button(
-            "delete_outline",
-            "delete_district",
-            "Delete District".to_string(),
-            move || *enabled.as_ref().borrow(),
-            move || EditorMessages::ActivatePlugin(DeleteDistrict::identifier()),
-        )?;
+                let enabled = Rc::clone(&self.__enabled);
+                toolbar
+                    .add_toggle_button(
+                        "delete_outline",
+                        "delete_district",
+                        "Delete District".to_string(),
+                        move || *enabled.as_ref().borrow(),
+                        move || EditorMessages::ActivatePlugin(DeleteDistrict::identifier()),
+                    )
+                    .unwrap();
+            },
+        );
 
         Ok(())
     }
@@ -70,7 +76,12 @@ impl Plugin<Map> for DeleteDistrict {
         false
     }
 
-    fn mouse_up(&mut self, mouse_pos: Coordinate<f64>, _: mouse::Button, app: &mut App<Map>) -> bool {
+    fn mouse_up(
+        &mut self,
+        mouse_pos: Coordinate<f64>,
+        _: mouse::Button,
+        app: &mut App<Map>,
+    ) -> bool {
         if let Some(hovered_district) = app.data().get_district_at_position(&mouse_pos) {
             app.data_mut().remove_district(&hovered_district);
             self.hovered_district = None
@@ -80,6 +91,7 @@ impl Plugin<Map> for DeleteDistrict {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use std::{cell::RefCell, rc::Rc};
@@ -125,3 +137,4 @@ mod tests {
         assert!(toolbar.has_button("delete_district"));
     }
 }
+*/

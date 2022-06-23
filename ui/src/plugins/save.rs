@@ -1,10 +1,9 @@
+use plugin_toolbar::toolbar::ToolbarPosition;
 use rust_editor::{
+    input::keyboard::Key,
     plugin::Plugin,
     store::Store,
-    ui::{
-        app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
-    }, input::keyboard::Key,
+    ui::app::{EditorError, Shortkey},
 };
 use rust_macro::editor_plugin;
 
@@ -17,15 +16,23 @@ impl Plugin<Map> for Save {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<Save>(vec![Key::Ctrl, Key::S])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.actions", ToolbarPosition::Left)?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Map>| {
+                let toolbar = toolbar_plugin
+                    .get_or_add_toolbar("primary.actions", ToolbarPosition::Left)
+                    .unwrap();
 
-        toolbar.add_toggle_button(
-            "save",
-            "save",
-            "Save".to_string(),
-            || false,
-            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::S]),
-        )?;
+                toolbar
+                    .add_toggle_button(
+                        "save",
+                        "save",
+                        "Save".to_string(),
+                        || false,
+                        || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::S]),
+                    )
+                    .unwrap();
+            },
+        );
 
         Ok(())
     }

@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use super::app::EditorMessages;
+use rust_editor::ui::app::EditorMessages;
 
 pub struct ToolbarButton<Data> {
   pub icon: &'static str,

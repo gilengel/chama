@@ -1,15 +1,16 @@
 use rust_editor::{
+    input::keyboard::Key,
     plugin::Plugin,
     ui::{
         app::{EditorError, Shortkey},
         panel::Panel,
-        toolbar::ToolbarPosition,
-    }, input::keyboard::Key,
+    },
 };
 use rust_macro::editor_plugin;
 use wasm_bindgen::JsCast;
 
 use crate::map::map::Map;
+use plugin_toolbar::toolbar::ToolbarPosition;
 
 #[editor_plugin(skip, specific_to=Map)]
 pub struct Settings {
@@ -21,16 +22,24 @@ impl Plugin<Map> for Settings {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<Settings>(vec![Key::Ctrl, Key::M])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.actions", ToolbarPosition::Left)?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Map>| {
+                let toolbar = toolbar_plugin
+                    .get_or_add_toolbar("primary.actions", ToolbarPosition::Left)
+                    .unwrap();
 
-        let visible = Rc::clone(&self.visible);
-        toolbar.add_toggle_button(
-            "settings",
-            "settings",
-            "Settings".to_string(),
-            move || !*visible.as_ref().borrow(),
-            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::M]),
-        )?;
+                let visible = Rc::clone(&self.visible);
+                toolbar
+                    .add_toggle_button(
+                        "settings",
+                        "settings",
+                        "Settings".to_string(),
+                        move || !*visible.as_ref().borrow(),
+                        || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::M]),
+                    )
+                    .unwrap();
+            },
+        );
 
         Ok(())
     }

@@ -326,7 +326,6 @@ impl From<String> for Key {
             "ALTGRAPH" => Key::AltGraph,
 
             _ => {
-                log!("{}", val);
                 Key::Unknown
             }
         }

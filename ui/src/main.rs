@@ -1,6 +1,9 @@
 use map::map::Map;
 
+use plugin_camera::Camera;
 use plugin_ribbon::RibbonPlugin;
+use plugin_toolbar::ToolbarPlugin;
+use plugin_undo_redo::{Redo, Undo};
 use plugins::create_district::CreateDistrict;
 use plugins::delete_district::DeleteDistrict;
 use plugins::delete_street::DeleteStreet;
@@ -11,21 +14,18 @@ use plugins::reference_image::ReferenceImage;
 use plugins::save::Save;
 use plugins::settings::Settings;
 use plugins::sync::Sync;
-use plugin_camera::Camera;
-use plugin_undo_redo::{Undo, Redo};
 
 use plugins::create_freeform_street::CreateFreeformStreet;
 use rust_editor::ui::app::x_launch;
 
+mod algorithm;
 mod map;
 mod plugins;
-mod algorithm;
 
 fn main() {
     let mut editor = x_launch::<Map>();
 
-    
-
+    editor.add_plugin(ToolbarPlugin::default());
     editor.add_plugin(New::default());
     editor.add_plugin(Save::default());
     editor.add_plugin(Load::default());
@@ -42,15 +42,14 @@ fn main() {
     editor.add_plugin(ReferenceImage::default());
     editor.add_plugin(RibbonPlugin::default());
     editor.add_plugin(Sync::default());
-
 }
 
 #[cfg(test)]
 mod tests {
     use crate::plugins::create_freeform_street::CreateFreeformStreet;
-    use crate::Map;
     use crate::plugins::new::New;
     use crate::plugins::settings::Settings;
+    use crate::Map;
     use rust_editor::plugins::plugin::Plugin;
     use rust_editor::ui::app::{launch, EditorError};
     use rust_macro::editor_plugin;
@@ -100,13 +99,13 @@ mod tests {
         editor.add_plugin(Camera::default());
         editor.add_plugin(Undo::<Map>::default());
         editor.add_plugin(Redo::<Map>::default());
-        editor.add_plugin(MapRender::default());        
+        editor.add_plugin(MapRender::default());
         editor.add_plugin(DeleteStreet::default());
         editor.add_plugin(CreateDistrict::default());
         editor.add_plugin(DeleteDistrict::default());
-        editor.add_plugin(CreateFreeformStreet::default());        
+        editor.add_plugin(CreateFreeformStreet::default());
         editor.add_plugin(crate::plugins::debug::Debug::default());
-        
+
         // The headless test plugin contains the asserts. We chose this approach to avoid hardcoding timeouts
         // or other workarounds.
         editor.add_plugin(HeadlessTestPlugin::default());

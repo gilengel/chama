@@ -1,14 +1,13 @@
 use rust_editor::{
+    input::keyboard::Key,
     plugin::Plugin,
     store::Store,
-    ui::{
-        app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
-    }, input::keyboard::Key,
+    ui::app::{EditorError, Shortkey},
 };
 use rust_macro::editor_plugin;
 
 use crate::map::map::Map;
+use plugin_toolbar::toolbar::ToolbarPosition;
 
 #[editor_plugin(skip, specific_to=Map)]
 pub struct Load {}
@@ -17,20 +16,27 @@ impl Plugin<Map> for Load {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<Load>(vec![Key::Ctrl, Key::O])?;
 
-        let toolbar = editor.get_or_add_toolbar("primary.actions", ToolbarPosition::Left)?;
-        toolbar.add_toggle_button(
-            "open_in_browser",
-            "load",
-            "Load".to_string(),
-            || false,
-            || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::O]),
-        )?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Map>| {
+                let toolbar = toolbar_plugin
+                    .get_or_add_toolbar("primary.actions", ToolbarPosition::Left)
+                    .unwrap();
+                toolbar
+                    .add_toggle_button(
+                        "open_in_browser",
+                        "load",
+                        "Load".to_string(),
+                        || false,
+                        || EditorMessages::ShortkeyPressed(vec![Key::Ctrl, Key::O]),
+                    )
+                    .unwrap();
+            },
+        );
 
         Ok(())
     }
 
     fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Map>>, editor: &mut App<Map>) {
-        
         if *key == vec![Key::Ctrl, Key::O] {
             if let Some(store) = Store::new("map_editor") {
                 if let Some(data) = store.fetch_local_storage() {

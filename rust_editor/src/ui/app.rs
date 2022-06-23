@@ -21,10 +21,6 @@ use web_sys::{
 
 use yew::{html, AppHandle, Component, Context, Html, NodeRef, Properties};
 
-
-
-use super::toolbar::{Toolbar, ToolbarPosition, Toolbars};
-
 pub enum EditorMessages<Data> {
     AddPlugin(
         (
@@ -82,9 +78,6 @@ where
     /// All plugins that implement the editor logic and functionality
     plugins: Plugins<Data>,
 
-    /// Toolbars added by plugins
-    toolbars: Toolbars<Data>,
-
     /// Registered by plugins, shortkeys must by unique.
     shortkeys: HashMap<PluginId, Vec<Shortkey>>,
 
@@ -111,7 +104,6 @@ where
         Self {
             data: Default::default(),
             plugins: Default::default(),
-            toolbars: Toolbars::<Data>::new(),
             shortkeys: Default::default(),
             _render_loop: Default::default(),
             canvas_ref: Default::default(),
@@ -246,32 +238,6 @@ where
     pub fn has_shortkey(&self, key: Shortkey) -> bool {
         self.shortkeys.values().any(|x| x.contains(&&key))
     }
-
-    pub fn add_toolbar(
-        &mut self,
-        toolbar_id: &'static str,
-        position: ToolbarPosition,
-    ) -> Result<&mut Toolbar<Data>, EditorError> {
-        self.toolbars.add_toolbar(toolbar_id, position)
-    }
-
-    pub fn get_or_add_toolbar(
-        &mut self,
-        toolbar_id: &'static str,
-        position: ToolbarPosition,
-    ) -> Result<&mut Toolbar<Data>, EditorError> {
-        match self.toolbars.index_and_position_of_toolbar(toolbar_id) {
-            Ok((pos, index)) => Ok(self
-                .toolbars
-                .toolbars
-                .get_mut(&pos)
-                .unwrap()
-                .get_mut(index)
-                .unwrap()),
-
-            Err(_) => return self.toolbars.add_toolbar(toolbar_id, position),
-        }
-    }
 }
 
 #[derive(Properties, PartialEq, Default)]
@@ -295,7 +261,6 @@ where
             data: Data::default(),
             plugins: BTreeMap::new(),
             shortkeys: HashMap::new(),
-            toolbars: Toolbars::new(),
             canvas_ref: NodeRef::default(),
             _render_loop: None,
             context: None,
@@ -573,10 +538,6 @@ where
                     {onpointermove}
                     //{oncontextmenu}
                 ></canvas>
-                
-                {
-                    self.toolbars.view(ctx)
-                }
             </content>
         </main>
         }

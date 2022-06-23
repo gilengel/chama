@@ -1,9 +1,10 @@
-use std::{rc::Rc, collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, rc::Rc};
 
-use yew::{html, Context, Html, classes};
+use yew::{classes, html, Context, Html};
 
+use rust_editor::ui::app::{App, EditorError, EditorMessages};
 
-use super::{app::{App, EditorMessages, EditorError}, toolbar_button::ToolbarButton};
+use crate::toolbar_button::ToolbarButton;
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub enum ToolbarPosition {
@@ -76,13 +77,14 @@ impl<Data> Toolbar<Data> {
     }
 }
 
-pub(crate) struct Toolbars<Data> {
+pub struct Toolbars<Data>
+{
     pub toolbars: HashMap<ToolbarPosition, Vec<Toolbar<Data>>>,
 }
 
 impl<Data> Toolbars<Data>
 where
-    Data:  Default,
+    Data: Default,
 {
     pub fn new() -> Self {
         Toolbars {

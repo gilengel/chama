@@ -10,12 +10,10 @@ use rust_editor::{
     actions::{Action, Redo, Undo},
     input::{keyboard::Key, mouse},
     plugin::{Plugin, PluginWithOptions},
-    ui::{
-        app::{EditorError, Shortkey},
-        toolbar::ToolbarPosition,
-    },
+    ui::app::{EditorError, Shortkey},
 };
 use uuid::Uuid;
+use plugin_toolbar::toolbar::ToolbarPosition;
 
 #[editor_plugin(specific_to=Map, execution=Exclusive)]
 pub struct CreateDistrict {
@@ -79,17 +77,24 @@ impl Plugin<Map> for CreateDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         editor.add_shortkey::<CreateDistrict>(vec![Key::Ctrl, Key::D])?;
 
-        let toolbar =
-            editor.get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)?;
+        editor.plugin_mut(
+            move |toolbar_plugin: &mut plugin_toolbar::ToolbarPlugin<Map>| {
+                let toolbar = toolbar_plugin
+                    .get_or_add_toolbar("primary.edit.modes.district", ToolbarPosition::Left)
+                    .unwrap();
 
-        let enabled = Rc::clone(&self.__enabled);
-        toolbar.add_toggle_button(
-            "maps_home_work",
-            "create_district",
-            "Create District".to_string(),
-            move || *enabled.as_ref().borrow(),
-            move || EditorMessages::ActivatePlugin(CreateDistrict::identifier()),
-        )?;
+                let enabled = Rc::clone(&self.__enabled);
+                toolbar
+                    .add_toggle_button(
+                        "maps_home_work",
+                        "create_district",
+                        "Create District".to_string(),
+                        move || *enabled.as_ref().borrow(),
+                        move || EditorMessages::ActivatePlugin(CreateDistrict::identifier()),
+                    )
+                    .unwrap();
+            },
+        );
 
         Ok(())
     }

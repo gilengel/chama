@@ -47,6 +47,7 @@ impl Plugin<Map> for Load {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use rust_editor::input::keyboard::Key;
@@ -82,3 +83,4 @@ mod tests {
         assert!(toolbar.has_button("load"));
     }
 }
+*/

@@ -1,16 +1,15 @@
+use crate::toolbar_button::ToolbarButton;
 use rust_editor::log;
 use rust_editor::plugin::Plugin;
 use rust_editor::ui::app::{EditorError, Shortkey};
 use rust_macro::editor_plugin;
 use std::collections::HashMap;
-use std::sync::Arc;
 use toolbar::{Toolbar, ToolbarPosition};
 use yew::classes;
-use crate::toolbar_button::ToolbarButton;
 
-pub mod view;
 pub mod toolbar;
 pub mod toolbar_button;
+pub mod view;
 
 #[editor_plugin(skip)]
 pub struct ToolbarPlugin<Data> {
@@ -84,15 +83,8 @@ where
         toolbar_id: &'static str,
         position: ToolbarPosition,
     ) -> Result<&mut Toolbar<Data>, EditorError> {
-        match self
-            .index_and_position_of_toolbar(toolbar_id)
-        {
-            Ok((pos, index)) => Ok(self
-                .toolbars
-                .get_mut(&pos)
-                .unwrap()
-                .get_mut(index)
-                .unwrap()),
+        match self.index_and_position_of_toolbar(toolbar_id) {
+            Ok((pos, index)) => Ok(self.toolbars.get_mut(&pos).unwrap().get_mut(index).unwrap()),
 
             Err(_) => return self.add_toolbar(toolbar_id, position),
         }
@@ -120,9 +112,8 @@ where
             */
           </li>
         }
-    }    
+    }
 }
-
 
 impl<Data> Plugin<Data> for ToolbarPlugin<Data>
 where
@@ -140,42 +131,31 @@ where
         use view::Toolbar as UiToolbar;
         //use view::ribbon_tab::RibbonTab as UiRibbonTab;
 
-    
-            let positions = vec![
-                ToolbarPosition::Left,
-                ToolbarPosition::Right,
-                ToolbarPosition::Top,
-                ToolbarPosition::Bottom,
-            ];
+        let mut elements: Vec<Html> = vec![];
+        for (pos, toolbars) in &self.toolbars {
+            let id = pos.to_string();
 
-            
-            let mut elements: Vec<Html> = vec![];
-            for (pos, toolbars) in &self.toolbars {
-                let id = pos.to_string();
-
-                let element = html! {
-                    <div id={id}>
-                    {
-                        for toolbars.iter().map(|toolbar| { 
-                            html! {
-                                <UiToolbar>
-                                {
-                                    for toolbar.buttons.iter().map(|button| {
-                                        self.view_button(button, ctx)
-                                    })
-                                }
-                                </UiToolbar>
+            let element = html! {
+                <div id={id}>
+                {
+                    for toolbars.iter().map(|toolbar| {
+                        html! {
+                            <UiToolbar>
+                            {
+                                for toolbar.buttons.iter().map(|button| {
+                                    self.view_button(button, ctx)
+                                })
                             }
-                        })
-                    }
-                    </div>
-                };
-                
-                elements.push(element);
-                
-            }
-            
-            elements
-        
+                            </UiToolbar>
+                        }
+                    })
+                }
+                </div>
+            };
+
+            elements.push(element);
+        }
+
+        elements
     }
 }

@@ -10,6 +10,7 @@ pub struct UpdateIntersection {
     connected_streets: Option<Vec<(Direction, Uuid)>>,
 }
 
+/*
 impl UpdateIntersection {
     pub fn new(id: Uuid) -> Self {
         UpdateIntersection {
@@ -18,6 +19,7 @@ impl UpdateIntersection {
         }
     }
 }
+*/
 
 impl Undo<Map> for UpdateIntersection {
     fn undo(&mut self, map: &mut Map) {

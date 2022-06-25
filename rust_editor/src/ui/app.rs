@@ -47,6 +47,7 @@ pub enum EditorMessages<Data> {
     UpdateElements(),
     Drop(DragEvent),
     DragOver(DragEvent),
+    RerenderView,
 }
 
 pub type Shortkey = Vec<Key>;
@@ -321,7 +322,8 @@ where
                 }
                 self.plugins.insert(key, plugin);
 
-                ctx.link().send_message(EditorMessages::ActivatePlugin(key))
+                ctx.link().send_message(EditorMessages::ActivatePlugin(key));
+                return true;
             }
             EditorMessages::AddPlugins(plugins) => {
                 for (key, plugin) in plugins {
@@ -331,8 +333,10 @@ where
 
                     self.plugins.insert(key, plugin);
 
-                    ctx.link().send_message(EditorMessages::ActivatePlugin(key))
+                    ctx.link().send_message(EditorMessages::ActivatePlugin(key));
                 }
+
+                return true;
             }
             EditorMessages::MouseMove(e) => {
                 let mouse_pos = self.mouse_pos(e.client_x() as u32, e.client_y() as u32);
@@ -405,6 +409,8 @@ where
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
                     plugin.as_ref().borrow_mut().key_down(e.key().into(), self);
                 }
+
+                return true;
             }
             EditorMessages::KeyUp(e) => {
                 self.pressed_keys.retain(|value| *value != e.key().into());
@@ -423,6 +429,8 @@ where
                 for (_, plugin) in enabled_plugins(&mut self.plugins) {
                     plugin.as_ref().borrow_mut().key_up(e.key().into(), self);
                 }
+
+                return true;
             }
             EditorMessages::ShortkeyPressed(shortkey) => {
                 for (plugin_id, shortkeys) in self.shortkeys.clone().iter() {
@@ -432,6 +440,8 @@ where
                         plugin.shortkey_pressed(&shortkey, ctx, self);
                     }
                 }
+
+                return true;
             }
             EditorMessages::Render(_) => {
                 self.render(ctx.link());
@@ -447,6 +457,8 @@ where
                     .as_ref()
                     .borrow_mut()
                     .property_updated(attribute, self);
+
+                return true;
             }
             EditorMessages::ActivatePlugin(plugin_id) => {
                 if !self.plugins.contains_key(plugin_id) {
@@ -473,7 +485,10 @@ where
                     .as_ref()
                     .borrow_mut()
                     .enable();
+
+                return true;
             }
+            EditorMessages::RerenderView => return true,
         }
 
         true
@@ -486,10 +501,12 @@ where
         let onmousemove = ctx.link().callback(|e| EditorMessages::MouseMove(e));
 
         // Context menu event aka right click
+        /*
         let oncontextmenu = ctx.link().callback(|e: MouseEvent| {
             e.prevent_default();
             EditorMessages::MouseUp(e)
         });
+        */
 
         // Key events
         let onkeyup = ctx.link().callback(|e| EditorMessages::KeyUp(e));
@@ -560,7 +577,7 @@ where
     Data: Default + 'static,
 {
     fn mouse_pos(&self, x: u32, y: u32) -> Coordinate<f64> {
-        let mut offset: Coordinate<f64> = Coordinate { x: 0., y: 0. };
+        let offset: Coordinate<f64> = Coordinate { x: 0., y: 0. };
 
         /*
         self.plugin(|camera: &Camera| {

@@ -1,7 +1,5 @@
 use std::fmt;
 
-use rand::SeedableRng;
-use rand_chacha::ChaCha8Rng;
 use rust_macro::editor_plugin;
 
 use crate::Map;
@@ -26,14 +24,14 @@ pub struct CreateDistrict {
     )]
     minimum_house_side: f64,
 
-    #[option(skip)]
-    seed: <ChaCha8Rng as SeedableRng>::Seed,
+    //#[option(skip)]
+    //seed: <ChaCha8Rng as SeedableRng>::Seed,
 }
 
 struct CreateDistrictAction {
     street: Uuid,
-    minimum_house_side: f64,
-    seed: <ChaCha8Rng as SeedableRng>::Seed,
+    //minimum_house_side: f64,
+    //seed: <ChaCha8Rng as SeedableRng>::Seed,
 
     district: Option<Uuid>,
 }
@@ -58,20 +56,22 @@ impl fmt::Display for CreateDistrictAction {
     }
 }
 
+/*
 impl CreateDistrictAction {
     pub fn new(
         street: Uuid,
-        minimum_house_side: f64,
-        seed: <ChaCha8Rng as SeedableRng>::Seed,
+        //minimum_house_side: f64,
+        //seed: <ChaCha8Rng as SeedableRng>::Seed,
     ) -> Self {
         CreateDistrictAction {
             street,
-            minimum_house_side,
-            seed,
+            //minimum_house_side,
+            //seed,
             district: None,
         }
     }
 }
+*/
 
 impl Plugin<Map> for CreateDistrict {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
@@ -132,12 +132,14 @@ impl Plugin<Map> for CreateDistrict {
     }
 }
 
+
+/*
 #[cfg(test)]
 mod tests {
+    use plugin_toolbar::toolbar::ToolbarPosition;
     use rust_editor::input::keyboard::Key;
-    use rust_editor::plugins::plugin::Plugin;
+    use rust_editor::plugin::Plugin;
     use rust_editor::ui::app::App;
-    use rust_editor::ui::toolbar::ToolbarPosition;
 
     use crate::map::map::Map;
     use crate::plugins::create_district::CreateDistrict;
@@ -167,3 +169,4 @@ mod tests {
         assert!(toolbar.has_button("create_district"));
     }
 }
+*/

@@ -1,0 +1,23 @@
+[package]
+name = "plugin_ui_components"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["snackbar"]
+snackbar = []
+
+[dependencies]
+rust_editor = { path = "../rust_editor" }
+rust_macro = { path = "../rust_macro" }
+rust_internal = { path = "../rust_internal" }
+yew = { git = "https://github.com/yewstack/yew", branch = "master", features=["csr"] }
+wasm-bindgen = "0.2.*"
+gloo-timers = "0.2.4"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  'console',
+]
+

@@ -3,7 +3,6 @@ use std::fmt;
 use geo::Coordinate;
 use rust_editor::{
     actions::{Action, Redo, Undo},
-    gizmo::{GetPosition, Id},
 };
 use uuid::Uuid;
 
@@ -14,6 +13,7 @@ pub(crate) struct DeleteIntersection {
     position: Coordinate<f64>,
 }
 
+/*
 impl DeleteIntersection {
     pub fn new(intersection: &Intersection) -> Self {
         DeleteIntersection {
@@ -22,6 +22,7 @@ impl DeleteIntersection {
         }
     }
 }
+*/
 
 impl Undo<Map> for DeleteIntersection {
     fn undo(&mut self, map: &mut Map) {
@@ -52,6 +53,7 @@ impl fmt::Display for DeleteIntersection {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use geo::Coordinate;
@@ -110,3 +112,4 @@ mod tests {
         assert_eq!(map.intersections.len(), 1);
     }
 }
+*/

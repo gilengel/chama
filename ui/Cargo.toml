@@ -24,6 +24,8 @@ plugin_undo_redo = { path = "../plugin_undo_redo" }
 plugin_ribbon = { path = "../plugin_ribbon" }
 plugin_toolbar = { path = "../plugin_toolbar" }
 
+plugin_ui_components = { path = "../plugin_ui_components" }
+
 
 geo = { version = "0.21.0", features = ["use-serde"] }
 serde = { version = "1.0.133", features = ["derive"] }

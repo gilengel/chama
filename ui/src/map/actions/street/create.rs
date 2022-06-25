@@ -16,6 +16,7 @@ pub(crate) struct CreateStreet {
     action_stack: MultiAction<Map>,
 }
 
+/*
 impl CreateStreet {
     pub fn new(start_pos: Coordinate<f64>, end_pos: Coordinate<f64>, street_id: Uuid) -> Self {
         CreateStreet {
@@ -28,6 +29,7 @@ impl CreateStreet {
         }
     }
 }
+*/
 
 impl Undo<Map> for CreateStreet {
     fn undo(&mut self, map: &mut Map) {

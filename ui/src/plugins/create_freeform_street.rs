@@ -1,7 +1,7 @@
 use std::fmt;
 
 use futures::executor::block_on;
-use geo::{simplify::Simplify, Coordinate, LineString, Point};
+use geo::{simplify::Simplify, Coordinate, LineString};
 use plugin_toolbar::toolbar::ToolbarPosition;
 use rust_editor::{
     actions::{Action, Redo, Undo},
@@ -26,12 +26,11 @@ pub struct CreateFreeformStreet {
     #[option(skip)]
     raw_points: Vec<Coordinate<f64>>,
 
-    #[option(skip)]
-    points: Vec<Point<f64>>,
+    //#[option(skip)]
+    //points: Vec<Point<f64>>,
 
-    #[option(skip)]
-    raw_point_style: Style,
-
+    //#[option(skip)]
+    //raw_point_style: Style,
     #[option(skip)]
     brush_active: bool,
 
@@ -209,12 +208,13 @@ impl Plugin<Map> for CreateFreeformStreet {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
+    use plugin_toolbar::toolbar::ToolbarPosition;
     use rust_editor::input::keyboard::Key;
-    use rust_editor::plugins::plugin::Plugin;
+    use rust_editor::plugin::Plugin;
     use rust_editor::ui::app::App;
-    use rust_editor::ui::toolbar::ToolbarPosition;
 
     use crate::map::map::Map;
     use crate::plugins::create_freeform_street::CreateFreeformStreet;
@@ -244,3 +244,4 @@ mod tests {
         assert!(toolbar.has_button("create_street"));
     }
 }
+*/

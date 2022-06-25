@@ -11,7 +11,6 @@ use crate::map::map::Map;
 #[derive(PartialEq)]
 enum State {
     Idle,
-    MouseDown,
 }
 
 impl Default for State {
@@ -68,8 +67,8 @@ pub struct ReferenceImage {
     #[option(skip)]
     images: Rc<RefCell<Vec<ImageData>>>,
 
-    #[option(skip)]
-    drag_start: Coordinate<f64>,
+    //#[option(skip)]
+    //drag_start: Coordinate<f64>,
 
     #[option(skip)]
     drag_state: State,

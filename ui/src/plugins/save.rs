@@ -46,6 +46,7 @@ impl Plugin<Map> for Save {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use rust_editor::input::keyboard::Key;
@@ -81,3 +82,4 @@ mod tests {
         assert!(toolbar.has_button("save"));
     }
 }
+*/

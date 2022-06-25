@@ -29,23 +29,40 @@ body {
 
 /// MATERIAL COMPONENTS
 $snackbar-height: 48px;
-$snackbar-padding: 16px;
+$snackbar-padding-h: 16px;
+$snackbar-padding-v: 6px;
+
 .md-snackbar {
   position: absolute;
-  background-color: #d64933;
-  display: block;
+  z-index: 999;
+  background-color: lighten($background, 10%);
+  display: flex;
+  justify-content: space-between;
 
-  width: 344px;
+  min-width: 344px;
   line-height: $snackbar-height;
   height: $snackbar-height;
-  padding-left: $snackbar-padding;
-  padding-right: $snackbar-padding;
+  padding: $snackbar-padding-v $snackbar-padding-h $snackbar-padding-v $snackbar-padding-h;
   border-radius: 4px;
-  bottom: $snackbar-padding * 1.5;
+  bottom: $snackbar-padding-h * 1.5;
+
+  color: $text;
+  
+
+  button {
+    background: transparent;
+    border: none;
+    color: $primary;
+    border-radius: 4px;
+  }
+
+  button:hover {
+    background-color: $background
+  }
 }
 
 .left {
-  left: $snackbar-padding * 1.5;
+  left: $snackbar-padding-v * 1.5;
 }
 
 .center {
@@ -54,7 +71,7 @@ $snackbar-padding: 16px;
 }
 
 .right {
-  right: $snackbar-padding * 1.5;
+  right: $snackbar-padding-v * 1.5;
 }
 
 /// MATERIAL COMPONENTS

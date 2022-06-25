@@ -1,10 +1,14 @@
 [workspace]
 
 members = [
-    "backend",
     "ui",
     "rust_editor",
     "rust_internal",
     "rust_macro",
-    "plugin_ribbon"
+    "plugin_camera",
+    "plugin_grid",
+    "plugin_ribbon",
+    "plugin_toolbar",
+    "plugin_ui_components",
+    "plugin_undo_redo"
 ]

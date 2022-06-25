@@ -11,6 +11,7 @@ pub(crate) struct RemoveConnectedStreet {
     intersection_id: Uuid,
 }
 
+/*
 impl RemoveConnectedStreet {
     pub fn new(intersection_id: Uuid, street_id: Uuid) -> Self {
         RemoveConnectedStreet {
@@ -20,6 +21,7 @@ impl RemoveConnectedStreet {
         }
     }
 }
+*/
 
 impl Undo<Map> for RemoveConnectedStreet {
     fn undo(&mut self, map: &mut Map) {
@@ -57,6 +59,7 @@ impl fmt::Display for RemoveConnectedStreet {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use geo::Coordinate;
@@ -136,3 +139,4 @@ mod tests {
         find_intersection(&mut map);
     }
 }
+*/

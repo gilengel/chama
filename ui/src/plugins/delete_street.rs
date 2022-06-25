@@ -1,6 +1,6 @@
 use crate::map::actions::street::delete::DeleteStreet as ActionDeleteStreet;
 use geo::Coordinate;
-use plugin_toolbar::toolbar::{ToolbarPosition, self};
+use plugin_toolbar::toolbar::{ToolbarPosition};
 use rust_editor::{
     actions::Action,
     input::{keyboard::Key, mouse},

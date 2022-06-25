@@ -527,7 +527,6 @@ impl From<String> for Key {
 }
 */
 
-use crate::log;
 
 #[cfg(test)]
 mod tests {

@@ -14,6 +14,7 @@ use plugins::reference_image::ReferenceImage;
 use plugins::save::Save;
 use plugins::settings::Settings;
 use plugins::sync::Sync;
+use plugin_ui_components::ComponentsPlugin;
 
 use plugins::create_freeform_street::CreateFreeformStreet;
 use rust_editor::ui::app::x_launch;
@@ -25,6 +26,7 @@ mod plugins;
 fn main() {
     let mut editor = x_launch::<Map>();
 
+    editor.add_plugin(ComponentsPlugin::default());
     editor.add_plugin(ToolbarPlugin::default());
     editor.add_plugin(New::default());
     editor.add_plugin(Save::default());
@@ -42,6 +44,7 @@ fn main() {
     editor.add_plugin(ReferenceImage::default());
     editor.add_plugin(RibbonPlugin::default());
     editor.add_plugin(Sync::default());
+    
 }
 
 #[cfg(test)]
@@ -50,7 +53,9 @@ mod tests {
     use crate::plugins::new::New;
     use crate::plugins::settings::Settings;
     use crate::Map;
-    use rust_editor::plugins::plugin::Plugin;
+    use plugin_camera::Camera;
+    use plugin_undo_redo::{Undo, Redo};
+    use rust_editor::plugin::Plugin;
     use rust_editor::ui::app::{launch, EditorError};
     use rust_macro::editor_plugin;
     use wasm_bindgen_test::*;
@@ -61,9 +66,6 @@ mod tests {
     use crate::plugins::load::Load;
     use crate::plugins::map_render::MapRender;
     use crate::plugins::save::Save;
-    use rust_editor::plugins::camera::Camera;
-    use rust_editor::plugins::redo::Redo;
-    use rust_editor::plugins::undo::Undo;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

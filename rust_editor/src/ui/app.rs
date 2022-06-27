@@ -185,6 +185,40 @@ where
         }
     }
 
+    /// Finds two plugins that were registered to the editor instance and let you perform mutable actions on them simultanously.
+    /// To perform the action you need to specify a closure `f`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// app.two_plugin_mut(move |plugin: &mut DataPlugin<Map>| {
+    ///     plugin.write("some_data");
+    /// });
+    ///
+    /// ```
+    pub fn two_plugin_mut<'a, Plugin1, Plugin2, F>(&mut self, mut f: F)
+    where
+        Plugin1: PluginWithOptions<Data> + Default + 'static,
+        Plugin2: PluginWithOptions<Data> + Default + 'static,
+        F: FnMut(&mut Plugin1, &mut Plugin2),
+    {
+        let plugins: Vec<&Rc<RefCell<dyn PluginWithOptions<Data>>>> = self
+            .plugins
+            .iter()
+            .filter(|(id, _)| id == &&Plugin1::identifier() || id == &&Plugin2::identifier())
+            .map(|(_, plugin)| plugin)
+            .collect();
+
+            let mut plugin1 = plugins[0].as_ref().borrow_mut();
+            let plugin1 = plugin1.as_any_mut().downcast_mut::<Plugin1>().unwrap();
+
+            let mut plugin2 = plugins[1].as_ref().borrow_mut();
+            let plugin2 = plugin2.as_any_mut().downcast_mut::<Plugin2>().unwrap();
+
+            f(plugin1, plugin2)
+    }
+
     /// Registers a shortkey that is handled by the editor.
     ///
     /// Shortkeys are usally used for plugins to allow fast execution of specific actions for expert users.

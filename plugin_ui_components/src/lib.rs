@@ -18,7 +18,7 @@ pub struct ComponentsPlugin {
 
 impl ComponentsPlugin {
     #[cfg(feature = "snackbar")]
-    pub fn show_snackbar<Data>(&mut self, text: &'static str, position: Option<SnackbarPosition>, _: Option<SnackbarAction>) where Data: Default {
+    pub fn show_snackbar(&mut self, text: &'static str, position: Option<SnackbarPosition>, _: Option<SnackbarAction>){
         let action = SnackbarAction {
             label: "Retry".to_string(),
             callback: Rc::new(|| log!("Click on retry")),

@@ -48,14 +48,17 @@ impl Plugin<Map> for Sync {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         self.connected = Rc::new(RefCell::new(None));
 
-        editor.plugin_mut(move |ribbon: &mut plugin_ribbon::RibbonPlugin<Map>| {
+        editor.two_plugin_mut(move |ribbon: &mut plugin_ribbon::RibbonPlugin<Map>, component_plugin: &mut plugin_ui_components::ComponentsPlugin| {
             let tab = ribbon.get_or_add_tab_mut("default", "Default").unwrap();
             let group = tab.get_or_add_group_mut("sync", "Remote Sync").unwrap();
 
             let ws = self.ws.clone();
             let connected_state = self.connected.clone();
             let connect_btn = RibbonButton::new("cast", "cast", None, move |state| {
-                connect(ws.clone(), connected_state.clone(), state)
+                connect(ws.clone(), connected_state.clone(), state);
+
+                //self.test();
+                //component_plugin.show_snackbar("Try to connect :O", None, None);
             });
 
             group.add_action(connect_btn);
@@ -63,7 +66,7 @@ impl Plugin<Map> for Sync {
 
         editor.plugin_mut(
             move |components: &mut plugin_ui_components::ComponentsPlugin| {
-                components.show_snackbar::<Map>("Hello :)", None, None);
+                components.show_snackbar("Hello :)", None, None);
             },
         );
 

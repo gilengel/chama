@@ -1,11 +1,12 @@
 use pharos::{Filter, Observable};
-use plugin_ribbon::model::ribbon_button::{RibbonButton, RibbonButtonState};
+use plugin_ribbon::model::ribbon_button::{RibbonButton, RibbonButtonType};
+use plugin_ui_components::ComponentMessage;
 use rust_editor::{error, log, plugin::Plugin, ui::app::EditorError};
 use rust_macro::editor_plugin;
 
 use futures::{io::WriteHalf, lock::Mutex, AsyncReadExt, AsyncWriteExt, StreamExt};
 use wasm_bindgen_futures::spawn_local;
-use ws_stream_wasm::{WsEvent, WsMeta, WsStreamIo};
+use ws_stream_wasm::{WsErr, WsEvent, WsMeta, WsStreamIo};
 
 use crate::map::map::Map;
 
@@ -30,7 +31,10 @@ pub struct Sync {
     ws: Rc<Mutex<Option<Writer>>>,
 
     #[option(skip)]
-    connected: Rc<RefCell<Option<WsEvent>>>
+    connected: Rc<RefCell<Option<WsEvent>>>,
+
+    #[option(skip)]
+    connection_error: Rc<RefCell<Option<WsErr>>>,
 }
 
 impl Sync {
@@ -47,28 +51,52 @@ impl Sync {
 impl Plugin<Map> for Sync {
     fn startup(&mut self, editor: &mut App<Map>) -> Result<(), EditorError> {
         self.connected = Rc::new(RefCell::new(None));
+        self.connection_error = Rc::new(RefCell::new(None));
 
-        editor.two_plugin_mut(move |ribbon: &mut plugin_ribbon::RibbonPlugin<Map>, component_plugin: &mut plugin_ui_components::ComponentsPlugin| {
+        editor.plugin_mut(move |ribbon: &mut plugin_ribbon::RibbonPlugin<Map>| {
             let tab = ribbon.get_or_add_tab_mut("default", "Default").unwrap();
             let group = tab.get_or_add_group_mut("sync", "Remote Sync").unwrap();
 
             let ws = self.ws.clone();
             let connected_state = self.connected.clone();
-            let connect_btn = RibbonButton::new("cast", "cast", None, move |state| {
-                connect(ws.clone(), connected_state.clone(), state);
+            let connection_error = self.connection_error.clone();
+            let connect_btn = RibbonButton::new(
+                "cast",
+                "cast",
+                None,
+                Some(RibbonButtonType::Toggle),
+                move || {
+                    log!("Clicked");
+                    /*
+                    move || {
+                        EditorMessages::PluginMessage(
+                            ComponentsPlugin::identifier(),
+                            ComponentMessage::ShowSnackbar("Success :)", None, None),
+                        )
+                    }
+                    */
 
-                //self.test();
-                //component_plugin.show_snackbar("Try to connect :O", None, None);
-            });
+                    connect(
+                        ws.clone(),
+                        connected_state.clone(),
+                        connection_error.clone(),
+                        || {
+                            log!("SUCCESS :)")
+                        },
+                        || {
+                            log!("ERROR :(")
+                        },
+                    );
+
+                    EditorMessages::PluginMessage(
+                        "ComponentsPlugin",
+                        Box::new(ComponentMessage::ShowSnackbar("Success :)", None, None)),
+                    )
+                },
+            );
 
             group.add_action(connect_btn);
         });
-
-        editor.plugin_mut(
-            move |components: &mut plugin_ui_components::ComponentsPlugin| {
-                components.show_snackbar("Hello :)", None, None);
-            },
-        );
 
         Ok(())
     }
@@ -98,7 +126,16 @@ impl Sync {
     }
 }
 
-fn connect(ws: Rc<Mutex<Option<Writer>>>, connected_state: Rc<RefCell<Option<WsEvent>>>, state: Rc<RefCell<RibbonButtonState>>) {
+fn connect<F, T>(
+    ws: Rc<Mutex<Option<Writer>>>,
+    connected_state: Rc<RefCell<Option<WsEvent>>>,
+    error_state: Rc<RefCell<Option<WsErr>>>,
+    mut success_callback: F,
+    mut error_callback: T,
+) where
+    F: FnMut() + 'static,
+    T: FnMut() + 'static,
+{
     let program = async move {
         match WsMeta::connect("ws://127.0.0.1:8765", None).await {
             Ok((mut meta, stream)) => {
@@ -108,7 +145,7 @@ fn connect(ws: Rc<Mutex<Option<Writer>>>, connected_state: Rc<RefCell<Option<WsE
                         .await
                         .unwrap();
 
-                    while let Some(next) = evts.next().await {                        
+                    while let Some(next) = evts.next().await {
                         *connected_state.borrow_mut() = Some(next);
                     }
                 };
@@ -128,12 +165,12 @@ fn connect(ws: Rc<Mutex<Option<Writer>>>, connected_state: Rc<RefCell<Option<WsE
                 let mut guard = ws.lock().await;
                 *guard = Some(stream);
 
-                *state.borrow_mut() = RibbonButtonState::Selected;
+                success_callback();
             }
             Err(e) => {
-                *state.borrow_mut() = RibbonButtonState::Error;
+                *error_state.borrow_mut() = Some(e);
 
-                error!("{}", e);
+                error_callback();
                 return;
             }
         };

@@ -16,9 +16,25 @@ pub struct ComponentsPlugin {
     elements: Vec<Html>,
 }
 
+pub enum ComponentMessage {
+    #[cfg(feature = "snackbar")]
+    ShowSnackbar(
+        &'static str,
+        Option<SnackbarPosition>,
+        Option<SnackbarAction>,
+    ),
+}
+
+unsafe impl Send for ComponentsPlugin {}
+
 impl ComponentsPlugin {
     #[cfg(feature = "snackbar")]
-    pub fn show_snackbar(&mut self, text: &'static str, position: Option<SnackbarPosition>, _: Option<SnackbarAction>){
+    pub fn show_snackbar(
+        &mut self,
+        text: &'static str,
+        position: Option<SnackbarPosition>,
+        _: Option<SnackbarAction>,
+    ) {
         let action = SnackbarAction {
             label: "Retry".to_string(),
             callback: Rc::new(|| log!("Click on retry")),
@@ -45,5 +61,17 @@ where
 
     fn editor_elements(&mut self, _: &Context<App<Data>>, _: &App<Data>) -> Vec<Html> {
         self.elements.clone()
+    }
+
+    fn on_message(&mut self, message: Box<dyn Any>) {
+        let message = message.as_ref().downcast_ref::<ComponentMessage>().unwrap();
+
+        // TODO enable option
+        match message {
+            #[cfg(feature = "snackbar")]
+            ComponentMessage::ShowSnackbar(text, position, _) => {
+                self.show_snackbar(text, position.clone(), None)
+            }
+        }
     }
 }

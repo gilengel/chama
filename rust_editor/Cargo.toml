@@ -24,6 +24,7 @@ yew = { git = "https://github.com/yewstack/yew", branch = "master", features = [
 gloo-render = "0.1"
 thiserror = "1.0"
 rand = "0.8.5"
+lazy_static = "1.4.0"
 
 [dependencies.web-sys]
 version = "0.3.4"

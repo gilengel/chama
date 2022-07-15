@@ -4,7 +4,7 @@ use yew::{classes, html, Context, Html};
 
 use rust_editor::ui::app::{App, EditorError, EditorMessages};
 
-use crate::toolbar_button::ToolbarButton;
+use crate::ToolbarButton;
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub enum ToolbarPosition {

@@ -1,11 +1,14 @@
+use model::ribbon::Ribbon;
+use model::ribbon_action::RibbonAction;
 use model::ribbon_tab::RibbonTab;
+use model::ribbon_tab_group::RibbonTabGroup;
 use rust_editor::plugin::Plugin;
 use rust_editor::ui::app::{EditorError, Shortkey};
 use rust_macro::editor_plugin;
-use wasm_bindgen::JsCast;
-use web_sys::{MouseEvent, HtmlElement};
 use std::collections::HashMap;
-use crate::view::ribbon_tab_group::RibbonTabGroup;
+use wasm_bindgen::JsCast;
+use web_sys::{HtmlElement, MouseEvent};
+use yew::virtual_dom::VNode;
 
 pub mod model;
 pub mod view;
@@ -16,7 +19,7 @@ pub struct RibbonPlugin<Data> {
     pub tabs: HashMap<&'static str, RibbonTab<Data>>,
 
     #[option(skip)]
-    pub selected_tab: Rc<RefCell<&'static str>>
+    pub selected_tab: Rc<RefCell<&'static str>>,
 }
 
 impl<Data> RibbonPlugin<Data> {
@@ -25,14 +28,12 @@ impl<Data> RibbonPlugin<Data> {
         id: &'static str,
         label: &'static str,
     ) -> Result<&RibbonTab<Data>, EditorError> {
-
         if !self.tabs.contains_key(id) {
             let tab = RibbonTab::new(id, label);
             self.tabs.insert(id, tab);
-            
         }
 
-        return Ok(self.tabs.get(id).unwrap()); 
+        return Ok(self.tabs.get(id).unwrap());
     }
 
     pub fn get_or_add_tab_mut(
@@ -46,33 +47,18 @@ impl<Data> RibbonPlugin<Data> {
     }
 }
 
-impl<Data> Plugin<Data> for RibbonPlugin<Data>
+impl<Data> RibbonPlugin<Data>
 where
-    Data: Default + 'static,
+    Data: Default,
 {
-    fn startup(&mut self, _: &mut App<Data>) -> Result<(), EditorError> {
-        *self.selected_tab.borrow_mut() = "default";
-
-        Ok(())
-    }
-
-    fn shortkey_pressed(&mut self, _: &Shortkey, _: &Context<App<Data>>, _: &mut App<Data>) {
-    }
-
-    fn editor_elements(&mut self, ctx: &Context<App<Data>>, _: &App<Data>) -> Vec<Html> {
-        use view::ribbon::Ribbon as UiRibbon;
-        use view::ribbon_tab::RibbonTab as UiRibbonTab;
-
-        let selected_tab_id = self.selected_tab.as_ref().borrow();
-        let selected_tab_id: &'static str = &*selected_tab_id.borrow();
-
-        let element = html! {
-
-            <UiRibbon>          
+    fn view_ribbon(&self, ribbon: &Ribbon<Data>, ctx: &Context<App<Data>>) -> VNode {
+        let selected_tab_id = *self.selected_tab.as_ref().borrow();
+        html! {
+            <div class="ribbon">
                 <ul class="tabs">
                 {
-                    html! {
-                        for self.tabs.iter().map(|(id, tab)| {   
+
+                        for ribbon.tabs.iter().map(|tab| {
                             let selected_tab = self.selected_tab.clone();
                             let onclick = ctx.link().callback(move |e: MouseEvent| {
                                 let element = e.target().unwrap().dyn_ref::<HtmlElement>().unwrap().clone();
@@ -84,42 +70,135 @@ where
                             });
 
 
-                            let class = if &selected_tab_id == id {
+                            let class = if selected_tab_id == tab.id {
                                 "selected"
                             } else {
                                 ""
                             };
 
-                            html! { <li id={&**id} class={class} {onclick}>{tab.label}</li> }
+                            html! { <li id={selected_tab_id} class={class} {onclick}>{tab.label}</li> }
                         })
-                    }
-                }        
-                    <hr />        
+
+                }
+                    <hr />
                 </ul>
                 <div>
                 {
-                    for self.tabs.iter().filter(|(id, _)| id == &&selected_tab_id).map(|(_, tab)| {                
+                    for self.tabs.iter().filter(|(id, _)| id == &&selected_tab_id).map(|(_, tab)| {
+                        self.view_ribbon_tab(tab, ctx)
+                        /*
                         html! {
                             <UiRibbonTab label={tab.label}>
-                            {                        
+                            {
                                 for tab.groups.iter().map(|(_, group)| {
                                     html! {
                                         <RibbonTabGroup title={group.label}>
                                             {
                                                 for group.actions.iter().map(|action| {
-                                                    action.view(ctx) 
+                                                    action.view(ctx)
                                                 })
                                             }
-                                        </RibbonTabGroup>                                
+                                        </RibbonTabGroup>
                                     }
                                 })
                             }
                             </UiRibbonTab>
-                        }             
+                        }
+                        */
                     })
                 }
                 </div>
-            </UiRibbon>
+            </div>
+        }
+    }
+
+    fn view_ribbon_group(&self, group: &RibbonTabGroup<Data>, ctx: &Context<App<Data>>) -> VNode {
+        html! {
+        <div class="ribbon_tab_group">
+            <div class="content">
+            {
+                for group.actions.iter().map(|action| {
+                    self.view_ribbon_action(action, ctx)
+                })
+            }
+            </div>
+            <span>{&group.label}</span>
+        </div>
+        }
+    }
+
+    fn view_ribbon_action(
+        &self,
+        action: &Box<dyn RibbonAction<Data>>,
+        ctx: &Context<App<Data>>,
+    ) -> VNode {
+        action.view(ctx)
+    }
+
+    fn view_ribbon_tab(&self, tab: &RibbonTab<Data>, ctx: &Context<App<Data>>) -> VNode {
+        html! {
+            <div class="ribbon_tab">
+            {
+                for tab.groups.iter().map(|(_, group)| {
+                    self.view_ribbon_group(group, ctx)
+                })
+            }
+            </div>
+        }
+    }
+}
+
+impl<Data> Plugin<Data> for RibbonPlugin<Data>
+where
+    Data: Default + 'static,
+{
+    fn startup(&mut self, _: &mut App<Data>) -> Result<(), EditorError> {
+        *self.selected_tab.borrow_mut() = "default";
+
+        Ok(())
+    }
+
+    fn shortkey_pressed(&mut self, _: &Shortkey, _: &Context<App<Data>>, _: &mut App<Data>) {}
+
+    fn editor_elements(&mut self, ctx: &Context<App<Data>>, _: &App<Data>) -> Vec<Html> {
+
+        let selected_tab_id = *self.selected_tab.as_ref().borrow();
+        let element =         
+        html! {
+            <div class="ribbon">
+                <ul class="tabs">
+                {
+                    for self.tabs.iter().map(|(_, tab)| {
+                        let selected_tab = self.selected_tab.clone();
+                        let onclick = ctx.link().callback(move |e: MouseEvent| {
+                            let element = e.target().unwrap().dyn_ref::<HtmlElement>().unwrap().clone();
+                            let selected_tab = selected_tab.clone();
+                            let mut selected_tab = selected_tab.borrow_mut();
+                            *selected_tab = Box::leak(element.id().into_boxed_str());
+
+                            EditorMessages::UpdateElements()
+                        });
+
+
+                        let class = if selected_tab_id == tab.id {
+                            "selected"
+                        } else {
+                            ""
+                        };
+                        
+                        html! { <li id={selected_tab_id} class={class} {onclick}>{tab.label}</li> }
+                    })
+                }
+                    <hr />
+                </ul>
+                <div>
+                {
+                    for self.tabs.iter().filter(|(id, _)| id == &&selected_tab_id).map(|(_, tab)| {
+                        self.view_ribbon_tab(tab, ctx)
+                    })
+                }
+                </div>
+            </div>
         };
 
         vec![element]

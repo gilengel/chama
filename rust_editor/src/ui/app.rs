@@ -35,6 +35,7 @@ pub enum EditorMessages<Data> {
         )>,
     ),
     PluginOptionUpdated((&'static str, &'static str, Box<dyn Any>)),
+    PluginMessage(&'static str, Box<dyn Any>),
     ActivatePlugin(&'static str),
 
     MouseMove(MouseEvent),
@@ -210,13 +211,13 @@ where
             .map(|(_, plugin)| plugin)
             .collect();
 
-            let mut plugin1 = plugins[0].as_ref().borrow_mut();
-            let plugin1 = plugin1.as_any_mut().downcast_mut::<Plugin1>().unwrap();
+        let mut plugin1 = plugins[0].as_ref().borrow_mut();
+        let plugin1 = plugin1.as_any_mut().downcast_mut::<Plugin1>().unwrap();
 
-            let mut plugin2 = plugins[1].as_ref().borrow_mut();
-            let plugin2 = plugin2.as_any_mut().downcast_mut::<Plugin2>().unwrap();
+        let mut plugin2 = plugins[1].as_ref().borrow_mut();
+        let plugin2 = plugin2.as_any_mut().downcast_mut::<Plugin2>().unwrap();
 
-            f(plugin1, plugin2)
+        f(plugin1, plugin2)
     }
 
     /// Registers a shortkey that is handled by the editor.
@@ -521,6 +522,22 @@ where
                     .enable();
 
                 return true;
+            }
+            EditorMessages::PluginMessage(plugin_id, message) => {
+                if !self.plugins.contains_key(plugin_id) {
+                    error!(
+                        "tried to send message to a plugin with id {} which is not registered",
+                        plugin_id
+                    );
+                    return true;
+                }
+
+                self.plugins
+                    .get_mut(plugin_id)
+                    .unwrap()
+                    .as_ref()
+                    .borrow_mut()
+                    .on_message(message);
             }
             EditorMessages::RerenderView => return true,
         }

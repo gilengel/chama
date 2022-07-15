@@ -1,4 +1,3 @@
-use crate::toolbar_button::ToolbarButton;
 use rust_editor::log;
 use rust_editor::plugin::Plugin;
 use rust_editor::ui::app::{EditorError, Shortkey};
@@ -8,8 +7,15 @@ use toolbar::{Toolbar, ToolbarPosition};
 use yew::classes;
 
 pub mod toolbar;
-pub mod toolbar_button;
 pub mod view;
+
+pub struct ToolbarButton<Data> {
+    pub icon: &'static str,
+    pub identifier: &'static str,
+    pub tooltip: String,
+    pub on_click_callback: Rc<dyn Fn() -> EditorMessages<Data>>,
+    pub selected: Option<Box<dyn Fn() -> bool>>,
+  }
 
 #[editor_plugin(skip)]
 pub struct ToolbarPlugin<Data> {

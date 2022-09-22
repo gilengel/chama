@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'rust_procmap'",
+            "name": "Debug executable 'chama'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=rust_procmap",
-                    "--package=rust_procmap"
+                    "--bin=chama",
+                    "--package=chama"
                 ],
                 "filter": {
-                    "name": "rust_procmap",
+                    "name": "chama",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'rust_procmap'",
+            "name": "Debug unit tests in executable 'chama'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=rust_procmap",
-                    "--package=rust_procmap"
+                    "--bin=chama",
+                    "--package=chama"
                 ],
                 "filter": {
-                    "name": "rust_procmap",
+                    "name": "chama",
                     "kind": "bin"
                 }
             },

@@ -8,9 +8,9 @@
   </p>
 
   <p>  
-    <a href="https://github.com/gilengel/rust_procmap/actions"><img src="https://img.shields.io/github/workflow/status/gilengel/rust_procmap/Code%20Coverage?style=for-the-badge" alt="build" ></a>
-    <a href="https://app.codecov.io/gh/gilengel/rust_procmap" rel="nofollow"><img src="https://img.shields.io/codecov/c/github/gilengel/rust_procmap?style=for-the-badge" alt="coverage"></a>
-    <a href="https://github.com/gilengel/rust_procmap/blob/main/LICENSE"><img src="https://img.shields.io/github/license/gilengel/rust_procmap?style=for-the-badge" alt="license"></a>
+    <a href="https://github.com/gilengel/chama/actions"><img src="https://img.shields.io/github/workflow/status/gilengel/chama/Code%20Coverage?style=for-the-badge" alt="build" ></a>
+    <a href="https://app.codecov.io/gh/gilengel/chama" rel="nofollow"><img src="https://img.shields.io/codecov/c/github/gilengel/chama?style=for-the-badge" alt="coverage"></a>
+    <a href="https://github.com/gilengel/chama/blob/main/LICENSE"><img src="https://img.shields.io/github/license/gilengel/chama?style=for-the-badge" alt="license"></a>
   </p>
 </div>
 
@@ -27,7 +27,7 @@
 In the meantime you can always use the <b>main</b> branch version containing all the latest improvements. Define <b>Chama</b> in your Cargo.toml file like this:
 ```
 [dependencies]
-chama = { git = "https://github.com/gilengel/rust_procmap", branch = "main" }
+chama = { git = "https://github.com/gilengel/chama", branch = "main" }
 ```
 
 # Contributing
@@ -51,11 +51,11 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 code and reloads the live preview in your browser making development way easier and fun. You find more information about trunk and how to install it on their [official website](https://trunkrs.dev/#install).
 3. Clone this repo:
 ```sh
-git clone https://github.com/gilengel/rust_procmap
+git clone https://github.com/gilengel/chama
 ```
 3. Switch to the cloned directory
 ```sh
-cd rust_procmap
+cd chama
 ```
 4. Open your favorite code editing tool to get startet. We use [Visual Studio Code](https://code.visualstudio.com/) and highly recommend it (if you use it make sure to install the [rust-analyzer](https://rust-analyzer.github.io/) extension)
 5. Start the live server with

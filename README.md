@@ -1,9 +1,44 @@
+<div align="center">
+  <img height="200" src="editall.svg">
 
-[![build](https://img.shields.io/github/workflow/status/gilengel/rust_procmap/Code%20Coverage?style=for-the-badge)](https://github.com/gilengel/rust_procmap/actions)
-[![coverage](https://img.shields.io/codecov/c/github/gilengel/rust_procmap?style=for-the-badge)](https://app.codecov.io/gh/gilengel/rust_procmap)
-[![license](https://img.shields.io/github/license/gilengel/rust_procmap?style=for-the-badge)](https://github.com/gilengel/rust_procmap/blob/main/LICENSE)
-# rust-procmap
-2D map editor for creating beautiful and stylized fantasy maps for games and / or pen and paper adventures. It also serves as a living example of the EditAll editor framework (unstable, work in progress).
+  <h1>Chama</h1>
+
+  <p>
+    <strong>Rust / Wasm editor framework</strong>
+  </p>
+
+  <p>  
+    <a href="https://github.com/gilengel/rust_procmap/actions"><img src="https://img.shields.io/github/workflow/status/gilengel/rust_procmap/Code%20Coverage?style=for-the-badge" alt="build" ></a>
+    <a href="https://app.codecov.io/gh/gilengel/rust_procmap" rel="nofollow"><img src="https://img.shields.io/codecov/c/github/gilengel/rust_procmap?style=for-the-badge" alt="coverage"></a>
+    <a href="https://github.com/gilengel/rust_procmap/blob/main/LICENSE"><img src="https://img.shields.io/github/license/gilengel/rust_procmap?style=for-the-badge" alt="license"></a>
+  </p>
+</div>
+
+# About
+<b>Chama</b> is a modern framework for creating graphical editors that run everywhere.
+
+* Features an easy to use plugin system to allow the development of any type of editor, small or complex.
+* Comes with predefined components and an unique design language to ease usage of end users
+* Can be deployed as as WASM application directly on a webserver or embedded into [tauri](https://tauri.app/) / [electron](https://www.electronjs.org/) to offer a native application
+
+# Releases
+🙁 Chama is in its early developing stage and so far not released yet. Please take at the issues the roadmap for the next release.
+
+In the meantime you can always use the <b>main</b> branch version containing all the latest improvements. Define <b>Chama</b> in your Cargo.toml file like this:
+```
+[dependencies]
+chama = { git = "https://github.com/gilengel/rust_procmap", branch = "main" }
+```
+
+# Contributing
+Main development is currently done by a small team of developers. We have big goals that can only achieve with the community in a joined effort. Therefore we really encourage you to contribute regardless of your knowledge or skillset. 
+Developing Chama shall be a pleasent experience for everyone and we strive for a happy, helping and respectful community. So please read our [Code of Conduct](CODE_OF_CONDUCT.md) to learn behavior will not be tolerated.
+
+🥳 You are new to <b>Chama</b>? Take a look at our Wiki to learn the first steps.
+
+❔ Something is unclear, not good documented or missing? Please let us know by opening a new issue. We might switch to another form of communication (e.g. Discord) in the future.
+
+🐞 Found a bug? Please open an issue. We are currently working on a corresponding template.
 
 
 
@@ -51,9 +86,3 @@ cargo build && cargo test
 grcov . -s . --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./target/debug/coverage/
 ```
 You'll find the report here: ```target/debug/coverage/index.html```
-
-## Production
-Comming Soon
-
-## Release
-Comming Soon

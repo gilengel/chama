@@ -38,6 +38,7 @@ rand = "0.8.5"
 rand_chacha = "0.3.1"
 geo-booleanop = { git = "https://github.com/21re/rust-geo-booleanop", branch = "master" }
 js-sys = "0.3.57"
+gloo-net = "0.2.3"
 
 ws_stream_wasm = "0.7.3"
 pharos = "0.5.3"

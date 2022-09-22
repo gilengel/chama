@@ -39,3 +39,5 @@ tramp
 *.profraw
 # Added by cargo
 /target
+
+/bin

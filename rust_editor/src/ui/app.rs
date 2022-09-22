@@ -246,7 +246,7 @@ where
     ///
     ///     fn shortkey_pressed(&mut self, key: &Shortkey, _: &Context<App<Data>>, editor: &mut App<Data>) {
     ///         if *key == vec![Key::Ctrl, Key::Z] {
-    ///             ...
+    ///             
     ///         }
     ///     }
     /// }

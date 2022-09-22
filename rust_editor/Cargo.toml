@@ -3,6 +3,8 @@ name = "rust_editor"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+doctest = false # disable doctest for the moment
 
 [dependencies]
 rust_macro = { path = "../rust_macro" }

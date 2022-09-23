@@ -1,7 +1,6 @@
 [workspace]
 
 members = [
-    "ui",
     "rust_editor",
     "rust_internal",
     "rust_macro",
@@ -11,11 +10,9 @@ members = [
     "plugin_toolbar",
     "plugin_ui_components",
     "plugin_undo_redo",
-    "plugins"
 ]
 
 default-members = [
-    "ui",
     "rust_editor",
     "rust_internal",
     "rust_macro"

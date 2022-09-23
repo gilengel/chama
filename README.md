@@ -1,5 +1,5 @@
 <div align="center">
-  <img height="200" src="editall.svg">
+  <img height="200" src="chama.svg">
 
   <h1>Chama</h1>
 

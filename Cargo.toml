@@ -10,5 +10,22 @@ members = [
     "plugin_ribbon",
     "plugin_toolbar",
     "plugin_ui_components",
-    "plugin_undo_redo"
+    "plugin_undo_redo",
+    "plugins"
 ]
+
+default-members = [
+    "ui",
+    "rust_editor",
+    "rust_internal",
+    "rust_macro"
+]
+
+[workspace.package]
+version = "0.0.0"
+authors = ["Gil Engel"]
+description = "Framework for creating graphical editors that run everywhere (native, web)"
+edition = "2021"
+
+[workspace.dependencies]
+yew = { git = "https://github.com/yewstack/yew", branch = "master", features=["csr"] }

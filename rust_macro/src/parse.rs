@@ -168,6 +168,7 @@ mod kw {
     syn::custom_keyword!(specific_to);
     syn::custom_keyword!(execution);
     syn::custom_keyword!(description);
+    syn::custom_keyword!(messages);
 }
 
 impl Parse for EditorPluginArg {
@@ -178,7 +179,8 @@ impl Parse for EditorPluginArg {
         if input.peek(kw::skip) ||
         input.peek(kw::specific_to) ||
         input.peek(kw::execution) ||
-        input.peek(kw::description)
+        input.peek(kw::description) ||
+        input.peek(kw::messages)
         {
             let ident = input.parse::<syn::Ident>()?;
 
@@ -199,6 +201,10 @@ impl Parse for EditorPluginArg {
 
                 //let behaviour = PluginExecutionBehaviour::from_str(&ty.to_string()).unwrap();
                 return Ok(EditorPluginArg::ExecutionBehaviour(ty));
+            }
+
+            if ident == "messages" {
+                
             }
 
             // description

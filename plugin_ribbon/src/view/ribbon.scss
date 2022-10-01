@@ -64,18 +64,15 @@
         flex-direction: row;
         justify-content: flex-start;
 
-        height: 100%;
-        
+        height: calc(100% - 8px);
+     
 
         
 
         .ribbon_tab {
             display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-
-
-            
+           ///flex-direction: column;
+            justify-content: flex-start;            
 
             .heading {
                 color: $text;

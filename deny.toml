@@ -1,0 +1,27 @@
+[advisories]
+vulnerability = "deny"
+unmaintained = "deny"
+notice = "deny"
+unsound = "deny"
+ignore = [
+    # ansi_term is unmaintained, but it does exactly what it needs to and no more
+    # so no reason to change just for the sake of it
+    "RUSTSEC-2021-0139",
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+
+# Since we are using yew next which does not have a release yet we 
+# need to allow the git repo.
+[sources.allow-org]
+github = ["yewstack"]
+
+[licenses]
+unlicensed = "deny"
+allow-osi-fsf-free = "neither"
+copyleft = "deny"
+# We want really high confidence when inferring licenses from text
+confidence-threshold = 0.93
+allow = ["Apache-2.0", "Apache-2.0 WITH LLVM-exception", "MIT", "MPL-2.0", "ISC"]

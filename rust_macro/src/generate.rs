@@ -377,13 +377,10 @@ pub(crate) fn produce(
     param: &GenericParam,
     skip_ui_gen: bool,
 ) -> TokenStream2 {
-    let (where_clause_plugins_with_options, where_clause_any_plugin) = if param.ty == "Data" {
-        (
-            quote! { where Data: Default + 'static },
-            quote! { where Data: Default + 'static },
-        )
+    let where_clause_plugins_with_options = if param.ty == "Data" {
+        quote! { where Data: Default + 'static }
     } else {
-        (quote! {}, quote! {})
+        quote! {}
     };
 
     let (impl_plugins_with_options, impl_any_plugin) = if param.ty == "Data" {
@@ -414,7 +411,8 @@ pub(crate) fn produce(
         let generic_type = param.ty.clone();
 
         let use_statements = produce_use_statements(&crate_name);
-        let muu = quote! {
+        
+        quote! {
             #use_statements
 
             #impl_plugins_with_options #crate_name::plugin::PluginWithOptions<#generic_type> for #name #ty_generics #where_clause_plugins_with_options
@@ -429,15 +427,13 @@ pub(crate) fn produce(
             }
 
 
-            #impl_any_plugin #crate_name::plugin::AnyPlugin<#generic_type> for #name #ty_generics #where_clause_any_plugin
+            #impl_any_plugin #crate_name::plugin::AnyPlugin<#generic_type> for #name #ty_generics #where_clause_plugins_with_options
             {
                 #produce_as_any_impl
             }
 
             #default_impl
-        };
-
-        muu
+        }
     } else {
         quote! {}
     }

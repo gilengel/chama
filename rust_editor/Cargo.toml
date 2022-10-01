@@ -3,6 +3,7 @@ name = "rust_editor"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
+license.workspace = true
 
 [lib]
 doctest = false # disable doctest for the moment
